@@ -1,0 +1,12 @@
+name: "cmg-api-dev"
+
+services:
+  postgres:
+    container_name: api-db-dev
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=cmgapi'
+      - 'POSTGRES_PASSWORD=localpassword'
+      - 'POSTGRES_USER=cmgapi'
+    ports:
+      - '8081:5432'
