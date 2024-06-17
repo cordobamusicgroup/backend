@@ -6,7 +6,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
-  async register(@Body() body: { username: string; email: string, password: string }) {
-    return this.usersService.createUser(body.username, body.email, body.password);
+  async register(
+    @Body() body: { username: string; email: string; password: string },
+  ) {
+    return this.usersService.createUser(
+      body.username,
+      body.email,
+      body.password,
+    );
   }
 }
