@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User  {
+model User {
   id       Int     @id @default(autoincrement())
   username String  @unique
   email    String  @unique
@@ -15,6 +15,8 @@ model User  {
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
+
+  @@map("users")
 }
 
 model Client {
@@ -27,6 +29,8 @@ model Client {
   address   Address    @relation(fields: [addressId], references: [id])
   label     Label[]
   users     User[]
+
+  @@map("clients")
 }
 
 model Address {
@@ -38,6 +42,8 @@ model Address {
   zip       String
   country   Country  @relation(fields: [countryId], references: [id])
   client    Client[]
+
+  @@map("clients_addresses")
 }
 
 model Country {
@@ -47,6 +53,8 @@ model Country {
   continent String
   address   Address[]
   label     Label[]
+
+  @@map("countries")
 }
 
 model Label {
@@ -57,6 +65,8 @@ model Label {
   website   String
   client    Client  @relation(fields: [clientId], references: [id])
   country   Country @relation(fields: [countryId], references: [id])
+
+  @@map("labels")
 }
 
 model LabelRegistrations {
@@ -65,11 +75,15 @@ model LabelRegistrations {
   traxsourceStatus LabelRegistrationsStatuses @default(NO_REGISTRATION)
   beatportUrl      String
   traxsourceUrl    String
+
+  @@map("labels_registrations")
 }
 
 enum ClientType {
   INDIVIDUAL
   COMPANY
+
+  @@map("clients_types")
 }
 
 enum Role {
@@ -78,10 +92,14 @@ enum Role {
   ADMIN_LEGAL
   ADMIN_MANAGER
   USER
+
+  @@map("roles")
 }
 
 enum LabelRegistrationsStatuses {
   NO_REGISTRATION
   PENDING
   ACTIVE
+
+  @@map("label_registrations_statuses")
 }

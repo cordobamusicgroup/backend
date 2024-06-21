@@ -2,7 +2,7 @@
   "name": "backend-nestjs",
   "version": "0.0.1",
   "description": "",
-  "author": "",
+  "author": "Córdoba Music Group Ltd",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -18,8 +18,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:reset": "prisma migrate reset --force --skip-seed",
-    "prisma:generate": "prisma generate"
+    "db:migrate:reset": "prisma migrate reset --force --skip-seed",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:reset": "npm run migrate:reset && npm run migrate:dev && npm run seed",
+    "db:push": "prisma db push",
+    "db:format": "prisma format"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
