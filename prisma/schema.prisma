@@ -8,19 +8,23 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  username String  @unique
-  email    String  @unique
-  password String
-  role     Role    @default(USER)
-  clientId Int?
-  client   Client? @relation(fields: [clientId], references: [id])
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  clientId  Int?
+  client    Client?  @relation(fields: [clientId], references: [id])
 
   @@map("users")
 }
 
 model Client {
   id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   name      String
   type      ClientType
   addressId Int
@@ -35,6 +39,8 @@ model Client {
 
 model Address {
   id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   street    String
   city      String
   state     String
@@ -58,19 +64,23 @@ model Country {
 }
 
 model Label {
-  id        Int     @id @default(autoincrement())
-  name      String  @unique
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String   @unique
   clientId  Int
   countryId Int
   website   String
-  client    Client  @relation(fields: [clientId], references: [id])
-  country   Country @relation(fields: [countryId], references: [id])
+  client    Client   @relation(fields: [clientId], references: [id])
+  country   Country  @relation(fields: [countryId], references: [id])
 
   @@map("labels")
 }
 
 model LabelRegistrations {
   id               Int                        @id @default(autoincrement())
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
   beatportStatus   LabelRegistrationsStatuses @default(NO_REGISTRATION)
   traxsourceStatus LabelRegistrationsStatuses @default(NO_REGISTRATION)
   beatportUrl      String
