@@ -1,5 +1,4 @@
 import { Expose } from 'class-transformer';
-import { Role } from '@prisma/client';
 import { ClientType } from '../../../common/enums/client-type.enum';
 
 export class ClientDto {

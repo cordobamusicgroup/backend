@@ -6,6 +6,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({

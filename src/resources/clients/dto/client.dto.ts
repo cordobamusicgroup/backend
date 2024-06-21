@@ -1,4 +1,5 @@
 import { Expose } from 'class-transformer';
+import { ClientType } from '../../../common/enums/client-type.enum';
 
 export class ClientDto {
   @Expose()
@@ -8,7 +9,7 @@ export class ClientDto {
   name: string;
 
   @Expose()
-  type: string;
+  type: ClientType;
 
   @Expose()
   vatId: string;
