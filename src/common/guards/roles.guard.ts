@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@prisma/client';
 import { ROLES_KEY } from 'src/common/decorators/roles.decorator';
+import { Role } from '../enums/role.enum';
 
 /**
  * Guard to handle role-based access control.
