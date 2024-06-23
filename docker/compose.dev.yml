@@ -1,4 +1,4 @@
-name: "cmg-api-dev"
+name: 'cmg-api-dev'
 
 services:
   postgres:
@@ -10,3 +10,9 @@ services:
       - 'POSTGRES_USER=cmgapi'
     ports:
       - '8081:5432'
+
+  redis:
+    container_name: redis
+    image: 'redis:latest'
+    ports:
+      - '8082:6379'
