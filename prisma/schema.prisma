@@ -22,19 +22,33 @@ model User {
 }
 
 model Client {
-  id        Int        @id @default(autoincrement())
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   name      String
   type      ClientType
   addressId Int
+  address   Address    @relation(fields: [addressId], references: [id])
   vatId     String
   taxId     String
-  address   Address    @relation(fields: [addressId], references: [id])
-  label     Label[]
-  users     User[]
+
+  balances Balance[]
+
+  labels Label[]
+  users  User[]
 
   @@map("clients")
+}
+
+model Balance {
+  id       Int      @id @default(autoincrement())
+  clientId Int
+  client   Client   @relation(fields: [clientId], references: [id])
+  currency Currency @default(EUR)
+  amount   Float    @default(0.00)
+
+  @@map("balances")
 }
 
 model Address {
@@ -55,7 +69,8 @@ model Address {
 model Country {
   id        Int       @id @default(autoincrement())
   name      String
-  code      String
+  shortCode String    @unique
+  code      String    @unique
   continent String
   address   Address[]
   label     Label[]
@@ -67,26 +82,138 @@ model Label {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  labelStatus LabelStatus @default(ACTIVE)
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
   name      String   @unique
-  clientId  Int
-  countryId Int
-  website   String
-  client    Client   @relation(fields: [clientId], references: [id])
-  country   Country  @relation(fields: [countryId], references: [id])
+  website   String?
+  countryId Int?
+  country   Country? @relation(fields: [countryId], references: [id])
+
+  beatportStatus   LabelRegistrationStatus @default(NO_REGISTRATION)
+  traxsourceStatus LabelRegistrationStatus @default(NO_REGISTRATION)
+  beatportUrl      String?
+  traxsourceUrl    String?
+
+  KontorRoyaltyReport  KontorRoyaltyReport[]
+  BelieveRoyaltyReport BelieveRoyaltyReport[]
 
   @@map("labels")
 }
 
-model LabelRegistrations {
-  id               Int                        @id @default(autoincrement())
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
-  beatportStatus   LabelRegistrationsStatuses @default(NO_REGISTRATION)
-  traxsourceStatus LabelRegistrationsStatuses @default(NO_REGISTRATION)
-  beatportUrl      String
-  traxsourceUrl    String
+//*** Royalties Reports ***//
 
-  @@map("labels_registrations")
+model KontorRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  currency  Currency @default(EUR)
+
+  labelId Int?
+  label   Label? @relation(fields: [labelId], references: [id])
+
+  labelName                       String
+  isrc                            String
+  ean                             String
+  artist                          String
+  productTitle                    String
+  trackTitle                      String
+  articleNo                       String
+  grid                            String
+  licensee                        String
+  outletname                      String
+  format                          String
+  distributionChannel             String
+  territory                       String
+  salesPeriod                     String
+  ppd                             Float
+  shareCustomer                   Float
+  royaltyValuePerUnit             Float
+  units                           Int
+  netRevenue                      Float
+  royaltyRate                     Float
+  royaltyAmountBeforeCopyrightDed Float
+  royaltyAmountCustomer           Float
+  dmbRetailerName                 String
+  dmbStoreName                    String
+
+  @@map("kontor_royalties_reports")
+}
+
+model BelieveRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  currency  Currency @default(USD)
+
+  labelId Int?
+  label   Label? @relation(fields: [labelId], references: [id])
+
+  reportingMonth            String
+  salesMonth                String
+  platform                  String
+  countryRegion             String
+  labelName                 String
+  artistName                String
+  releaseTitle              String
+  trackTitle                String
+  upc                       String
+  isrc                      String
+  catalogNb                 String
+  streamingSubscriptionType String
+  releaseType               String
+  salesType                 String
+  quantity                  String
+  clientPaymentCurrency     String
+  unitPrice                 Float
+  mechanicalFee             Float
+  grossRevenue              Float
+  clientShareRate           Float
+  netRevenue                Float
+
+  @@map("believe_royalties_reports")
+}
+
+model UnlinkedReport {
+  id                   Int                    @id @default(autoincrement())
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  labelName            String
+  count                Int
+  UnlinkedReportDetail UnlinkedReportDetail[]
+
+  @@map("unlinked_reports")
+}
+
+model UnlinkedReportDetail {
+  id               Int            @id @default(autoincrement())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  unlinkedReportId Int
+  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id])
+  data             Json
+
+  @@map("unlinked_details_reports")
+}
+
+//*** Enums  ***//
+
+enum Currency {
+  USD
+  EUR
+  GBP
+
+  @@map("currencies")
+}
+
+enum Distributor {
+  BELIEVE
+  KONTOR
+
+  @@map("distributors")
 }
 
 enum ClientType {
@@ -106,10 +233,17 @@ enum Role {
   @@map("roles")
 }
 
-enum LabelRegistrationsStatuses {
+enum LabelRegistrationStatus {
   NO_REGISTRATION
   PENDING
   ACTIVE
 
   @@map("label_registrations_statuses")
+}
+
+enum LabelStatus {
+  ACTIVE
+  DISABLED
+
+  @@map("label_statuses")
 }
