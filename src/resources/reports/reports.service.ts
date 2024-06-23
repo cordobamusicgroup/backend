@@ -21,7 +21,7 @@ export class ReportsService {
   async getUnlinkedReports() {
     return this.prisma.unlinkedReport.findMany({
       include: {
-        UnlinkedReportDetail: true,
+        UnlinkedReportDetail: false,
       },
     });
   }
@@ -65,5 +65,29 @@ export class ReportsService {
         where: { id: unlinkedReportId },
       }),
     ]);
+  }
+
+  async getRecentReports(distributor: Distributor, limit: number) {
+    if (limit > 100) {
+      throw new Error('Limit exceeds the maximum value of 100');
+    }
+
+    if (distributor === Distributor.KONTOR) {
+      return this.prisma.kontorRoyaltyReport.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+      });
+    } else if (distributor === Distributor.BELIEVE) {
+      return this.prisma.believeRoyaltyReport.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+      });
+    } else {
+      throw new Error('Invalid distributor type');
+    }
   }
 }

@@ -1,10 +1,12 @@
 // src/resources/reports/reports.controller.ts
 
 import {
-  Controller,
-  Post,
-  Get,
+  BadRequestException,
   Body,
+  Controller,
+  Get,
+  Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import { ReportsService } from './reports.service';
 import { Distributor } from '../../common/enums/distributor.enum';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { parse } from 'csv-parse';
 
 @Controller('reports')
 export class ReportsController {
@@ -58,5 +61,24 @@ export class ReportsController {
       distributor,
     );
     return { message: 'Unlinked reports assigned successfully' };
+  }
+
+  @Get('recent')
+  async getRecentReports(
+    @Query('distributor') distributor: Distributor,
+    @Query('limit') limit: number,
+  ) {
+    if (!Object.values(Distributor).includes(distributor)) {
+      throw new BadRequestException('Invalid distributor');
+    }
+
+    if (!limit || isNaN(limit) || limit <= 0) {
+      throw new BadRequestException('Invalid limit value');
+    }
+
+    return await this.reportsService.getRecentReports(
+      distributor,
+      parseInt(String(limit)),
+    );
   }
 }
