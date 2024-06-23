@@ -6,8 +6,8 @@ import { PrismaService } from './prisma/prisma.service';
 import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { ReportsModule } from './resources/reports/base/reports.module';
 import { BullModule } from '@nestjs/bull';
+import { ReportsModule } from './resources/reports/reports.module';
 
 @Module({
   imports: [

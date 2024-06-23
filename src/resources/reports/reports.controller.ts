@@ -3,6 +3,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UploadedFile,
   UseInterceptors,
@@ -38,5 +39,24 @@ export class ReportsController {
   ) {
     await this.reportsService.processCsv(file.path, distributor);
     return { message: 'File uploaded and processing started' };
+  }
+
+  @Get('unlinked')
+  async getUnlinkedReports() {
+    return this.reportsService.getUnlinkedReports();
+  }
+
+  @Post('assign-label')
+  async assignLabelToUnlinkedReports(
+    @Body('labelId') labelId: number,
+    @Body('unlinkedReportId') unlinkedReportId: number,
+    @Body('distributor') distributor: Distributor,
+  ) {
+    await this.reportsService.assignLabelToUnlinkedReports(
+      labelId,
+      unlinkedReportId,
+      distributor,
+    );
+    return { message: 'Unlinked reports assigned successfully' };
   }
 }
