@@ -25,7 +25,6 @@ export class UsersController {
     );
   }
 
-  @Public()
   @Get('all')
   async getUsers() {
     return this.usersService.getAllUsers();
