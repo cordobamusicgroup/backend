@@ -1,0 +1,32 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: [kvm4]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Ensure .ssh directory exists
+        run: mkdir -p ~/.ssh
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: |
+          ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
+          cd /root/docker-apps/cmg-app/backend &&
+          git reset --hard HEAD &&
+          git pull origin main &&
+          chmod +x start_containers.sh &&
+          ./start_containers.sh'
