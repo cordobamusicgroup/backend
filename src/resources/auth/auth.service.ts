@@ -20,12 +20,10 @@ export class AuthService {
 
   async validateUser(username: string, password: string): Promise<User | null> {
     const user = await this.usersService.findByUsername(username);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    const isPasswordMatch =
+      user && (await bcrypt.compare(password, user.password));
     if (!isPasswordMatch) {
-      throw new UnauthorizedException('Invalid password');
+      throw new UnauthorizedException('Invalid credentials');
     }
     return user;
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
@@ -19,7 +19,7 @@ export class UsersService {
     });
   }
   async findByUsername(username: string) {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { username },
     });
   }

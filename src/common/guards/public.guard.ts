@@ -11,7 +11,6 @@ export class PublicGuard implements CanActivate {
       IS_PUBLIC_KEY,
       context.getHandler(),
     );
-    console.log('PublicGuard canActivate:', isPublic); // Log para depuración
     return isPublic;
   }
 }

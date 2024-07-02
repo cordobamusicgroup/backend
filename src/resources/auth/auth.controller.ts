@@ -13,6 +13,7 @@ import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +26,7 @@ export class AuthController {
     return this.authService.login(authLoginDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async me(@Request() req): Promise<CurrentUserResponseDto> {

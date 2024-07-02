@@ -20,7 +20,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     BullModule.forRoot({
       redis: {
         host: 'localhost',
-        port: 8082,
+        port: 9002,
       },
     }),
     PrismaModule,

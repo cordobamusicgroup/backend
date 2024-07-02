@@ -1,0 +1,28 @@
+name: 'cmg-api-dev'
+
+services:
+  cmg-api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    ports:
+      - '9000:6060'
+    depends_on:
+      - cmg-db-prod
+      - cmg-redis-prod
+
+  cmg-db-prod:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=cmgapi'
+      - 'POSTGRES_PASSWORD=localpassword'
+      - 'POSTGRES_USER=cmgapi'
+    ports:
+      - '9001:5432'
+
+  cmg-redis-prod:
+    image: 'redis:latest'
+    ports:
+      - '9002:6379'
