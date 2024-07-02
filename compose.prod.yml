@@ -1,4 +1,4 @@
-name: 'cmg-api-dev'
+version: '3.3'
 
 services:
   cmg-api-prod:
