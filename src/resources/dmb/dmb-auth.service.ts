@@ -1,13 +1,18 @@
 // dmb/dmb-auth.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as tough from 'tough-cookie';
 import { wrapper } from 'axios-cookiejar-support';
+import { ConfigService } from '@nestjs/config';
+
+const logger = new Logger('DmbAuthService');
 
 @Injectable()
 export class DmbAuthService {
   private cookieJar = new tough.CookieJar();
   private xsrfToken: string;
+
+  constructor(private configService: ConfigService) {}
 
   async login(user: string, pass: string): Promise<void> {
     const client = wrapper(axios.create({ jar: this.cookieJar }));
@@ -57,7 +62,16 @@ export class DmbAuthService {
 
   async ensureAuthenticated(): Promise<void> {
     if (!this.getXsrfToken() || !this.getDmbSid()) {
-      await this.login('SantiagoDiaz', '030903joaquin12A!');
+      const user = this.configService.get<string>('DMB_USER');
+      const pass = this.configService.get<string>('DMB_PASS');
+
+      if (!user || !pass) {
+        logger.error(
+          'DMB_USER or DMB_PASS not defined in environment variables',
+        );
+      }
+
+      await this.login(user, pass);
     }
   }
 
