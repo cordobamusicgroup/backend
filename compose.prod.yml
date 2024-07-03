@@ -1,10 +1,11 @@
 version: '3.3'
 
 services:
-  cmg-api-prod:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: cmg-api-prod
     env_file:
       - .env.production
     ports:
@@ -13,16 +14,26 @@ services:
       - cmg-db-prod
       - cmg-redis-prod
 
-  cmg-db-prod:
+  postgres:
+    container_name: cmg-db-prod
     image: 'postgres:latest'
     environment:
       - 'POSTGRES_DB=cmgapi'
       - 'POSTGRES_PASSWORD=localpassword'
       - 'POSTGRES_USER=cmgapi'
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+      - ./docker/postgres/log:/var/log/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 10s
+      retries: 5
     ports:
       - '1001:5432'
 
-  cmg-redis-prod:
+  redis:
+    container_name: cmg-redis-prod
     image: 'redis:latest'
     ports:
       - '1002:6379'
