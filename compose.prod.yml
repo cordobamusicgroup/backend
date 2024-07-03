@@ -1,5 +1,4 @@
 version: '3.3'
-name: 'cmg-backend'
 
 services:
   cmg-api-prod:
