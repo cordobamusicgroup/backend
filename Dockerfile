@@ -42,6 +42,9 @@ RUN apk add --no-cache \
     nodejs \
     yarn
 
+# Instalar Chrome mediante Puppeteer
+RUN npx puppeteer browsers install chrome
+
 # Establecer la variable de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser

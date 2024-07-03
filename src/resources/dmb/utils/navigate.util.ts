@@ -15,7 +15,17 @@ export async function navigateToPage(
     await authService.ensureAuthenticated();
 
     logger.log('Launching Puppeteer browser...');
-    const browser = await puppeteer.launch();
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const launchOptions = isProduction
+      ? {
+          executablePath: '/usr/bin/chromium-browser',
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        }
+      : {};
+
+    const browser = await puppeteer.launch(launchOptions);
+
     const page = await browser.newPage();
 
     logger.log('Setting cookies...');
