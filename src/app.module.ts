@@ -11,6 +11,7 @@ import { ReportsModule } from './resources/reports/reports.module';
 import { APP_GUARD } from '@nestjs/core';
 import { PublicGuard } from './common/guards/public.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { DmbModule } from './resources/dmb/dmb.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     UsersModule,
     AuthModule,
     ReportsModule,
+    DmbModule,
   ],
   controllers: [AppController],
   providers: [
