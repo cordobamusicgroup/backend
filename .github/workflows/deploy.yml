@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [kvm4]
+    runs-on: [self-hosted, kvm4]
 
     steps:
       - name: Checkout repository
