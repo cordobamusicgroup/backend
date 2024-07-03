@@ -31,6 +31,21 @@ WORKDIR /app
 # Instalar pnpm
 RUN npm install -g pnpm
 
+# Instalar dependencias necesarias para Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    nodejs \
+    yarn
+
+# Establecer la variable de entorno para Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Copiar dependencias instaladas y el directorio de construcción desde la etapa de construcción
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
