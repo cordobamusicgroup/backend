@@ -11,8 +11,8 @@ services:
     ports:
       - '1000:6060'
     depends_on:
-      - cmg-db-prod
-      - cmg-redis-prod
+      - postgres
+      - redis
 
   postgres:
     container_name: cmg-db-prod
