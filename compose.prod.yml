@@ -12,6 +12,8 @@ services:
     depends_on:
       - cmg-db-prod
       - cmg-redis-prod
+    networks:
+      - nginx_webnet
 
   cmg-db-prod:
     image: 'postgres:latest'
@@ -26,3 +28,7 @@ services:
     image: 'redis:latest'
     ports:
       - '1002:6379'
+
+networks:
+  nginx_webnet:
+    external: true
