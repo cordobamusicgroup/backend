@@ -22,6 +22,7 @@ export class DmbAuthService {
       const xsrfUrl = 'https://dmb.kontornewmedia.com/v5/dmbauth';
 
       // Login request
+      this.logger.log('Sending login request...');
       await client.post(
         loginUrl,
         {
@@ -40,6 +41,7 @@ export class DmbAuthService {
       );
 
       // Get XSRF token
+      this.logger.log('Fetching XSRF token...');
       await client.get(xsrfUrl, {
         withCredentials: true,
         headers: {
@@ -80,6 +82,7 @@ export class DmbAuthService {
         );
       }
 
+      this.logger.log('Ensuring authentication...');
       await this.login(user, pass);
     }
   }
