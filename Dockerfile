@@ -4,6 +4,9 @@ FROM node:20 AS base
 # Configurar el locale predeterminado
 ENV LANG en_US.UTF-8
 
+# Instalar pnpm y corepack
+RUN npm install -g pnpm
+
 # Instalar Chrome y fuentes necesarias
 RUN apt-get update \
     && apt-get install -y wget gnupg \
@@ -16,7 +19,6 @@ RUN apt-get update \
 
 # Etapa de instalación de dependencias
 FROM base AS deps
-RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch --frozen-lockfile
@@ -24,7 +26,6 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 
 # Etapa de construcción
 FROM base AS build
-RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch --frozen-lockfile
@@ -47,4 +48,4 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Ejecutar migraciones de Prisma antes de iniciar la aplicación
-CMD ["sh", "-c", "pnpm prisma migrate deploy && node ./dist/index.js"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start:prod"]
