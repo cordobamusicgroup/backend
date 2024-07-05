@@ -1,70 +1,55 @@
 # Etapa base
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+FROM node:20 AS base
 
-# Copiar el código fuente
-COPY . /app
+# Configurar el locale predeterminado
+ENV LANG en_US.UTF-8
+
+# Instalar Chrome y fuentes necesarias
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
+      --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
+
+USER pptruser
+WORKDIR /home/pptruser
+
+# Etapa de instalación de dependencias
+FROM base AS deps
+RUN corepack enable
 WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --prod
 
-# Instalar dependencias de producción
-FROM base AS prod-deps
-RUN --mount=type=cache,target=/pnpm/store pnpm install --prod --frozen-lockfile
-
-# Instalar todas las dependencias y construir la aplicación
+# Etapa de construcción
 FROM base AS build
-RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm prisma generate
-RUN pnpm run build
-
-# Imagen final de producción
-FROM node:20-slim AS production
-
-# Establecer entorno de pnpm y corepack
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm prisma generate
+RUN pnpm build
 
-# Instalar dependencias necesarias
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y \
-    openssl \
-    chromium \
-    libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxrandr2 \
-    libgbm1 \
-    libpangocairo-1.0-0 \
-    libasound2 \
-    fonts-liberation \
-    libjpeg-turbo-progs \
-    libxdamage1 \
-    && rm -rf /var/lib/apt/lists/*
+# Etapa de producción
+FROM base
 
-# Instalar Chrome mediante Puppeteer
-RUN npx puppeteer browsers install chrome
+USER root
+WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
+COPY --from=build /app/dist /app/dist
+COPY --from=build /app/prisma /app/prisma
+ENV NODE_ENV production
 
 # Establecer la variable de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Copiar dependencias y build desde las etapas anteriores
-WORKDIR /app
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=build /app/dist /app/dist
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/prisma /app/prisma
-
-# Establecer la variable de entorno para producción
-ENV NODE_ENV=production
-
-# Exponer el puerto en el que corre la aplicación
-EXPOSE 3000
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Ejecutar migraciones de Prisma antes de iniciar la aplicación
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node ./dist/index.js"]

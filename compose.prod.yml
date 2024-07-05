@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 
 services:
   app:
@@ -42,5 +42,5 @@ services:
 
 networks:
   default:
-    external:
-      name: nginx_webnet
+    external: true
+    name: nginx_webnet
