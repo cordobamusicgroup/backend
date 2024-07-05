@@ -1,14 +1,17 @@
 # Etapa 1: Construcción
 FROM node:20-slim AS base
 
+# Instalar pnpm
+RUN npm install -g pnpm
+
 # Establecer el directorio de trabajo
 WORKDIR /app
 
 # Copiar archivos de configuración
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml ./
 
-# Instalar dependencias y usar caché para npm
-RUN --mount=type=cache,id=npm-store,target=/root/.npm npm ci
+# Instalar dependencias y usar caché para pnpm
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile
 
 # Copiar el resto de los archivos de la aplicación
 COPY . .
@@ -17,10 +20,13 @@ COPY . .
 RUN npx prisma generate
 
 # Construir la aplicación
-RUN npm run build
+RUN pnpm run build
 
 # Etapa 2: Producción
 FROM node:20-slim AS production
+
+# Instalar pnpm
+RUN npm install -g pnpm
 
 # Configurar el locale predeterminado
 ENV LANG en_US.UTF-8
@@ -46,6 +52,7 @@ WORKDIR /app
 COPY --from=base /app/node_modules /app/node_modules
 COPY --from=base /app/dist /app/dist
 COPY --from=base /app/package.json /app/package.json
+COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY --from=base /app/prisma /app/prisma
 
 # Establecer la variable de entorno para producción
@@ -55,4 +62,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Ejecutar migraciones de Prisma antes de iniciar la aplicación
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
