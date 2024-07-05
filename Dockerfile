@@ -1,26 +1,31 @@
 # Etapa 1: Construcción
 FROM node:20-slim AS base
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
+# Establecer el directorio de trabajo
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# Copiar archivos de configuración
+COPY package.json package-lock.json ./
 
-FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Instalar dependencias y usar caché para npm
+RUN --mount=type=cache,id=npm-store,target=/root/.npm npm ci
+
+# Copiar el resto de los archivos de la aplicación
 COPY . .
-RUN pnpm prisma generate
-RUN pnpm run build
+
+# Generar el cliente Prisma
+RUN npx prisma generate
+
+# Construir la aplicación
+RUN npm run build
 
 # Etapa 2: Producción
 FROM node:20-slim AS production
 
+# Configurar el locale predeterminado
+ENV LANG en_US.UTF-8
 
+# Instalar Chrome y fuentes necesarias para Puppeteer
 RUN apt-get update \
     && apt-get install -y wget gnupg \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
@@ -30,18 +35,24 @@ RUN apt-get update \
       --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Establecer la variable de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
+# Establecer el directorio de trabajo
 WORKDIR /app
 
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=build /app/dist /app/dist
+# Copiar dependencias y archivos de construcción desde la etapa de construcción
+COPY --from=base /app/node_modules /app/node_modules
+COPY --from=base /app/dist /app/dist
+COPY --from=base /app/package.json /app/package.json
+COPY --from=base /app/prisma /app/prisma
 
-#COPY --from=build /app/package.json /app/package.json
-#COPY --from=build /app/prisma /app/prisma
-
+# Establecer la variable de entorno para producción
 ENV NODE_ENV=production
+
+# Exponer el puerto en el que corre la aplicación
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
+# Ejecutar migraciones de Prisma antes de iniciar la aplicación
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
