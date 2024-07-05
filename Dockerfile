@@ -12,11 +12,7 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
       --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
-
-USER pptruser
-WORKDIR /home/pptruser
+    && rm -rf /var/lib/apt/lists/*
 
 # Etapa de instalación de dependencias
 FROM base AS deps
@@ -40,7 +36,6 @@ RUN pnpm build
 # Etapa de producción
 FROM base
 
-USER root
 WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
