@@ -41,6 +41,7 @@ async function main() {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const label = await prisma.label.create({
       data: {
         client: { connect: { id: 1 } },
