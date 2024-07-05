@@ -10,11 +10,11 @@ WORKDIR /app
 
 # Instalar dependencias de producción
 FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Instalar todas las dependencias y construir la aplicación
 FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm prisma generate
 RUN pnpm run build
 
@@ -27,7 +27,8 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 # Instalar dependencias necesarias
-RUN apt-get update && apt-get install -y \
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y \
     openssl \
     chromium \
     libnss3 \
