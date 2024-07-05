@@ -9,9 +9,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { BullModule } from '@nestjs/bull';
 import { ReportsModule } from './resources/reports/reports.module';
 import { APP_GUARD } from '@nestjs/core';
-import { PublicGuard } from './common/guards/public.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { DmbModule } from './resources/dmb/dmb.module';
+import { DmbModule } from './resources/external/dmb/dmb.module';
+import { FreeAgentModule } from './resources/external/freeagent/freeagent.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -24,11 +25,13 @@ import { DmbModule } from './resources/dmb/dmb.module';
         port: 9002,
       },
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
     ReportsModule,
     DmbModule,
+    FreeAgentModule,
   ],
   controllers: [AppController],
   providers: [
