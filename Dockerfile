@@ -27,11 +27,19 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 RUN apt-get update && apt-get install -y \
     chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxrandr2 \
+    libgbm1 \
+    libpangocairo-1.0-0 \
+    libasound2 \
+    fonts-liberation \
+    libjpeg-turbo-progs \
+    libxdamage1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar Chrome mediante Puppeteer
@@ -39,7 +47,7 @@ RUN npx puppeteer browsers install chrome
 
 # Establecer la variable de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copiar dependencias y build desde las etapas anteriores
 WORKDIR /app
