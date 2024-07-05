@@ -23,7 +23,9 @@ export class AuthService {
     const isPasswordMatch =
       user && (await bcrypt.compare(password, user.password));
     if (!isPasswordMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(
+        'Failed to log in. Please check your username and password.',
+      );
     }
     return user;
   }
@@ -51,6 +53,7 @@ export class AuthService {
     return {
       id: userData.id,
       username: userData.username,
+      email: userData.email,
       role: userData.role,
     };
   }
