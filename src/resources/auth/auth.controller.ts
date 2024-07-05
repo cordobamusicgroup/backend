@@ -6,14 +6,15 @@ import {
   HttpStatus,
   Post,
   Request,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -22,8 +23,15 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() authLoginDto: AuthLoginDto) {
-    return this.authService.login(authLoginDto);
+  async login(@Body() authLoginDto: AuthLoginDto, @Res() res: Response) {
+    const { access_token } = await this.authService.login(authLoginDto);
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: true, // Asegúrate de que tu aplicación use HTTPS en producción
+      domain: '.cmgdistro.com', // Configura el dominio base
+      sameSite: 'strict',
+    });
+    return res.send({ access_token });
   }
 
   @UseGuards(JwtAuthGuard)
