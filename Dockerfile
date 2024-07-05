@@ -1,46 +1,38 @@
-# Etapa 1: Construcción
-FROM node:18 AS build
+# Etapa base
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-# Establecer directorio de trabajo
+# Copiar el código fuente
+COPY . /app
 WORKDIR /app
 
-# Copiar archivos de configuración
-COPY package.json pnpm-lock.yaml ./
+# Instalar dependencias de producción
+FROM base AS prod-deps
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
-# Instalar pnpm
-RUN npm install -g pnpm
-
-# Instalar dependencias
-RUN pnpm install
-
-# Copiar el resto de los archivos de la aplicación
-COPY . .
-
-# Generar el cliente Prisma
+# Instalar todas las dependencias y construir la aplicación
+FROM base AS build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm prisma generate
-
-# Construir la aplicación
 RUN pnpm run build
 
-# Etapa 2: Producción
-FROM node:18-alpine AS production
+# Imagen final de producción
+FROM node:20-slim AS production
 
-# Establecer directorio de trabajo
-WORKDIR /app
-
-# Instalar pnpm
-RUN npm install -g pnpm
-
-# Instalar dependencias necesarias para Puppeteer
-RUN apk add --no-cache \
+# Instalar pnpm y Puppeteer
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+RUN apt-get update && apt-get install -y \
     chromium \
     nss \
     freetype \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    nodejs \
-    yarn
+    && rm -rf /var/lib/apt/lists/*
 
 # Instalar Chrome mediante Puppeteer
 RUN npx puppeteer browsers install chrome
@@ -49,11 +41,12 @@ RUN npx puppeteer browsers install chrome
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Copiar dependencias instaladas y el directorio de construcción desde la etapa de construcción
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./
-COPY --from=build /app/prisma ./prisma
+# Copiar dependencias y build desde las etapas anteriores
+WORKDIR /app
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=build /app/dist /app/dist
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/prisma /app/prisma
 
 # Establecer la variable de entorno para producción
 ENV NODE_ENV=production
