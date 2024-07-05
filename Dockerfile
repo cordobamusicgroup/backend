@@ -21,11 +21,14 @@ RUN pnpm run build
 # Imagen final de producción
 FROM node:20-slim AS production
 
-# Instalar pnpm y Puppeteer
+# Establecer entorno de pnpm y corepack
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
+
+# Instalar dependencias necesarias
 RUN apt-get update && apt-get install -y \
+    openssl \
     chromium \
     libnss3 \
     libatk1.0-0 \
