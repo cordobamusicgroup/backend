@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main
+      - preview
 
 jobs:
   deploy:
@@ -25,8 +25,8 @@ jobs:
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
         run: |
           ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-          cd /root/docker-apps/cordobamusicgroup/app/backend-prod &&
+          cd /root/docker-apps/cordobamusicgroup/app/backend-preview &&
           git reset --hard HEAD &&
           git pull origin main &&
-          chmod +x start_containers_prod.sh &&
-          ./start_containers_prod.sh'
+          chmod +x start_containers_preview.sh &&
+          ./start_containers_preview.sh'

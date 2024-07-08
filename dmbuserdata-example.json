@@ -1,0 +1,33 @@
+{
+  "id": 4851,
+  "username": "SantiagoDiaz",
+  "fullName": "Santiago Joaquin Diaz",
+  "language": "en",
+  "clientId": 2808,
+  "email": "santiago@cmgdistro.com",
+  "imagePath": "/004000/004851/profile.jpeg",
+  "emailForLoginFromNewDevice": true,
+  "userFunction": "User",
+  "totpEnabled": false,
+  "comms": [{ "type": "mobile", "value": "+5493549549762" }],
+  "privileges": [],
+  "preferences": {
+    "fontSize": "smaller",
+    "Album.search.orderBy": "release_date_dig",
+    "search:defaultProduct": "Album",
+    "Album.search.orderDesc": "1",
+    "Album.search.rowsPerPage": "250",
+    "QCProduct.search.orderBy": "salesStartDate",
+    "ProductPitch.search.orderBy": "updateDateTime",
+    "ProductPitch.search.orderDesc": "1",
+    "ProductPitch.search.rowsPerPage": "10",
+    "client\\imex\\lists\\LabelListExport.columns": "client,client_id,label,id,labelcode_edel,labelcode_gvl,country,genre1,genre2,productCount,creationTime,creationUser",
+    "sales\\imex\\AwardCsvExportMetadata.columns": "type,level,awarded,threshold,client",
+    "album\\imex\\export\\csv\\PplCsvExport.columns": "isrc,artist,title,titleVersion,isRemastered,genre,contentType,pYear,pName,countryOrigin,countryComissioning,duration,isExplicit,recordingDate,language,countryPublication,recordingVenue,recordingId,hasSamples,isMedley,rightsController,rightsholderId,rightsOwnershipType,rightsCountryDefault,rightsBeginDate,rightsEndDate,rightsPercentage",
+    "album\\imex\\lists\\TrackAlbumListExport.columns": "track_id,track_isrc,track_artist,track_title,track_title_version,track_genre,track_pricecode,track_duration,album_ean_upc,album_grid,album_title,album_artist",
+    "modules/common/imex/genre/GenreListExport.php.columns": "DMB-ID,Parent Genre(s),Genre Name,Sub Genres",
+    "mainMenuCollapsed": true,
+    "theme": "standard",
+    "search:initialSearchLimited": 10
+  }
+}
