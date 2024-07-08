@@ -58,15 +58,8 @@ COPY --from=base /app/prisma /app/prisma
 # Set environment variable for production
 ENV NODE_ENV=production
 
-# Run Prisma migrations before starting the application
-RUN pnpm prisma migrate deploy
-
-# Copy and execute seed script
-COPY prisma/seed.ts /app/prisma/seed.ts
-RUN pnpm exec -- ts-node /app/prisma/seed.ts
-
 # Expose the port on which the application runs
 EXPOSE 3000
 
-# Run Prisma migrations before starting the application
-CMD ["pnpm", "run", "start:prod"]
+# Run Prisma migrations and seed script before starting the application
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node /app/prisma/seed.ts && pnpm run start:prod"]
