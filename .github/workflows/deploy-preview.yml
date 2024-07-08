@@ -27,6 +27,6 @@ jobs:
           ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
           cd /root/docker-apps/cordobamusicgroup/app/backend-preview &&
           git reset --hard HEAD &&
-          git pull origin main &&
+          git pull origin preview &&
           chmod +x start_containers_preview.sh &&
           ./start_containers_preview.sh'
