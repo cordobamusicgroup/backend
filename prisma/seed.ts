@@ -1,74 +1,87 @@
+// Importar PrismaClient y dependencias necesarias
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { countries } from './countries-seed';
 
+// Inicializar PrismaClient
 const prisma = new PrismaClient();
 
+// Función principal asincrónica
 async function main() {
-  for (const country of countries) {
-    await prisma.country.create({
-      data: {
-        name: country.name,
-        shortCode: country.shortCode,
-        code: country.code,
-        continent: country.continent,
-      },
-    });
-  }
+  try {
+    // Verificar si ya está inicializado
+    const status = await prisma.initializationStatus.findFirst();
+    if (status?.initialized) {
+      console.log('La semilla ya ha sido ejecutada previamente.');
+      return;
+    }
 
-  const argentina = await prisma.country.findUnique({
-    where: { code: 'ARG' },
-  });
+    // Insertar países si no existen
+    for (const country of countries) {
+      const existingCountry = await prisma.country.findUnique({
+        where: {
+          shortCode: country.alpha2,
+          code: country.alpha3,
+        },
+      });
 
-  if (argentina) {
-    const address1 = await prisma.address.create({
-      data: {
-        street: 'Sargento Cabral 241',
-        city: 'Cruz del Eje',
-        state: 'Cordoba',
-        zip: '5280',
-        countryId: argentina.id,
-      },
-    });
+      if (!existingCountry) {
+        await prisma.country.create({
+          data: {
+            name: country.name,
+            shortCode: country.alpha2,
+            code: country.alpha3,
+          },
+        });
+        console.log(`País ${country.name} insertado.`);
+      } else {
+        console.log(`El país ${country.name} ya existe en la base de datos.`);
+      }
+    }
 
-    const client1 = await prisma.client.create({
-      data: {
-        name: 'Santiago Joaquin Diaz',
-        type: 'INDIVIDUAL',
-        addressId: address1.id,
-        vatId: '123456789',
-        taxId: '987654321',
-      },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const label = await prisma.label.create({
-      data: {
-        client: { connect: { id: 1 } },
-        name: 'Legion Records',
-      },
-    });
-
-    const password = 'admin';
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await prisma.user.create({
-      data: {
+    // Insertar usuario admin si no existe
+    const existingAdmin = await prisma.user.findUnique({
+      where: {
         username: 'admin',
-        email: 'admin@example.com',
-        password: hashedPassword,
-        role: 'ADMIN',
-        clientId: client1.id,
       },
     });
+
+    if (!existingAdmin) {
+      const password = 'adminpassword-123';
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await prisma.user.create({
+        data: {
+          username: 'admin',
+          email: 'changeme@gmail.com',
+          password: hashedPassword,
+          role: 'ADMIN',
+        },
+      });
+
+      console.log('Usuario admin insertado correctamente.');
+    } else {
+      console.log('El usuario admin ya existe en la base de datos.');
+    }
+
+    // Actualizar el estado de inicialización
+    await prisma.initializationStatus.create({
+      data: {
+        initialized: true,
+      },
+    });
+
+    console.log('Estado de inicialización actualizado correctamente.');
+  } catch (error) {
+    console.error('Error al ejecutar la semilla:', error);
+    process.exit(1); // Terminar con código de error
+  } finally {
+    await prisma.$disconnect(); // Desconectar Prisma al finalizar
   }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Ejecutar la función principal
+main().catch((error) => {
+  console.error('Error en la función main:', error);
+  process.exit(1); // Terminar con código de error si hay un problema
+});

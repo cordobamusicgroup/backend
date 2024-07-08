@@ -1,0 +1,47 @@
+name: cmg-backend-preview
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - 'DOCKER_BUILDKIT=1'
+    image: cmg-api-preview:latest
+    container_name: cmg-api-preview
+    env_file:
+      - .env.preview
+    ports:
+      - '2000:6060'
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    container_name: cmg-db-preview
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=cmgapipreview'
+      - 'POSTGRES_PASSWORD=previewpassword'
+      - 'POSTGRES_USER=cmgapipreview'
+    volumes:
+      - ./docker/postgres/preview_data:/var/lib/postgresql/data
+      - ./docker/postgres/preview_log:/var/log/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    ports:
+      - '2001:5432'
+
+  redis:
+    container_name: cmg-redis-preview
+    image: 'redis:latest'
+    ports:
+      - '2002:6379'
+
+networks:
+  default:
+    external: true
+    name: nginx_webnet
