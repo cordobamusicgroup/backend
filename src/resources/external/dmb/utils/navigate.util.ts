@@ -19,7 +19,7 @@ export async function navigateToPage(
 
     const launchOptions = isProduction
       ? {
-          executablePath: '/usr/bin/chromium-browser',
+          executablePath: '/usr/bin/google-chrome-stable',
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         }
       : {};
@@ -87,7 +87,9 @@ export async function navigateToPage(
           await iframe.waitForSelector('html.dmb-smaller-size.iframe-enabled', {
             timeout: 5000,
           });
-          logger.verbose(`Selector html.dmb-smaller-size.iframe-enabled found.`);
+          logger.verbose(
+            `Selector html.dmb-smaller-size.iframe-enabled found.`,
+          );
 
           for (const { selector, timeout } of iframeSelectors) {
             try {
