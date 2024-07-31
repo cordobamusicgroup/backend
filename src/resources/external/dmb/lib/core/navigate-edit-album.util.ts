@@ -56,10 +56,8 @@ export async function navigateAndEditAlbum(
     await saveAlbum(page, iframe);
 
     if (coverFilePath) {
-      await uploadImageToDmb(page, iframe, coverFilePath); // Pasar page y iframe
+      await uploadImageToDmb(page, iframe, coverFilePath);
     }
-
-    await saveAlbum(page, iframe);
   } catch (error) {
     logger.error('Error interacting with album page:', error.message);
   } finally {

@@ -12,7 +12,7 @@ export async function removePrimaryAttachment(iframe: puppeteer.Frame) {
     // Esperar a que el botón de eliminar sea visible
     await iframe.waitForSelector(primaryRemoveButtonSelector, {
       visible: true,
-      timeout: 3000, // Timeout de 10 segundos
+      timeout: 500, // Timeout de 10 segundos
     });
 
     const primaryRemoveButton = await iframe.$(primaryRemoveButtonSelector);
@@ -40,7 +40,7 @@ export async function removeSubCoverAttachments(iframe: puppeteer.Frame) {
     // Esperar a que el contenedor de subcovers sea visible
     await iframe.waitForSelector(subCoverContainerSelector, {
       visible: true,
-      timeout: 3000, // Timeout de 10 segundos
+      timeout: 500, // Timeout de 10 segundos
     });
 
     // Continuar eliminando subcovers mientras existan
