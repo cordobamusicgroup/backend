@@ -1,4 +1,3 @@
-import * as puppeteer from 'puppeteer';
 import { DmbAuthService } from '../dmb-auth.service';
 import { navigateToPage } from './navigate.util';
 import { Logger } from '@nestjs/common';

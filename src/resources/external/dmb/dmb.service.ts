@@ -1,13 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  InternalServerErrorException,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { DmbAuthService } from './dmb-auth.service';
 import { extractProductId } from './utils/extract-id.util';
 import { AlbumDTO } from './interfaces/album.dto';
+import { navigateToAlbum } from './utils/navigateToAlbum';
 
 @Injectable()
 export class DmbService {
@@ -20,6 +20,8 @@ export class DmbService {
       if (!productId) {
         throw new NotFoundException('Product ID not found');
       }
+
+      await navigateToAlbum(this.dmbAuthService, productId);
 
       return { productId };
     } catch (error) {

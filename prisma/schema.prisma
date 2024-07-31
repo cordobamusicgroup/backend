@@ -21,8 +21,7 @@ model User {
   email     String   @unique
   password  String
 
-  fullName String  @default("Change Me")
-  language String?
+  fullName String @default("Change Me")
 
   preferences UserPreferences[]
   comms       UserComms[]
@@ -45,6 +44,7 @@ model UserPreferences {
   fontSize          String?
   mainMenuCollapsed Boolean?
   theme             String?
+  language          String?
 
   @@map("users_preferences")
 }
@@ -77,10 +77,33 @@ model Client {
 
   balances Balance[]
 
-  labels Label[]
-  users  User[]
+  labels    Label[]
+  users     User[]
+  contracts Contract[]
 
   @@map("clients")
+}
+
+model Contract {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId Int?    @unique
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  contractId   Int            @unique
+  contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
+  ppd          Float?         @default(75.00)
+  status       ContractStatus @default(PENDING)
+
+  startDate DateTime
+  endDate   DateTime
+  signed    Boolean   @default(false)
+  signedAt  DateTime?
+  signedBy  String?
+
+  @@map("agreements")
 }
 
 model Balance {
@@ -156,32 +179,27 @@ model KontorRoyaltyReport {
   labelId Int?
   label   Label? @relation(fields: [labelId], references: [id])
 
-  labelName                       String
-  isrc                            String
-  ean                             String
-  artist                          String
-  productTitle                    String
-  trackTitle                      String
-  articleNo                       String
-  grid                            String
-  licensee                        String
-  outletname                      String
-  format                          String
-  distributionChannel             String
-  territory                       String
-  salesPeriod                     String
-  ppd                             Float
-  shareCustomer                   Float
-  royaltyValuePerUnit             Float
-  units                           Int
-  netRevenue                      Float
-  royaltyRate                     Float
-  royaltyAmountBeforeCopyrightDed Float
-  royaltyAmountCustomer           Float
-  dmbRetailerName                 String
-  dmbStoreName                    String
+  labelName     String
+  productType   String
+  grid          String
+  ean           String
+  articleNumber String
+  isrc          String
+  artist        String
+  title         String
+  workTitle     String
+  store         String
+  channelType   String
+  channelId     String
+  country       String
+  salesPeriod   String
+  royalties     String
+  units         String
 
-  @@map("kontor_reports")
+  clientRate String?
+  netRenueve String?
+
+  @@map("kontor_royalties_reports")
 }
 
 model BelieveRoyaltyReport {
@@ -312,4 +330,27 @@ enum CommsChannels {
   VK
 
   @@map("communication_channels")
+}
+
+enum ContractStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+
+  @@map("contracts_statuses")
+}
+
+enum ContractType {
+  DISTRIBUTION_NONEXCLUSIVE
+  DISTRIBUTION_EXCLUSIVE
+  LICENSING
+  PUBLISHING
+  MANAGEMENT
+  PRODUCTION
+  PROMOTION
+  OTHER
+
+  @@map("contracts_types")
 }
