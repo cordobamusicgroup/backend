@@ -53,6 +53,8 @@ export async function navigateAndEditAlbum(
       await removeSubCoverAttachments(iframe);
     }
 
+    await saveAlbum(page, iframe);
+
     if (coverFilePath) {
       await uploadImageToDmb(page, iframe, coverFilePath); // Pasar page y iframe
     }

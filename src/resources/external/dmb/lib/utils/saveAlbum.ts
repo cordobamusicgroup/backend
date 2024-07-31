@@ -6,6 +6,7 @@ const logger = new Logger('SaveAlbum');
 export async function saveAlbum(page: Page, iframe: Frame): Promise<void> {
   try {
     const saveButtonSelector = '.dmb-actions-toolbar__action--save a.vc-link';
+
     // Hacer clic en el botón de guardar
     await iframe.waitForSelector(saveButtonSelector, {
       visible: true,
@@ -15,16 +16,15 @@ export async function saveAlbum(page: Page, iframe: Frame): Promise<void> {
 
     if (saveButton) {
       logger.verbose('Save button clicked.');
-      await saveButton.click();
-      await iframe.waitForNavigation({ waitUntil: 'load' });
-      await page.waitForNetworkIdle({ idleTime: 2000 });
+      await Promise.all([
+        page.waitForNetworkIdle({ idleTime: 5000 }),
+        saveButton.click(),
+      ]);
 
-      logger.verbose('Iframe content changed after saving.');
+      logger.verbose('Page reloaded after saving.');
     } else {
       logger.warn('Save button not found.');
     }
-
-    // Puedes agregar más acciones según tus necesidades
   } catch (error) {
     logger.error('Error interacting with save button:', error.message);
     throw error;
