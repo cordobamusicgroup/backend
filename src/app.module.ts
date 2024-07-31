@@ -11,7 +11,6 @@ import { ReportsModule } from './resources/reports/reports.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { DmbModule } from './resources/external/dmb/dmb.module';
-import { FreeAgentModule } from './resources/external/freeagent/freeagent.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -31,7 +30,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     ReportsModule,
     DmbModule,
-    FreeAgentModule,
   ],
   controllers: [AppController],
   providers: [
