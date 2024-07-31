@@ -1,6 +1,5 @@
-import * as puppeteer from 'puppeteer';
-import { DmbAuthService } from '../dmb-auth.service';
-import { navigateToPage } from './navigate.util';
+import { DmbAuthService } from '../../dmb-auth.service';
+import { navigateToPage } from '../core/navigate.util';
 import { Logger } from '@nestjs/common';
 
 const logger = new Logger('ExtractProductIdUtil');
