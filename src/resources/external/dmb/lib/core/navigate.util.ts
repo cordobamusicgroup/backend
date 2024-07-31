@@ -1,6 +1,6 @@
 // dmb/utils/navigate.util.ts
 import * as puppeteer from 'puppeteer';
-import { DmbAuthService } from '../dmb-auth.service';
+import { DmbAuthService } from '../../dmb-auth.service';
 import { Logger } from '@nestjs/common';
 
 const logger = new Logger('NavigateUtil');
@@ -22,7 +22,7 @@ export async function navigateToPage(
           executablePath: '/usr/bin/google-chrome-stable',
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         }
-      : {};
+      : { devtools: true };
 
     const browser = await puppeteer.launch(launchOptions);
 
