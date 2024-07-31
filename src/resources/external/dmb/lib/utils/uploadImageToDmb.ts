@@ -50,6 +50,10 @@ export async function uploadImageToDmb(
         logger.verbose(
           'Upload process completed and cover uploaded successfully',
         );
+        // Recargar la página después de subir la portada
+        logger.verbose('Reloading the page after uploading the cover.');
+        await page.reload({ waitUntil: 'networkidle0' });
+        logger.verbose('Page reloaded.');
       } else {
         logger.warn('Upload button not found');
       }
