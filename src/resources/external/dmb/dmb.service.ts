@@ -4,6 +4,8 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { DmbAuthService } from './dmb-auth.service';
 import { AlbumDTO } from './interfaces/album.dto';
 import { navigateAndEditAlbum } from './lib/core/navigate-edit-album.util';
@@ -12,7 +14,10 @@ import { downloadBlvCover } from './lib/external/downloadBlvCover';
 
 @Injectable()
 export class DmbService {
-  constructor(private readonly dmbAuthService: DmbAuthService) {}
+  constructor(
+    private readonly dmbAuthService: DmbAuthService,
+    @InjectQueue('dmb') private readonly dmbQueue: Queue,
+  ) {}
 
   async scrapeAlbum(
     ean: string,
@@ -65,5 +70,28 @@ export class DmbService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  async scrapeAlbums(
+    eans: string[],
+    removeAttachments: boolean,
+  ): Promise<void> {
+    for (const ean of eans) {
+      await this.dmbQueue.add(
+        'scrape-album',
+        { ean, removeAttachments },
+        { attempts: 10 },
+      );
+    }
+  }
+
+  async importBlvCovers(eans: string[]): Promise<void> {
+    for (const ean of eans) {
+      await this.dmbQueue.add('import-blv-cover', { ean }, { attempts: 10 });
+    }
+  }
+
+  async clearQueue(): Promise<void> {
+    await this.dmbQueue.empty();
   }
 }
