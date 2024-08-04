@@ -12,14 +12,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { DmbModule } from './resources/external/dmb/dmb.module';
 import { ScheduleModule } from '@nestjs/schedule';
-
-const ENV = process.env.NODE_ENV;
+import { HealthModule } from './resources/healthcheck/health.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `./env/${ENV}.env`,
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -37,6 +35,7 @@ const ENV = process.env.NODE_ENV;
     AuthModule,
     ReportsModule,
     DmbModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
