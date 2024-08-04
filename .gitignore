@@ -47,6 +47,8 @@ db.dev.env
 dev.env
 prod.env
 db.prod.env
+preview.env
+db.preview.env
 
 # temp directory
 .temp
