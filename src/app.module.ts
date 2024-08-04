@@ -13,10 +13,13 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { DmbModule } from './resources/external/dmb/dmb.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
+const ENV = process.env.NODE_ENV;
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: `./env/${ENV}.env`,
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
