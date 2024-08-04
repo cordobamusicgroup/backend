@@ -43,6 +43,12 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+db.dev.env
+dev.env
+prod.env
+db.prod.env
+preview.env
+db.preview.env
 
 # temp directory
 .temp
@@ -58,3 +64,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /uploads
+dev.env
+db.dev.env
+prod.env
+db.prod.env

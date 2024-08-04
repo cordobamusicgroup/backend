@@ -9,7 +9,7 @@ services:
         - 'DOCKER_BUILDKIT=1'
     container_name: cmg-api-prod
     env_file:
-      - .env.production
+      - env/prod/prod.env
     ports:
       - '1000:6060'
     depends_on:
@@ -19,10 +19,8 @@ services:
   postgres:
     container_name: cmg-db-prod
     image: 'postgres:latest'
-    environment:
-      - 'POSTGRES_DB=cmgapi'
-      - 'POSTGRES_PASSWORD=localpassword'
-      - 'POSTGRES_USER=cmgapi'
+    env_file:
+      - env/prod/db.prod.env
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
       - ./docker/postgres/log:/var/log/postgresql

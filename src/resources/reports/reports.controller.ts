@@ -15,7 +15,6 @@ import { ReportsService } from './reports.service';
 import { Distributor } from '../../common/enums/distributor.enum';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { parse } from 'csv-parse';
 
 @Controller('reports')
 export class ReportsController {

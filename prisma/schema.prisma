@@ -8,9 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model InitializationStatus {
   id          Int     @id @default(autoincrement())
   initialized Boolean @default(false)
+
+  @@map("initialization_status")
 }
 
 model User {
@@ -21,8 +24,7 @@ model User {
   email     String   @unique
   password  String
 
-  fullName String  @default("Change Me")
-  language String?
+  fullName String @default("Change Me")
 
   preferences UserPreferences[]
   comms       UserComms[]
@@ -45,6 +47,7 @@ model UserPreferences {
   fontSize          String?
   mainMenuCollapsed Boolean?
   theme             String?
+  language          String?
 
   @@map("users_preferences")
 }
@@ -63,24 +66,106 @@ model UserComms {
   @@map("users_comms")
 }
 
+//*** Clients ***//
+
 model Client {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name      String
-  type      ClientType
-  addressId Int
-  address   Address    @relation(fields: [addressId], references: [id])
-  vatId     String
-  taxId     String
+  clientName   String     @unique
+  firstName    String
+  lastName     String
+  type         ClientType
+  addressId    Int?
+  address      Address?   @relation(fields: [addressId], references: [id])
+  taxIdType    TaxIdType
+  taxId        String
+  vatRegistred Boolean    @default(false)
+  vatId        String?
 
-  balances Balance[]
+  isBlocked                 Boolean @default(false)
+  isPaymentInProgress       Boolean @default(false)
+  isPaymentDataInValidation Boolean @default(false)
 
-  labels Label[]
-  users  User[]
+  dmb ClientDMB?
+
+  balances    Balance[]
+  paymentData ClientPaymentData?
+
+  labels   Label[]
+  users    User[]
+  contract Contract?
 
   @@map("clients")
+}
+
+model ClientDMB {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId Int    @unique
+  client   Client @relation(fields: [clientId], references: [id])
+
+  accessType    AccessTypeDMB @default(STANDARD)
+  status        DMBStatus     @default(PENDING)
+  subclientName String?
+  username      String?
+
+  @@map("clients_dmb")
+}
+
+model ClientPaymentData {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId Int    @unique
+  client   Client @relation(fields: [clientId], references: [id])
+
+  paymentMethod PaymentMethod
+  clientBankId  Int?
+  clientBank    ClientPaymentBank? @relation(fields: [clientBankId], references: [id])
+  data          Json?
+
+  @@map("clients_payment_data")
+}
+
+model ClientPaymentBank {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accountType       ClientType          @default(PERSON)
+  accountHolder     String
+  accountNumber     String
+  swiftCode         String?
+  ClientPaymentData ClientPaymentData[]
+
+  @@map("clients_payment_banks")
+}
+
+model Contract {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId Int?    @unique
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  contractId   Int            @unique
+  contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
+  ppd          Float?         @default(75.00)
+  status       ContractStatus @default(PENDING)
+
+  startDate DateTime
+  endDate   DateTime
+  signed    Boolean   @default(false)
+  signedAt  DateTime?
+  signedBy  String?
+
+  @@map("agreements")
 }
 
 model Balance {
@@ -119,6 +204,8 @@ model Country {
   @@map("countries")
 }
 
+//*** Labels ***//
+
 model Label {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -156,32 +243,27 @@ model KontorRoyaltyReport {
   labelId Int?
   label   Label? @relation(fields: [labelId], references: [id])
 
-  labelName                       String
-  isrc                            String
-  ean                             String
-  artist                          String
-  productTitle                    String
-  trackTitle                      String
-  articleNo                       String
-  grid                            String
-  licensee                        String
-  outletname                      String
-  format                          String
-  distributionChannel             String
-  territory                       String
-  salesPeriod                     String
-  ppd                             Float
-  shareCustomer                   Float
-  royaltyValuePerUnit             Float
-  units                           Int
-  netRevenue                      Float
-  royaltyRate                     Float
-  royaltyAmountBeforeCopyrightDed Float
-  royaltyAmountCustomer           Float
-  dmbRetailerName                 String
-  dmbStoreName                    String
+  labelName     String
+  productType   String
+  grid          String
+  ean           String
+  articleNumber String
+  isrc          String
+  artist        String
+  title         String
+  workTitle     String
+  store         String
+  channelType   String
+  channelId     String
+  country       String
+  salesPeriod   String
+  royalties     String
+  units         String
 
-  @@map("kontor_reports")
+  clientRate String?
+  netRenueve String?
+
+  @@map("kontor_royalties_reports")
 }
 
 model BelieveRoyaltyReport {
@@ -240,17 +322,6 @@ model UnlinkedReportDetail {
   @@map("unlinked_details_reports")
 }
 
-//*** FreeAgent API ***//
-
-model FreeAgentToken {
-  id           Int      @id @default(autoincrement())
-  accessToken  String
-  refreshToken String
-  createdAt    DateTime @default(now())
-
-  @@map("freeagent_tokens")
-}
-
 //*** Enums  ***//
 
 enum Currency {
@@ -268,11 +339,17 @@ enum Distributor {
   @@map("distributors")
 }
 
-enum ClientType {
-  INDIVIDUAL
-  COMPANY
+enum PaymentMethod {
+  BANK_TRANSFER
+  PAYPAL
+  ADVCASH_VOLET
 
-  @@map("clients_types")
+  @@map("payment_methods")
+}
+
+enum AccessTypeDMB {
+  STANDARD
+  ADVANCED
 }
 
 enum Role {
@@ -284,6 +361,55 @@ enum Role {
 
   @@map("roles")
 }
+
+enum CommsChannels {
+  MOBILE
+  PHONE
+  SKYPE
+  X_TWITTER
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  TWITCH
+  VK
+
+  @@map("communication_channels")
+}
+
+//*** Enums Types ***//
+
+enum ContractType {
+  DISTRIBUTION_NONEXCLUSIVE
+  DISTRIBUTION_EXCLUSIVE
+  LICENSING
+  PUBLISHING
+  MANAGEMENT
+  PRODUCTION
+  PROMOTION
+  OTHER
+
+  @@map("contracts_types")
+}
+
+enum ClientType {
+  PERSON
+  BUSINESS
+
+  @@map("clients_types")
+}
+
+enum TaxIdType {
+  COMPANY_NUMBER
+  NATIONAL_ID
+  PASSPORT
+  RESIDENT_PERMIT
+  ID_CARD
+  DRIVERS_LICENSE
+
+  @@map("clients_tax_id_types")
+}
+
+//*** Enums Statuses ***//
 
 enum LabelRegistrationStatus {
   NO_REGISTRATION
@@ -300,16 +426,20 @@ enum LabelStatus {
   @@map("label_statuses")
 }
 
-enum CommsChannels {
-  MOBILE
-  PHONE
-  SKYPE
-  X_TWITTER
-  FACEBOOK
-  INSTAGRAM
-  TIKTOK
-  TWITCH
-  VK
+enum ContractStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
 
-  @@map("communication_channels")
+  @@map("contracts_statuses")
+}
+
+enum DMBStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+
+  @@map("dmb_statuses")
 }
