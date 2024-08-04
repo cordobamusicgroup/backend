@@ -61,5 +61,8 @@ ENV NODE_ENV=production
 # Expose the port on which the application runs
 EXPOSE 3000
 
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 CMD ["node", "-e", "require('http').get({host: 'localhost', port: 3000, path: '/health'}, res => {if (res.statusCode !== 200) process.exit(1);})"]
+
 # Run Prisma migrations and seed script before starting the application
 CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node /app/prisma/seed.ts && pnpm run start:prod"]

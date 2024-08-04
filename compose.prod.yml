@@ -13,8 +13,10 @@ services:
     ports:
       - '1000:6060'
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   postgres:
     container_name: cmg-db-prod
@@ -37,6 +39,11 @@ services:
     image: 'redis:latest'
     ports:
       - '1002:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   default:
