@@ -7,13 +7,13 @@ import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { BullModule } from '@nestjs/bull';
-import { ReportsModule } from './resources/reports/reports.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { DmbModule } from './resources/external/dmb/dmb.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './resources/healthcheck/health.module';
-
+import { ClientsModule } from './resources/clients/clients.module';
+import { RolesGuard } from './common/guards/roles.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,8 +32,8 @@ import { HealthModule } from './resources/healthcheck/health.module';
     ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
+    ClientsModule,
     AuthModule,
-    ReportsModule,
     DmbModule,
     HealthModule,
   ],
@@ -44,6 +44,10 @@ import { HealthModule } from './resources/healthcheck/health.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

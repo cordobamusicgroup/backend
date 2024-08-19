@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -10,9 +11,12 @@ import * as bcrypt from 'bcrypt';
 import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -30,17 +34,37 @@ export class AuthService {
     return user;
   }
 
-  async login(authLoginDto: AuthLoginDto) {
-    const { username, password } = authLoginDto;
-    const user = await this.validateUser(username, password);
-    const payload: JwtPayloadDto = {
-      username: user.username,
-      sub: user.id,
-      role: user.role,
-    };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+  async login(authLoginDto: AuthLoginDto, req: Request) {
+    try {
+      const { username, password } = authLoginDto;
+      const user = await this.validateUser(username, password);
+      const payload: JwtPayloadDto = {
+        username: user.username,
+        sub: user.id,
+        role: user.role,
+      };
+      const accessToken = this.jwtService.sign(payload);
+
+      const ipAddress = req.ip;
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+
+      // Log de acceso exitoso
+      this.logger.log(
+        `User with ID ${user.id} logged in successfully from IP ${ipAddress} using ${userAgent}.`,
+      );
+
+      return { access_token: accessToken };
+    } catch (error) {
+      const ipAddress = req.ip;
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+
+      // Log de acceso fallido
+      this.logger.warn(
+        `Failed login attempt for username ${authLoginDto.username} from IP ${ipAddress} using ${userAgent}. Reason: ${error.message}`,
+      );
+
+      throw error;
+    }
   }
 
   async getCurrentUserData(

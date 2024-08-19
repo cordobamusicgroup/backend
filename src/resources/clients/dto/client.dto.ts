@@ -1,19 +1,35 @@
 import { Expose } from 'class-transformer';
-import { ClientType } from '../../../common/enums/client-type.enum';
+import { AddressDto } from '../address/dto/address.dto';
+import { ClientType, TaxIdType } from '@prisma/client';
 
 export class ClientDto {
   @Expose()
   id: number;
 
   @Expose()
-  name: string;
+  clientName: string;
+
+  @Expose()
+  firstName: string;
+
+  @Expose()
+  lastName: string;
 
   @Expose()
   type: ClientType;
 
   @Expose()
-  vatId: string;
+  taxIdType: TaxIdType;
 
   @Expose()
   taxId: string;
+
+  @Expose()
+  vatRegistered?: boolean;
+
+  @Expose()
+  vatId: string;
+
+  @Expose()
+  address?: AddressDto;
 }

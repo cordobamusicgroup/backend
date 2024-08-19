@@ -1,19 +1,44 @@
-import { Expose } from 'class-transformer';
-import { ClientType } from '../../../common/enums/client-type.enum';
+// create-client.dto.ts
+import {
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateAddressDto } from '../address/dto/create-address.dto';
+import { ClientType, TaxIdType } from '@prisma/client';
 
-export class ClientDto {
-  @Expose()
-  id: number;
+export class CreateClientDto {
+  @IsString()
+  clientName: string;
 
-  @Expose()
-  name: string;
+  @IsString()
+  firstName: string;
 
-  @Expose()
+  @IsString()
+  lastName: string;
+
+  @IsEnum(ClientType)
   type: ClientType;
 
-  @Expose()
-  vatId: string;
+  @IsEnum(TaxIdType)
+  taxIdType: TaxIdType;
 
-  @Expose()
+  @IsString()
   taxId: string;
+
+  @IsBoolean()
+  @IsOptional()
+  vatRegistered?: boolean;
+
+  @IsString()
+  @IsOptional()
+  vatId?: string;
+
+  @ValidateNested()
+  @Type(() => CreateAddressDto)
+  @IsOptional()
+  address?: CreateAddressDto;
 }

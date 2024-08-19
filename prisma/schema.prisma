@@ -8,7 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model InitializationStatus {
   id          Int     @id @default(autoincrement())
   initialized Boolean @default(false)
@@ -322,7 +321,10 @@ model UnlinkedReportDetail {
   @@map("unlinked_details_reports")
 }
 
+
+
 //*** Enums  ***//
+
 
 enum Currency {
   USD
@@ -394,7 +396,6 @@ enum ContractType {
 enum ClientType {
   PERSON
   BUSINESS
-
   @@map("clients_types")
 }
 
