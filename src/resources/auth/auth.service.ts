@@ -22,6 +22,13 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  /**
+   * Validates a user's credentials.
+   * @param username - The username of the user.
+   * @param password - The password of the user.
+   * @returns A Promise that resolves to the User object if the credentials are valid, or null otherwise.
+   * @throws UnauthorizedException if the credentials are invalid.
+   */
   async validateUser(username: string, password: string): Promise<User | null> {
     const user = await this.usersService.findByUsername(username);
     const isPasswordMatch =
@@ -34,6 +41,13 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * Logs in a user and returns an access token.
+   * @param authLoginDto - The DTO containing the login credentials.
+   * @param req - The Express Request object.
+   * @returns An object containing the access token.
+   * @throws Error if the login attempt fails.
+   */
   async login(authLoginDto: AuthLoginDto, req: Request) {
     try {
       const { username, password } = authLoginDto;
@@ -48,7 +62,7 @@ export class AuthService {
       const ipAddress = req.ip;
       const userAgent = req.headers['user-agent'] || 'Unknown';
 
-      // Log de acceso exitoso
+      // Log successful login
       this.logger.log(
         `User with ID ${user.id} logged in successfully from IP ${ipAddress} using ${userAgent}.`,
       );
@@ -58,7 +72,7 @@ export class AuthService {
       const ipAddress = req.ip;
       const userAgent = req.headers['user-agent'] || 'Unknown';
 
-      // Log de acceso fallido
+      // Log failed login attempt
       this.logger.warn(
         `Failed login attempt for username ${authLoginDto.username} from IP ${ipAddress} using ${userAgent}. Reason: ${error.message}`,
       );
@@ -67,6 +81,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Retrieves the current user's data.
+   * @param user - The JWT payload containing the user's information.
+   * @returns A Promise that resolves to the CurrentUserResponseDto object.
+   * @throws NotFoundException if the user is not found.
+   */
   async getCurrentUserData(
     user: JwtPayloadDto,
   ): Promise<CurrentUserResponseDto> {
