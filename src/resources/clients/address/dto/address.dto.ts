@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 export class AddressDto {
   @Expose()
@@ -12,6 +12,10 @@ export class AddressDto {
 
   @Expose()
   countryId: number;
+
+  @Expose()
+  @Transform(({ value }) => value, { toClassOnly: true }) // Placeholder
+  countryName?: string; // This will be set later in the service
 
   @Expose()
   zip: string;

@@ -7,8 +7,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateAddressDto } from '../address/dto/create-address.dto';
 import { ClientType, TaxIdType } from '@prisma/client';
+import { CreateAddressDto } from '../address/dto/create-address.dto';
 
 export class CreateClientDto {
   @IsString()

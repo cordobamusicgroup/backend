@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -42,7 +43,12 @@ export class ClientsController {
     @Param('id') id: number,
     @Body() updateClientDto: UpdateClientDto,
   ): Promise<ClientDto> {
-    return this.clientsService.update(id, updateClientDto);
+    const numericId = Number(id);
+
+    if (isNaN(numericId)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+    return this.clientsService.update(numericId, updateClientDto);
   }
 
   @Delete(':id')

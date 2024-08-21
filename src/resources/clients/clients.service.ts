@@ -2,107 +2,127 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { plainToInstance } from 'class-transformer';
 import { ClientDto } from './dto/client.dto';
+import { plainToInstance } from 'class-transformer';
+import { AddressDto } from './address/dto/address.dto';
 
 @Injectable()
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Creates a new client.
-   * @param userObject - The data for creating a client.
-   * @returns A promise that resolves to the created client.
-   */
-  async create(userObject: CreateClientDto) {
+  // Main methods
+  async create(userObject: CreateClientDto): Promise<ClientDto> {
     const { address, ...clientData } = userObject;
-    return this.prisma.client.create({
+    const client = await this.prisma.client.create({
       data: {
         ...clientData,
         address: {
           create: address,
         },
       },
+      include: { address: true },
     });
+
+    return this.convertToClientDto(client);
   }
 
-  /**
-   * Updates an existing client.
-   * @param id - The ID of the client to update.
-   * @param userObject - The data for updating the client.
-   * @returns A promise that resolves to the updated client.
-   * @throws NotFoundException if the client with the specified ID is not found.
-   */
-  async update(id: number, userObject: UpdateClientDto) {
-    const client = await this.prisma.client.findUnique({ where: { id } });
-    if (!client) {
-      throw new NotFoundException(`Client with ID ${id} not found`);
-    }
+  async update(id: number, userObject: UpdateClientDto): Promise<ClientDto> {
+    const client = await this.findClientById(id);
 
     const { address, ...clientData } = userObject;
 
     if (address) {
-      if (client.addressId) {
-        await this.prisma.address.update({
-          where: { id: client.addressId },
-          data: address,
-        });
-      } else {
-        await this.prisma.address.create({
-          data: {
-            ...address,
-            client: { connect: { id: client.id } },
-          },
-        });
-      }
+      await this.updateOrCreateAddress(client.addressId, address, client.id);
     }
 
-    return this.prisma.client.update({
+    const updatedClient = await this.prisma.client.update({
       where: { id },
       data: clientData,
+      include: { address: true },
     });
+
+    return this.convertToClientDto(updatedClient);
   }
 
-  /**
-   * Deletes a client.
-   * @param id - The ID of the client to delete.
-   * @returns A promise that resolves when the client is deleted.
-   * @throws NotFoundException if the client with the specified ID is not found.
-   */
-  async delete(id: number) {
-    const client = await this.prisma.client.findUnique({ where: { id } });
-    if (!client) {
-      throw new NotFoundException(`Client with ID ${id} not found`);
-    }
-
-    return this.prisma.client.delete({
+  async delete(id: number): Promise<void> {
+    await this.findClientById(id);
+    await this.prisma.client.delete({
       where: { id },
     });
   }
 
-  async getClients() {
+  async getClients(): Promise<ClientDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: {
-        address: true,
-      },
+      include: { address: true },
     });
-    return plainToInstance(ClientDto, clients, {
-      excludeExtraneousValues: true,
-    });
+
+    return Promise.all(
+      clients.map((client) => this.convertToClientDto(client)),
+    );
   }
 
-  async getClientById(id: number) {
+  async getClientById(id: number): Promise<ClientDto> {
+    const client = await this.findClientById(id);
+
+    return this.convertToClientDto(client);
+  }
+
+  // *** Helper methods ***
+
+  private async findClientById(id: number) {
     const client = await this.prisma.client.findUnique({
       where: { id },
-      include: {
-        address: true,
-      },
+      include: { address: true },
     });
     if (!client) {
       throw new NotFoundException(`Client with ID ${id} not found`);
     }
-    return plainToInstance(ClientDto, client, {
+    return client;
+  }
+
+  private async updateOrCreateAddress(
+    addressId: number | null,
+    address: any,
+    clientId: number,
+  ) {
+    if (addressId) {
+      await this.prisma.address.update({
+        where: { id: addressId },
+        data: address,
+      });
+    } else {
+      await this.prisma.address.create({
+        data: {
+          ...address,
+          client: { connect: { id: clientId } },
+        },
+      });
+    }
+  }
+
+  private async getCountryName(countryId: number): Promise<string> {
+    const country = await this.prisma.country.findUnique({
+      where: { id: countryId },
+    });
+    return country ? country.name : 'Unknown';
+  }
+
+  private async convertToClientDto(client: any): Promise<ClientDto> {
+    const addressDto = plainToInstance(AddressDto, client.address, {
       excludeExtraneousValues: true,
     });
+
+    addressDto.countryName = await this.getCountryName(addressDto.countryId);
+
+    return plainToInstance(
+      ClientDto,
+      {
+        ...client,
+        address: addressDto,
+      },
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 }

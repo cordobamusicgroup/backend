@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { AddressDto } from '../address/dto/address.dto';
 import { ClientType, TaxIdType } from '@prisma/client';
 
@@ -31,5 +31,6 @@ export class ClientDto {
   vatId: string;
 
   @Expose()
-  address?: AddressDto;
+  @Type(() => AddressDto)
+  address: AddressDto;
 }
