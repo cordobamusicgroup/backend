@@ -14,6 +14,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './resources/healthcheck/health.module';
 import { ClientsModule } from './resources/clients/clients.module';
 import { RolesGuard } from './common/guards/roles.guard';
+import { CountriesModule } from './resources/countries/countries.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,6 +37,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AuthModule,
     DmbModule,
     HealthModule,
+    CountriesModule,
   ],
   controllers: [AppController],
   providers: [
