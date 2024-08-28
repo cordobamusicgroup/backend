@@ -7,7 +7,7 @@ settings:
 dependencies:
   '@nestjs/axios':
     specifier: ^3.0.2
-    version: 3.0.2(@nestjs/common@10.3.9)(axios@1.7.2)(rxjs@7.8.1)
+    version: 3.0.2(@nestjs/common@10.3.9)(axios@1.7.5)(rxjs@7.8.1)
   '@nestjs/bull':
     specifier: ^10.1.1
     version: 10.1.1(@nestjs/common@10.3.9)(@nestjs/core@10.3.9)(bull@4.13.1)
@@ -48,11 +48,11 @@ dependencies:
     specifier: ^4.0.5
     version: 4.0.5
   axios:
-    specifier: ^1.7.2
-    version: 1.7.2
+    specifier: ^1.7.4
+    version: 1.7.5
   axios-cookiejar-support:
     specifier: ^5.0.2
-    version: 5.0.2(axios@1.7.2)(tough-cookie@4.1.4)
+    version: 5.0.2(axios@1.7.5)(tough-cookie@4.1.4)
   bcrypt:
     specifier: ^5.1.1
     version: 5.1.1
@@ -1030,7 +1030,7 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@nestjs/axios@3.0.2(@nestjs/common@10.3.9)(axios@1.7.2)(rxjs@7.8.1):
+  /@nestjs/axios@3.0.2(@nestjs/common@10.3.9)(axios@1.7.5)(rxjs@7.8.1):
     resolution: {integrity: sha512-Z6GuOUdNQjP7FX+OuV2Ybyamse+/e0BFdTWBX5JxpBDKA+YkdLynDgG6HTF04zy6e9zPa19UX0WA2VDoehwhXQ==}
     peerDependencies:
       '@nestjs/common': ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
@@ -1038,7 +1038,7 @@ packages:
       rxjs: ^6.0.0 || ^7.0.0
     dependencies:
       '@nestjs/common': 10.3.9(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)
-      axios: 1.7.2
+      axios: 1.7.5
       rxjs: 7.8.1
     dev: false
 
@@ -1307,7 +1307,7 @@ packages:
       typeorm:
         optional: true
     dependencies:
-      '@nestjs/axios': 3.0.2(@nestjs/common@10.3.9)(axios@1.7.2)(rxjs@7.8.1)
+      '@nestjs/axios': 3.0.2(@nestjs/common@10.3.9)(axios@1.7.5)(rxjs@7.8.1)
       '@nestjs/common': 10.3.9(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 10.3.9(@nestjs/common@10.3.9)(@nestjs/platform-express@10.3.9)(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@prisma/client': 5.17.0(prisma@5.17.0)
@@ -2211,14 +2211,14 @@ packages:
       possible-typed-array-names: 1.0.0
     dev: false
 
-  /axios-cookiejar-support@5.0.2(axios@1.7.2)(tough-cookie@4.1.4):
+  /axios-cookiejar-support@5.0.2(axios@1.7.5)(tough-cookie@4.1.4):
     resolution: {integrity: sha512-4KwFqiH62Ry/J+ue1NwqLvBSaK3Bp/Owc9jTe7BS9c22uN8/4MB5pY7HV9QwQjV3ZRonCoSj5V8Pjx911qQqAw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       axios: '>=0.20.0'
       tough-cookie: '>=4.0.0'
     dependencies:
-      axios: 1.7.2
+      axios: 1.7.5
       http-cookie-agent: 6.0.5(tough-cookie@4.1.4)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
@@ -2226,8 +2226,8 @@ packages:
       - undici
     dev: false
 
-  /axios@1.7.2:
-    resolution: {integrity: sha512-2A8QhOMrbomlDuiLeK9XibIBzuHeRcqqNOHp0Cyp5EoJ1IFDh+XZH3A6BkXtv0K4gFGCI0Y4BM7B1wOEi0Rmgw==}
+  /axios@1.7.5:
+    resolution: {integrity: sha512-fZu86yCo+svH3uqJ/yTdQ0QHpQu5oL+/QE+QPSv6BZSkDAoky9vytxp7u5qk83OJFS3kEBcesWni9WTZAv3tSw==}
     dependencies:
       follow-redirects: 1.15.6
       form-data: 4.0.0
