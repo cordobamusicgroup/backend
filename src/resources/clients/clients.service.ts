@@ -44,10 +44,20 @@ export class ClientsService {
     return this.convertToClientDto(updatedClient);
   }
 
-  async delete(id: number): Promise<void> {
-    await this.findClientById(id);
-    await this.prisma.client.delete({
-      where: { id },
+  async deleteMultiple(ids: number[]): Promise<void> {
+    const existingClients = await this.prisma.client.findMany({
+      where: { id: { in: ids } },
+    });
+
+    if (existingClients.length !== ids.length) {
+      const existingIds = existingClients.map((client) => client.id);
+      const missingIds = ids.filter((id) => !existingIds.includes(id));
+      throw new NotFoundException(
+        `Clients with IDs ${missingIds.join(', ')} not found`,
+      );
+    }
+    await this.prisma.client.deleteMany({
+      where: { id: { in: ids } },
     });
   }
 

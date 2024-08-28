@@ -51,9 +51,14 @@ export class ClientsController {
     return this.clientsService.update(numericId, updateClientDto);
   }
 
-  @Delete(':id')
-  async delete(@Param('id') id: number): Promise<{ message: string }> {
-    await this.clientsService.delete(id);
-    return { message: `Client with ID ${id} deleted successfully` };
+  @Delete()
+  @Roles(Role.ADMIN)
+  async deleteMultiple(
+    @Body() deleteClientDto: { ids: number[] },
+  ): Promise<{ message: string }> {
+    await this.clientsService.deleteMultiple(deleteClientDto.ids);
+    return {
+      message: `Clients with IDs ${deleteClientDto.ids.join(', ')} deleted successfully`,
+    };
   }
 }

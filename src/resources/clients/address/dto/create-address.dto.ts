@@ -9,6 +9,7 @@ export class CreateAddressDto {
 
   @IsString()
   state: string;
+
   @IsInt()
   countryId: number;
 
