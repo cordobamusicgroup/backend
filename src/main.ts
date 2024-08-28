@@ -11,11 +11,17 @@ async function bootstrap() {
       'http://localhost:6060',
       'https://app.cmgdistro.com',
       'https://app.cmgdistro.dev',
+      /\.cmg-app\.pages\.dev$/,
     ],
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   app.use(cookieParser());
 
   await app.listen(6060);
