@@ -37,7 +37,7 @@
     "@prisma/client": "5.17.0",
     "@tanstack/react-query-devtools": "^4.36.1",
     "@types/tough-cookie": "^4.0.5",
-    "axios": "^1.7.2",
+    "axios": "^1.7.4",
     "axios-cookiejar-support": "^5.0.2",
     "bcrypt": "^5.1.1",
     "bull": "^4.13.1",
