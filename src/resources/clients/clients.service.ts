@@ -1,17 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
 import { AddressDto } from './address/dto/address.dto';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class ClientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   // Main methods
   async create(userObject: CreateClientDto): Promise<ClientDto> {
+    await this.validateUniqueClientName(userObject.clientName);
     const { address, ...clientData } = userObject;
     const client = await this.prisma.client.create({
       data: {
@@ -77,7 +86,22 @@ export class ClientsService {
     return this.convertToClientDto(client);
   }
 
-  // *** Helper methods ***
+  // *** Helper methods *** //
+
+  private async validateUniqueClientName(clientName: string) {
+    const existingClient = await this.prisma.client.findFirst({
+      where: { clientName },
+    });
+
+    if (existingClient) {
+      throw new BadRequestException(
+        this.i18n.translate('clients.CLIENT_EXISTS', {
+          args: { clientName },
+          lang: I18nContext.current().lang,
+        }),
+      );
+    }
+  }
 
   private async findClientById(id: number) {
     const client = await this.prisma.client.findUnique({
