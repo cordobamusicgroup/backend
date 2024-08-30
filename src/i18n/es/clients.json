@@ -1,0 +1,4 @@
+{
+  "CLIENT_EXISTS": "El cliente con el nombre '{clientName}' ya existe",
+  "CLIENT_NOT_FOUND": "Cliente con ID '{id}' no encontrado"
+}

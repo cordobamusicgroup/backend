@@ -15,6 +15,8 @@ import { HealthModule } from './resources/healthcheck/health.module';
 import { ClientsModule } from './resources/clients/clients.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CountriesModule } from './resources/countries/countries.module';
+import { CookieResolver, I18nModule } from 'nestjs-i18n';
+import { join } from 'path';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,6 +30,17 @@ import { CountriesModule } from './resources/countries/countries.module';
           port: configService.get<number>('REDIS_PORT'),
         },
       }),
+      inject: [ConfigService],
+    }),
+    I18nModule.forRootAsync({
+      useFactory: async (configService: ConfigService) => ({
+        fallbackLanguage: configService.getOrThrow('FALLBACK_LANGUAGE'),
+        loaderOptions: {
+          path: join(__dirname, '/i18n/'),
+          watch: true,
+        },
+      }),
+      resolvers: [new CookieResolver(['user_locale'])],
       inject: [ConfigService],
     }),
     ScheduleModule.forRoot(),
