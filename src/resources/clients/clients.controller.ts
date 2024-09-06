@@ -4,14 +4,11 @@ import {
   Post,
   Body,
   Param,
-  Put,
   Delete,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -36,19 +33,6 @@ export class ClientsController {
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<ClientDto> {
     return this.clientsService.getClientById(id);
-  }
-
-  @Put(':id')
-  async update(
-    @Param('id') id: number,
-    @Body() updateClientDto: UpdateClientDto,
-  ): Promise<ClientDto> {
-    const numericId = Number(id);
-
-    if (isNaN(numericId)) {
-      throw new BadRequestException('Invalid ID format');
-    }
-    return this.clientsService.update(numericId, updateClientDto);
   }
 
   @Delete()

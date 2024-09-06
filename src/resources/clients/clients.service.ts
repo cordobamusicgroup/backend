@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
 import { AddressDto } from './address/dto/address.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import { ContractDto } from './contract/dto/contract.dto';
 
 @Injectable()
 export class ClientsService {
@@ -21,36 +21,22 @@ export class ClientsService {
   // Main methods
   async create(userObject: CreateClientDto): Promise<ClientDto> {
     await this.validateUniqueClientName(userObject.clientName);
-    const { address, ...clientData } = userObject;
+    await this.validateVatIdExistOrNo(userObject);
+    const { address, contract, ...clientData } = userObject;
     const client = await this.prisma.client.create({
       data: {
         ...clientData,
         address: {
           create: address,
         },
+        contract: {
+          create: contract,
+        },
       },
-      include: { address: true },
+      include: { address: true, contract: true },
     });
 
     return this.convertToClientDto(client);
-  }
-
-  async update(id: number, userObject: UpdateClientDto): Promise<ClientDto> {
-    const client = await this.findClientById(id);
-
-    const { address, ...clientData } = userObject;
-
-    if (address) {
-      await this.updateOrCreateAddress(client.addressId, address, client.id);
-    }
-
-    const updatedClient = await this.prisma.client.update({
-      where: { id },
-      data: clientData,
-      include: { address: true },
-    });
-
-    return this.convertToClientDto(updatedClient);
   }
 
   async deleteMultiple(ids: number[]): Promise<void> {
@@ -72,7 +58,7 @@ export class ClientsService {
 
   async getClients(): Promise<ClientDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: { address: true },
+      include: { address: true, contract: true },
     });
 
     return Promise.all(
@@ -97,6 +83,16 @@ export class ClientsService {
       throw new BadRequestException(
         this.i18n.translate('clients.CLIENT_EXISTS', {
           args: { clientName },
+          lang: I18nContext.current().lang,
+        }),
+      );
+    }
+  }
+
+  private async validateVatIdExistOrNo(userObject: CreateClientDto) {
+    if (userObject.vatRegistered && !userObject.vatId) {
+      throw new BadRequestException(
+        this.i18n.translate('clients.CLIENT_VATIDMISSING', {
           lang: I18nContext.current().lang,
         }),
       );
@@ -144,19 +140,28 @@ export class ClientsService {
   private async convertToClientDto(client: any): Promise<ClientDto> {
     const addressDto = plainToInstance(AddressDto, client.address, {
       excludeExtraneousValues: true,
+      exposeUnsetFields: false,
+    });
+    const contractDto = plainToInstance(ContractDto, client.contract, {
+      excludeExtraneousValues: true,
+      exposeUnsetFields: false,
     });
 
     addressDto.countryName = await this.getCountryName(addressDto.countryId);
 
-    return plainToInstance(
+    const clientDto = plainToInstance(
       ClientDto,
       {
         ...client,
         address: addressDto,
+        contract: contractDto,
       },
       {
         excludeExtraneousValues: true,
+        exposeUnsetFields: false,
       },
     );
+
+    return clientDto;
   }
 }

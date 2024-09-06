@@ -1,6 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { AddressDto } from '../address/dto/address.dto';
 import { ClientType, TaxIdType } from '@prisma/client';
+import { ContractDto } from '../contract/dto/contract.dto';
 
 export class ClientDto {
   @Expose()
@@ -33,4 +34,8 @@ export class ClientDto {
   @Expose()
   @Type(() => AddressDto)
   address: AddressDto;
+
+  @Expose()
+  @Type(() => ContractDto)
+  contract: ContractDto;
 }

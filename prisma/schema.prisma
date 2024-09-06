@@ -153,18 +153,19 @@ model Contract {
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
 
-  contractId   Int            @unique
+  contractId   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
   ppd          Float?         @default(75.00)
   status       ContractStatus @default(PENDING)
+  docUrl       String?
 
   startDate DateTime
-  endDate   DateTime
+  endDate   DateTime?
   signed    Boolean   @default(false)
   signedAt  DateTime?
   signedBy  String?
 
-  @@map("agreements")
+  @@map("contracts")
 }
 
 model Balance {

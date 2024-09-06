@@ -5,10 +5,12 @@ import {
   IsBoolean,
   IsOptional,
   ValidateNested,
+  IsNotEmptyObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ClientType, TaxIdType } from '@prisma/client';
 import { CreateAddressDto } from '../address/dto/create-address.dto';
+import { CreateContractDto } from '../contract/dto/create-contract.dto';
 
 export class CreateClientDto {
   @IsString()
@@ -30,8 +32,7 @@ export class CreateClientDto {
   taxId: string;
 
   @IsBoolean()
-  @IsOptional()
-  vatRegistered?: boolean;
+  vatRegistered: boolean;
 
   @IsString()
   @IsOptional()
@@ -39,6 +40,11 @@ export class CreateClientDto {
 
   @ValidateNested()
   @Type(() => CreateAddressDto)
-  @IsOptional()
-  address?: CreateAddressDto;
+  @IsNotEmptyObject()
+  address: CreateAddressDto;
+
+  @ValidateNested()
+  @Type(() => CreateContractDto)
+  @IsNotEmptyObject()
+  contract: CreateContractDto;
 }
