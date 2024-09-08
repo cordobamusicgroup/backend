@@ -33,12 +33,15 @@ RUN pnpm run build
 # Stage 2: Production
 FROM node:20-slim AS production
 
-# Install system packages needed for Puppeteer and Prisma, caching dependencies
+# Install necessary system packages for Prisma, Puppeteer, and Chrome
 RUN apt-get update && apt-get install -y \
     openssl \
     wget \
     gnupg \
-    google-chrome-stable \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/chrome-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
     fonts-ipafont-gothic \
     fonts-wqy-zenhei \
     fonts-thai-tlwg \
@@ -50,6 +53,9 @@ RUN apt-get update && apt-get install -y \
     dbus-x11 \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm in the production stage as well
+RUN npm install -g pnpm
 
 # Set environment variables for Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
