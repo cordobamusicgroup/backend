@@ -49,15 +49,32 @@ jobs:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         run: |
           ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-          if [ -d "$DEPLOY_PATH/.git" ]; then
-            echo "Git repository found. Pulling changes..."
-            cd $DEPLOY_PATH &&
-            git reset --hard HEAD &&
-            git pull origin $ENV &&
-            chmod +x start_containers.sh &&
-            ./start_containers.sh $ENV
+          # Mostrar la carpeta actual
+          echo "Logged into server: $(hostname)"
+          echo "Current directory: $(pwd)"  # Mostrar el directorio actual
+          
+          cd $DEPLOY_PATH &&
+          echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
+          
+          if [ -d ".git" ]; then
+            echo "Git repository detected."
+            
+            # Resetear todos los cambios locales en archivos rastreados
+            echo "Resetting all local changes..."
+            git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
+
+            git remote -v  # Verificar el repositorio remoto
+            git status  # Verificar el estado del repositorio local
+
+            # Realizar el fetch y pull
+            git fetch origin $ENV  # Obtener los cambios del repositorio remoto
+            git pull origin $ENV  # Realizar el pull de la rama correspondiente
           else
-            echo "Error: Not a git repository. Check if the repository is correctly cloned."
+            echo "Error: Not a git repository or missing .git folder."
             exit 1
           fi
+
+          # Ejecutar el script de inicio de contenedores
+          chmod +x start_containers.sh &&
+          ./start_containers.sh $ENV
           '
