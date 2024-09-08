@@ -53,17 +53,17 @@ jobs:
           # Definir manualmente DEPLOY_PATH y ENV en la sesión SSH
           DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
           ENV="'${{ env.ENV }}'"
-          
+
           # Mostrar el nombre del servidor y la carpeta actual
           echo "Logged into server: $(hostname)"
           echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
-          
+
           # Verificar el valor de DEPLOY_PATH
           echo "DEPLOY_PATH is: $DEPLOY_PATH"
-          
+
           # Intentar cambiar al directorio de despliegue
           cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
-          
+
           # Verificar si el cambio de directorio fue exitoso
           echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
 
