@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Request,
   Res,
   UseGuards,
@@ -23,14 +24,13 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() authLoginDto: AuthLoginDto, @Res() res: Response) {
-    const { access_token } = await this.authService.login(authLoginDto);
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: true, // Asegúrate de que tu aplicación use HTTPS en producción
-      domain: '.cmgdistro.com', // Configura el dominio base
-      sameSite: 'strict',
-    });
+  async login(
+    @Body() authLoginDto: AuthLoginDto,
+    @Res() res: Response,
+    @Req() req,
+  ) {
+    const { access_token } = await this.authService.login(authLoginDto, req);
+
     return res.send({ access_token });
   }
 

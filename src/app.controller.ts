@@ -11,4 +11,10 @@ export class AppController {
   healthCheck(): string {
     return this.appService.healthCheck();
   }
+
+  @Get()
+  @Public()
+  getHello(): string {
+    return 'there is nothing to see here :)';
+  }
 }

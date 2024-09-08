@@ -1,6 +1,14 @@
 # Stage 1: Build
 FROM node:20-slim AS base
 
+# Install necessary system packages for Prisma and other dependencies (including OpenSSL)
+# Cache system packages separately to avoid reinstalling them if they haven't changed
+RUN apt-get update && apt-get install -y \
+    openssl \
+    wget \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm
 RUN npm install -g pnpm
 
@@ -25,23 +33,31 @@ RUN pnpm run build
 # Stage 2: Production
 FROM node:20-slim AS production
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Set default locale
-ENV LANG en_US.UTF-8
-
-# Install Chrome and necessary fonts for Puppeteer
-RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+# Install necessary system packages for Prisma, Puppeteer, and Chrome
+RUN apt-get update && apt-get install -y \
+    openssl \
+    wget \
+    gnupg \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/chrome-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list' \
     && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
-      --no-install-recommends \
+    && apt-get install -y google-chrome-stable \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    fonts-thai-tlwg \
+    fonts-khmeros \
+    fonts-kacst \
+    fonts-freefont-ttf \
+    libxss1 \
+    dbus \
+    dbus-x11 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variable for Puppeteer
+# Install pnpm in the production stage as well
+RUN npm install -g pnpm
+
+# Set environment variables for Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 

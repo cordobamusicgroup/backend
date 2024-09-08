@@ -8,6 +8,11 @@ import { RedisHealthIndicator } from './redis.health';
 import { PrismaHealthIndicator } from './prisma.health';
 import { Public } from 'src/common/decorators/public.decorator';
 
+/**
+ * Endpoint for checking the health of the application.
+ * Performs health checks on Prisma and Redis.
+ * @returns A Promise that resolves to the health check result.
+ */
 @Public()
 @Controller('health')
 export class HealthController {
