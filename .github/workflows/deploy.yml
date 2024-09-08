@@ -49,9 +49,15 @@ jobs:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         run: |
           ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-          cd $DEPLOY_PATH &&
-          git reset --hard HEAD &&
-          git pull origin $ENV &&
-          chmod +x start_containers.sh &&
-          ./start_containers.sh $ENV
+          if [ -d "$DEPLOY_PATH/.git" ]; then
+            echo "Git repository found. Pulling changes..."
+            cd $DEPLOY_PATH &&
+            git reset --hard HEAD &&
+            git pull origin $ENV &&
+            chmod +x start_containers.sh &&
+            ./start_containers.sh $ENV
+          else
+            echo "Error: Not a git repository. Check if the repository is correctly cloned."
+            exit 1
+          fi
           '
