@@ -34,6 +34,12 @@ jobs:
             echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/app/backend-preview" >> $GITHUB_ENV
           fi
 
+      # Debug: Print environment variables to verify their values
+      - name: Debug Environment Variables
+        run: |
+          echo "Environment: ${{ env.ENV }}"
+          echo "Deploy Path: ${{ env.DEPLOY_PATH }}"
+
       # Deploy to server and start containers
       - name: Deploy to server
         env:
