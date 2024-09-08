@@ -42,39 +42,46 @@ jobs:
 
       # Deploy to server and start containers
       - name: Deploy to server
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          ENV: ${{ env.ENV }}
-          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
-        run: |
-          ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-          # Mostrar la carpeta actual
-          echo "Logged into server: $(hostname)"
-          echo "Current directory: $(pwd)"  # Mostrar el directorio actual
+      env:
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+        SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        ENV: ${{ env.ENV }}
+        DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+      run: |
+        ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
+        # Mostrar el nombre del servidor y la carpeta actual
+        echo "Logged into server: $(hostname)"
+        echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
+        
+        # Verificar el valor de DEPLOY_PATH
+        echo "DEPLOY_PATH is: $DEPLOY_PATH"
+        
+        # Intentar cambiar al directorio de despliegue
+        cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
+        
+        # Verificar si el cambio de directorio fue exitoso
+        echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
+
+        if [ -d ".git" ]; then
+          echo "Git repository detected."
           
-          cd $DEPLOY_PATH &&
-          echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
-          
-          if [ -d ".git" ]; then
-            echo "Git repository detected."
-            
-            # Resetear todos los cambios locales en archivos rastreados
-            echo "Resetting all local changes..."
-            git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
+          # Resetear todos los cambios locales en archivos rastreados
+          echo "Resetting all local changes..."
+          git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
 
-            git remote -v  # Verificar el repositorio remoto
-            git status  # Verificar el estado del repositorio local
+          git remote -v  # Verificar el repositorio remoto
+          git status  # Verificar el estado del repositorio local
 
-            # Realizar el fetch y pull
-            git fetch origin $ENV  # Obtener los cambios del repositorio remoto
-            git pull origin $ENV  # Realizar el pull de la rama correspondiente
-          else
-            echo "Error: Not a git repository or missing .git folder."
-            exit 1
-          fi
+          # Realizar el fetch y pull
+          git fetch origin $ENV  # Obtener los cambios del repositorio remoto
+          git pull origin $ENV  # Realizar el pull de la rama correspondiente
+        else
+          echo "Error: Not a git repository or missing .git folder."
+          exit 1
+        fi
 
-          # Ejecutar el script de inicio de contenedores
-          chmod +x start_containers.sh &&
-          ./start_containers.sh $ENV
-          '
+        # Ejecutar el script de inicio de contenedores
+        chmod +x start_containers.sh &&
+        ./start_containers.sh $ENV
+        '
+
