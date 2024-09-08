@@ -48,7 +48,12 @@ jobs:
           ENV: ${{ env.ENV }}
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         run: |
+          echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
           ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
+          # Definir manualmente DEPLOY_PATH y ENV en la sesión SSH
+          DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
+          ENV="'${{ env.ENV }}'"
+          
           # Mostrar el nombre del servidor y la carpeta actual
           echo "Logged into server: $(hostname)"
           echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
