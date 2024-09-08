@@ -1,4 +1,4 @@
-version: '3.8'
+name: 'cmg-api-${ENV}'
 
 services:
   app:
