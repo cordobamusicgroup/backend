@@ -1,4 +1,4 @@
-name: cmg-backend-preview
+version: '3.8'
 
 services:
   app:
@@ -7,12 +7,13 @@ services:
       dockerfile: Dockerfile
       args:
         - 'DOCKER_BUILDKIT=1'
-    image: cmg-api-preview:latest
-    container_name: cmg-api-preview
+        - 'VERSION=${VERSION}' # Version configurable
+    image: ${DOCKER_IMAGE}:${VERSION} # Usa variable de imagen y versión
+    container_name: cmg-api-${ENV}
     env_file:
-      - env/preview/preview.env
+      - ${ENV_FILE} # Archivo de entorno específico
     ports:
-      - '2000:6060'
+      - '${APP_PORT}:6060'
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,26 +21,26 @@ services:
         condition: service_healthy
 
   postgres:
-    container_name: cmg-db-preview
+    container_name: cmg-db-${ENV}
     image: 'postgres:latest'
     env_file:
-      - env/preview/db.preview.env
+      - ${DB_ENV_FILE} # Archivo de entorno para la base de datos
     volumes:
-      - ./docker/postgres/preview_data:/var/lib/postgresql/data
-      - ./docker/postgres/preview_log:/var/log/postgresql
+      - ./docker/postgres/${ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
+      - ./docker/postgres/${ENV}_log:/var/log/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
       timeout: 10s
       retries: 5
     ports:
-      - '2001:5432'
+      - '${DB_PORT}:5432'
 
   redis:
-    container_name: cmg-redis-preview
+    container_name: cmg-redis-${ENV}
     image: 'redis:latest'
     ports:
-      - '2002:6379'
+      - '${REDIS_PORT}:6379'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
