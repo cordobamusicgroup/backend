@@ -7,9 +7,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
-import { AddressDto } from './address/dto/address.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ContractDto } from './dto/contract/contract.dto';
+import { AddressDto } from './dto/address/address.dto';
 
 @Injectable()
 export class ClientsService {

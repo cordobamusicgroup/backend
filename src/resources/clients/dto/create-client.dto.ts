@@ -9,8 +9,8 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ClientType, TaxIdType } from '@prisma/client';
-import { CreateAddressDto } from '../address/dto/create-address.dto';
 import { CreateContractDto } from './contract/create-contract.dto';
+import { CreateAddressDto } from './address/create-address.dto';
 
 export class CreateClientDto {
   @IsString()
