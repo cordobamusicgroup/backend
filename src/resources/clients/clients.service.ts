@@ -9,7 +9,7 @@ import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
 import { AddressDto } from './address/dto/address.dto';
 import { I18nContext, I18nService } from 'nestjs-i18n';
-import { ContractDto } from './contract/dto/contract.dto';
+import { ContractDto } from './dto/contract/contract.dto';
 
 @Injectable()
 export class ClientsService {

@@ -156,7 +156,7 @@ model Contract {
   contractId   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
   ppd          Float?         @default(75.00)
-  status       ContractStatus @default(PENDING)
+  status       ContractStatus @default(DRAFT)
   docUrl       String?
 
   startDate DateTime
@@ -428,10 +428,9 @@ enum LabelStatus {
 
 enum ContractStatus {
   ACTIVE
-  INACTIVE
-  CANCELLED
+  TERMINATED
   EXPIRED
-  PENDING
+  DRAFT
 
   @@map("contracts_statuses")
 }

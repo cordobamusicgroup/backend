@@ -10,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 import { ClientType, TaxIdType } from '@prisma/client';
 import { CreateAddressDto } from '../address/dto/create-address.dto';
-import { CreateContractDto } from '../contract/dto/create-contract.dto';
+import { CreateContractDto } from './contract/create-contract.dto';
 
 export class CreateClientDto {
   @IsString()
