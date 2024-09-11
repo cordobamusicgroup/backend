@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaService } from './resources/prisma/prisma.service';
 import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { PrismaModule } from './resources/prisma/prisma.module';
 import { BullModule } from '@nestjs/bull';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -17,6 +16,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { CountriesModule } from './resources/countries/countries.module';
 import { CookieResolver, I18nModule } from 'nestjs-i18n';
 import { join } from 'path';
+import { FinancialModule } from './resources/financial/financial.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -51,10 +51,10 @@ import { join } from 'path';
     DmbModule,
     HealthModule,
     CountriesModule,
+    FinancialModule,
   ],
   controllers: [AppController],
   providers: [
-    AppService,
     PrismaService,
     {
       provide: APP_GUARD,
