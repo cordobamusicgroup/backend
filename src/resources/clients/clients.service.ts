@@ -3,13 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
+import { Currency } from '@prisma/client';
+import { BalanceDto } from '../financial/dto/balance.dto';
 
 @Injectable()
 export class ClientsService {
@@ -32,8 +34,22 @@ export class ClientsService {
         contract: {
           create: contract,
         },
+        balances: {
+          createMany: {
+            data: [
+              {
+                amount: 0,
+                currency: Currency.EUR,
+              },
+              {
+                amount: 0,
+                currency: Currency.USD,
+              },
+            ],
+          },
+        },
       },
-      include: { address: true, contract: true },
+      include: { address: true, contract: true, balances: true },
     });
 
     return this.convertToClientDto(client);
@@ -58,7 +74,7 @@ export class ClientsService {
 
   async getClients(): Promise<ClientDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: { address: true, contract: true },
+      include: { address: true, contract: true, balances: true },
     });
 
     return Promise.all(
@@ -146,6 +162,12 @@ export class ClientsService {
       excludeExtraneousValues: true,
       exposeUnsetFields: false,
     });
+    const balanceDtos = client.balances.map((balance) =>
+      plainToInstance(BalanceDto, balance, {
+        excludeExtraneousValues: true,
+        exposeUnsetFields: false,
+      }),
+    );
 
     addressDto.countryName = await this.getCountryName(addressDto.countryId);
 
@@ -155,6 +177,7 @@ export class ClientsService {
         ...client,
         address: addressDto,
         contract: contractDto,
+        balances: balanceDtos,
       },
       {
         excludeExtraneousValues: true,
