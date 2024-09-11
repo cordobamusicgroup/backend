@@ -89,10 +89,10 @@ model Client {
 
   dmb ClientDMB?
 
-  balances    Balance[]
+  balances    Balance[]          @relation("ClientBalances")
   paymentData ClientPaymentData?
 
-  labels   Label[]
+  labels   Label[]   @relation("ClientLabel")
   users    User[]
   contract Contract?
 
@@ -169,13 +169,29 @@ model Contract {
 }
 
 model Balance {
-  id       Int      @id @default(autoincrement())
-  clientId Int
-  client   Client   @relation(fields: [clientId], references: [id])
-  currency Currency @default(EUR)
-  amount   Float    @default(0.00)
+  id           Int           @id @default(autoincrement())
+  clientId     Int
+  client       Client        @relation(fields: [clientId], references: [id], name: "ClientBalances")
+  currency     Currency      @default(EUR)
+  amount       Float         @default(0.00)
+  transactions Transaction[] @relation("BalanceTransactions")
 
   @@map("clients_balances")
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type          TransactionType
+  description   String
+  amount        Float
+  balanceAmount Float
+  balanceId     Int
+  balance       Balance         @relation(fields: [balanceId], references: [id], name: "BalanceTransactions")
+
+  @@map("clients_transactions")
 }
 
 model Address {
@@ -214,7 +230,7 @@ model Label {
   labelStatus LabelStatus @default(ACTIVE)
 
   clientId Int
-  client   Client @relation(fields: [clientId], references: [id])
+  client   Client @relation(fields: [clientId], references: [id], name: "ClientLabel")
 
   name      String   @unique
   website   String?
@@ -342,7 +358,7 @@ enum Distributor {
 enum PaymentMethod {
   BANK_TRANSFER
   PAYPAL
-  ADVCASH_VOLET
+  CRYPTO
 
   @@map("payment_methods")
 }
@@ -377,6 +393,14 @@ enum CommsChannels {
 }
 
 //*** Enums Types ***//
+
+enum TransactionType {
+  PAYMENT
+  ROYALTIES
+  RECALLED_PAYMENT
+  BOUNCEDBACK_PAYMENT
+  OTHER
+}
 
 enum ContractType {
   DISTRIBUTION_NONEXCLUSIVE
