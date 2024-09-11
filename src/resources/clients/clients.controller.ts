@@ -26,11 +26,13 @@ export class ClientsController {
   }
 
   @Get()
+  @Roles(Role.ADMIN)
   async findAll(): Promise<ClientDto[]> {
     return this.clientsService.getClients();
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN)
   async findOne(@Param('id') id: number): Promise<ClientDto> {
     return this.clientsService.getClientById(id);
   }
