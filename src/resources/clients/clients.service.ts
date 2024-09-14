@@ -7,24 +7,26 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
-import { I18nContext, I18nService } from 'nestjs-i18n';
+import { I18nService } from 'nestjs-i18n';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { Currency } from '@prisma/client';
 import { BalanceDto } from '../financial/dto/balance.dto';
+import { DmbDto } from './dto/dmb/dmb.dto';
+import { TranslationHelper } from 'src/common/helper/translation.helper';
 
 @Injectable()
 export class ClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly i18n: I18nService,
+    private readonly translationHelper: TranslationHelper,
   ) {}
 
   // Main methods
   async create(userObject: CreateClientDto): Promise<ClientDto> {
-    await this.validateUniqueClientName(userObject.clientName);
-    await this.validateVatIdExistOrNo(userObject);
-    const { address, contract, ...clientData } = userObject;
+    await this.validateClientData(userObject);
+    const { address, contract, dmb, ...clientData } = userObject;
     const client = await this.prisma.client.create({
       data: {
         ...clientData,
@@ -34,22 +36,19 @@ export class ClientsService {
         contract: {
           create: contract,
         },
+        dmb: {
+          create: dmb,
+        },
         balances: {
           createMany: {
             data: [
-              {
-                amount: 0,
-                currency: Currency.EUR,
-              },
-              {
-                amount: 0,
-                currency: Currency.USD,
-              },
+              { amount: 0, currency: Currency.EUR },
+              { amount: 0, currency: Currency.USD },
             ],
           },
         },
       },
-      include: { address: true, contract: true, balances: true },
+      include: { address: true, contract: true, balances: true, dmb: true },
     });
 
     return this.convertToClientDto(client);
@@ -67,6 +66,7 @@ export class ClientsService {
         `Clients with IDs ${missingIds.join(', ')} not found`,
       );
     }
+
     await this.prisma.client.deleteMany({
       where: { id: { in: ids } },
     });
@@ -74,7 +74,7 @@ export class ClientsService {
 
   async getClients(): Promise<ClientDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: { address: true, contract: true, balances: true },
+      include: { address: true, contract: true, balances: true, dmb: true },
     });
 
     return Promise.all(
@@ -84,33 +84,26 @@ export class ClientsService {
 
   async getClientById(id: number): Promise<ClientDto> {
     const client = await this.findClientById(id);
-
     return this.convertToClientDto(client);
   }
 
   // *** Helper methods *** //
-
-  private async validateUniqueClientName(clientName: string) {
+  private async validateClientData(userObject: CreateClientDto): Promise<void> {
     const existingClient = await this.prisma.client.findFirst({
-      where: { clientName },
+      where: { clientName: userObject.clientName },
     });
 
     if (existingClient) {
       throw new BadRequestException(
-        this.i18n.translate('clients.CLIENT_EXISTS', {
-          args: { clientName },
-          lang: I18nContext.current().lang,
+        this.translationHelper.translateError('clients.CLIENT_EXISTS', {
+          clientName: userObject.clientName,
         }),
       );
     }
-  }
 
-  private async validateVatIdExistOrNo(userObject: CreateClientDto) {
     if (userObject.vatRegistered && !userObject.vatId) {
       throw new BadRequestException(
-        this.i18n.translate('clients.CLIENT_VATIDMISSING', {
-          lang: I18nContext.current().lang,
-        }),
+        this.translationHelper.translateError('clients.CLIENT_VATIDMISSING'),
       );
     }
   }
@@ -153,36 +146,32 @@ export class ClientsService {
     return country ? country.name : 'Unknown';
   }
 
+  private async convertToDto<T, K>(entity: T, dto: new () => K): Promise<K> {
+    return plainToInstance(dto, entity, {
+      excludeExtraneousValues: true,
+      exposeUnsetFields: false,
+    });
+  }
+
   private async convertToClientDto(client: any): Promise<ClientDto> {
-    const addressDto = plainToInstance(AddressDto, client.address, {
-      excludeExtraneousValues: true,
-      exposeUnsetFields: false,
-    });
-    const contractDto = plainToInstance(ContractDto, client.contract, {
-      excludeExtraneousValues: true,
-      exposeUnsetFields: false,
-    });
-    const balanceDtos = client.balances.map((balance) =>
-      plainToInstance(BalanceDto, balance, {
-        excludeExtraneousValues: true,
-        exposeUnsetFields: false,
-      }),
+    const addressDto = await this.convertToDto(client.address, AddressDto);
+    const contractDto = await this.convertToDto(client.contract, ContractDto);
+    const dmbDto = await this.convertToDto(client.dmb, DmbDto);
+    const balanceDtos = await Promise.all(
+      client.balances.map((balance) => this.convertToDto(balance, BalanceDto)),
     );
 
     addressDto.countryName = await this.getCountryName(addressDto.countryId);
 
-    const clientDto = plainToInstance(
-      ClientDto,
+    const clientDto = await this.convertToDto(
       {
         ...client,
         address: addressDto,
+        dmb: dmbDto,
         contract: contractDto,
         balances: balanceDtos,
       },
-      {
-        excludeExtraneousValues: true,
-        exposeUnsetFields: false,
-      },
+      ClientDto,
     );
 
     return clientDto;
