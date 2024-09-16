@@ -1,7 +1,7 @@
-// dmb/utils/navigate.util.ts
 import * as puppeteer from 'puppeteer';
 import { DmbAuthService } from '../../dmb-auth.service';
-import { Logger } from '@nestjs/common';
+import { Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { waitForSelectorSafe } from './waitForSelectorSafe'; // Importamos la función personalizada
 
 const logger = new Logger('NavigateUtil');
 
@@ -10,25 +10,17 @@ export async function navigateToPage(
   url: string,
   iframeSelectors: { selector: string; timeout?: number }[] = [],
 ): Promise<puppeteer.Page> {
+  let browser: puppeteer.Browser;
+
   try {
-    logger.verbose('Ensuring authenticated session...');
+    logger.log('[DMB - Kontor] Starting navigation to page...');
     await authService.ensureAuthenticated();
 
-    logger.verbose('Launching Puppeteer browser...');
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    const launchOptions = isProduction
-      ? {
-          executablePath: '/usr/bin/google-chrome-stable',
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        }
-      : {};
-
-    const browser = await puppeteer.launch(launchOptions);
-
+    logger.log('[DMB - Kontor] Launching Puppeteer browser...');
+    browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    logger.verbose('Setting cookies...');
+    // Set authentication cookies
     const xsrfToken = authService.getXsrfToken();
     const dmbSid = authService.getDmbSid();
 
@@ -51,81 +43,47 @@ export async function navigateToPage(
       },
     );
 
+    // Set the user agent
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     );
 
-    logger.verbose(`Navigating to URL: ${url}`);
+    // Navigate to the URL
+    logger.log(`[DMB - Kontor] Navigating to URL: ${url}`);
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Verificar y registrar cada etiqueta
-    const selectors = [
-      'dmb-root',
-      'dmb-main',
-      'dmb-combined-menu',
-      'dmb-iframe',
-      'iframe',
-    ];
-
-    for (const selector of selectors) {
-      try {
-        await page.waitForSelector(selector);
-        logger.verbose(`Selector ${selector} found.`);
-      } catch (error) {
-        logger.error(`Error: Selector ${selector} not found.`);
-        await browser.close();
-        throw error;
-      }
+    // Wait for essential selectors using `waitForSelectorSafe`
+    const essentialSelectors = ['dmb-root', 'iframe'];
+    for (const selector of essentialSelectors) {
+      await waitForSelectorSafe(page, selector, 5000); // Delega la excepción a waitForSelectorSafe
     }
 
-    // Obtener el iframe y verificar los selectores dentro del iframe
+    // Handle iframe and check selectors within it
     const iframeElement = await page.$('iframe');
-    if (iframeElement) {
-      const iframe = await iframeElement.contentFrame();
-      if (iframe) {
-        try {
-          await iframe.waitForSelector('html.dmb-smaller-size.iframe-enabled', {
-            timeout: 5000,
-          });
-          logger.verbose(
-            `Selector html.dmb-smaller-size.iframe-enabled found.`,
-          );
+    if (!iframeElement) {
+      throw new HttpException(
+        `[DMB - Kontor] Iframe element not found.`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
-          for (const { selector, timeout } of iframeSelectors) {
-            try {
-              await iframe.waitForSelector(selector, {
-                timeout: timeout || 5000,
-              });
-              logger.verbose(`Selector ${selector} found inside iframe.`);
-            } catch (error) {
-              logger.error(
-                `Error: Selector ${selector} not found inside iframe.`,
-              );
-              await browser.close();
-              throw error;
-            }
-          }
-        } catch (error) {
-          logger.error(
-            `Error: Selector html.dmb-smaller-size.iframe-enabled not found.`,
-          );
-          await browser.close();
-          throw error;
-        }
-      } else {
-        logger.error(`Error: Could not get content frame.`);
-        await browser.close();
-        throw new Error('Could not get content frame.');
-      }
-    } else {
-      logger.error(`Error: Selector iframe not found.`);
-      await browser.close();
-      throw new Error('Selector iframe not found.');
+    const iframe = await iframeElement.contentFrame();
+    if (!iframe) {
+      throw new HttpException(
+        `[DMB - Kontor] Unable to access iframe content.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    // Check selectors inside the iframe
+    for (const { selector, timeout } of iframeSelectors) {
+      await waitForSelectorSafe(iframe, selector, timeout || 5000); // Delega la excepción a waitForSelectorSafe
     }
 
     return page;
-  } catch (error) {
-    logger.error('Error in navigateToPage:', error.message);
-    throw error;
+  } finally {
+    if (browser) {
+      await browser.close(); // Ensure browser is closed in case of an error
+    }
   }
 }

@@ -19,6 +19,18 @@ export class DmbService {
     @InjectQueue('dmb') private readonly dmbQueue: Queue,
   ) {}
 
+  async login() {
+    try {
+      await this.dmbAuthService.login(
+        process.env.DMB_USER,
+        process.env.DMB_PASS,
+      );
+      await extractProductId(this.dmbAuthService, '872076d6555065');
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
   async scrapeAlbum(
     ean: string,
     removeAttachments: boolean = false,
