@@ -153,7 +153,7 @@ model Contract {
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
 
-  contractId   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uuid         String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
   ppd          Float?         @default(75.00)
   status       ContractStatus @default(DRAFT)
