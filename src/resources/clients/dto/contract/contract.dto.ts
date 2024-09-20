@@ -3,7 +3,10 @@ import { Expose } from 'class-transformer';
 
 export class ContractDto {
   @Expose()
-  contractId: string;
+  id: number;
+
+  @Expose()
+  uuid: string;
 
   @Expose()
   contractType: ContractType;
