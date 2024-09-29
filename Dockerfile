@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM oven/bun:latest AS base
+FROM oven/bun:alpine AS base
 
 # Set working directory
 WORKDIR /app
@@ -20,7 +20,7 @@ RUN bun prisma generate
 RUN bun run build
 
 # Stage 2: Production
-FROM oven/bun:latest AS production
+FROM oven/bun:alpine AS production
 
 # Set working directory
 WORKDIR /app
