@@ -1,48 +1,44 @@
-# Stage 1: Build
-FROM node:20-slim AS base
+# Etapa 1: Usar la imagen oficial de Bun
+FROM oven/bun:1 AS base
 
-# Set working directory
-WORKDIR /app
+# Establecer directorio de trabajo
+WORKDIR /usr/src/app
 
-# Install necessary system packages for Prisma and other dependencies
-RUN apt-get update && apt-get install -y \
-    openssl \
-    wget \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
+# Etapa 2: Instalación de dependencias (con caché para acelerar compilaciones futuras)
+FROM base AS install
+RUN mkdir -p /temp/dev
+COPY package.json bun.lockb /temp/dev/
+RUN cd /temp/dev && bun install --frozen-lockfile
 
-# Copy the package.json
-COPY package.json ./
+# Instalar solo dependencias de producción (excluyendo devDependencies)
+RUN mkdir -p /temp/prod
+COPY package.json bun.lockb /temp/prod/
+RUN cd /temp/prod && bun install --frozen-lockfile --production
 
-# Install dependencies using npm (no package-lock.json)
-RUN npm install
-
-# Copy the rest of the application files
+# Etapa 3: Preparación previa al lanzamiento
+FROM base AS prerelease
+COPY --from=install /temp/dev/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the application (NestJS build)
-RUN npm run build
-
-# Stage 2: Production
-FROM node:20-slim AS production
-
-# Set working directory
-WORKDIR /app
-
-# Copy dependencies and build files from the build stage
-COPY --from=base /app/node_modules /app/node_modules
-COPY --from=base /app/dist /app/dist
-COPY --from=base /app/package.json /app/package.json
-COPY --from=base /app/prisma /app/prisma
-
-# Set environment variable for production
+# Generar cliente Prisma y construir la aplicación NestJS
 ENV NODE_ENV=production
+RUN bun prisma generate
+RUN bun run build
 
-# Expose the port on which the application runs
-EXPOSE 3000
+# Etapa 4: Preparar el entorno para producción
+FROM base AS release
 
-# Run Prisma migrations and start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+# Establecer directorio de trabajo
+WORKDIR /usr/src/app
+
+# Copiar las dependencias de producción y los archivos necesarios desde las etapas anteriores
+COPY --from=install /temp/prod/node_modules ./node_modules
+COPY --from=prerelease /usr/src/app/dist ./dist
+COPY --from=prerelease /usr/src/app/prisma ./prisma
+COPY --from=prerelease /usr/src/app/package.json ./package.json
+
+# Exponer el puerto 3000 que usa la aplicación
+EXPOSE 3000/tcp
+
+# Ejecutar migraciones Prisma y luego iniciar la aplicación de NestJS en modo producción
+CMD ["sh", "-c", "bun prisma migrate deploy && bun run dist/main.js"]
