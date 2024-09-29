@@ -20,10 +20,6 @@ then
     exit 1
 fi
 
-# Define the DNS server(s) you want to use (Google DNS as an example)
-DNS_SERVER="8.8.8.8"
-DNS_BACKUP="8.8.4.4"
-
 # Stop and remove existing containers
 echo "[CMG-DEV] Stopping and removing existing containers for $ENV..."
 docker compose --env-file "$ENV_FILE" down
@@ -44,8 +40,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # Start the containers in the background with custom DNS
-echo "[CMG-DEV] Starting the containers for $ENV with custom DNS ($DNS_SERVER, $DNS_BACKUP)..."
-docker compose --env-file "$ENV_FILE" up -d --dns "$DNS_SERVER" --dns "$DNS_BACKUP"
+echo "[CMG-DEV] Starting the containers for $ENV..."
+docker compose --env-file "$ENV_FILE" up -d"
 
 if [ $? -ne 0 ]; then
     echo "[CMG-DEV] Error while starting the containers for $ENV."
