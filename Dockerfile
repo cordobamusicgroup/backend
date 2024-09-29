@@ -13,8 +13,8 @@ RUN bun install --frozen-lockfile
 # Copy the rest of the application files
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma client using Bun
+RUN bun prisma generate
 
 # Build the application
 RUN bun run build
@@ -35,4 +35,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Run Prisma migrations and seed script before starting the application
-CMD ["sh", "-c", "bun prisma migrate deploy && bun exec ts-node /app/prisma/seed.ts && bun run start:prod"]
+CMD ["sh", "-c", "bun prisma migrate deploy && bun run /app/prisma/seed.ts && bun run start:prod"]
