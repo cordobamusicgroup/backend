@@ -39,13 +39,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Start the containers in the background with custom DNS
+# Start the containers in the background
 echo "[CMG-DEV] Starting the containers for $ENV..."
-docker compose --env-file "$ENV_FILE" up -d"
+docker compose --env-file "$ENV_FILE" up -d
 
 if [ $? -ne 0 ]; then
     echo "[CMG-DEV] Error while starting the containers for $ENV."
     exit 1
 fi
 
-echo "[CMG-DEV] Containers for $ENV started successfully with DNS $DNS_SERVER and $DNS_BACKUP."
+echo "[CMG-DEV] Containers for $ENV started successfully."
