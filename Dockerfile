@@ -1,19 +1,24 @@
-# Etapa 1: Usar la imagen oficial de Bun
-FROM oven/bun:1 AS base
+# Etapa 1: Usar la imagen oficial de Node.js
+FROM node:20-slim AS base
 
-# Establecer directorio de trabajo
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+
+# Establecer el directorio de trabajo
 WORKDIR /usr/src/app
 
-# Etapa 2: Instalación de dependencias (con caché para acelerar compilaciones futuras)
+# Etapa 2: Instalación de dependencias con caché de pnpm
 FROM base AS install
 RUN mkdir -p /temp/dev
-COPY package.json bun.lockb /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+COPY package.json pnpm-lock.yaml /temp/dev/
+
+# Usar la caché de pnpm
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store cd /temp/dev && pnpm install
 
 # Instalar solo dependencias de producción (excluyendo devDependencies)
 RUN mkdir -p /temp/prod
-COPY package.json bun.lockb /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
+COPY package.json pnpm-lock.yaml /temp/prod/
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store cd /temp/prod && pnpm install --frozen-lockfile --prod
 
 # Etapa 3: Preparación previa al lanzamiento
 FROM base AS prerelease
@@ -22,8 +27,8 @@ COPY . .
 
 # Generar cliente Prisma y construir la aplicación NestJS
 ENV NODE_ENV=production
-RUN bun prisma generate
-RUN bun run build
+RUN pnpm prisma generate
+RUN pnpm run build
 
 # Etapa 4: Preparar el entorno para producción
 FROM base AS release
@@ -36,9 +41,10 @@ COPY --from=install /temp/prod/node_modules ./node_modules
 COPY --from=prerelease /usr/src/app/dist ./dist
 COPY --from=prerelease /usr/src/app/prisma ./prisma
 COPY --from=prerelease /usr/src/app/package.json ./package.json
+COPY --from=prerelease /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Exponer el puerto 3000 que usa la aplicación
 EXPOSE 3000/tcp
 
 # Ejecutar migraciones Prisma y luego iniciar la aplicación de NestJS en modo producción
-CMD ["sh", "-c", "bun prisma migrate deploy && bun run dist/main.js"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
