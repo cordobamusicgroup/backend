@@ -44,8 +44,4 @@ export class ClientDto {
   @Expose()
   @Type(() => DmbDto)
   dmb: DmbDto;
-
-  @Expose()
-  @Type(() => BalanceDto)
-  balances: BalanceDto[];
 }
