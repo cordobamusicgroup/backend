@@ -1,8 +1,11 @@
 # Stage 1: Build
-FROM oven/bun:alpine AS base
+FROM node:20-slim AS base
 
 # Set working directory
 WORKDIR /app
+
+# Install Bun manually
+RUN npm install -g bun
 
 # Copy configuration files
 COPY package.json bun.lockb ./ 
@@ -20,7 +23,10 @@ RUN bun prisma generate
 RUN bun run build
 
 # Stage 2: Production
-FROM oven/bun:alpine AS production
+FROM node:20-slim AS production
+
+# Install Bun in the production stage as well
+RUN npm install -g bun
 
 # Set working directory
 WORKDIR /app
