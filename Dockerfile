@@ -23,9 +23,6 @@ COPY package.json pnpm-lock.yaml ./
 # Install dependencies using pnpm with cache
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile
 
-# Run postinstall (this will handle installing Chrome via pnpm scripts)
-RUN pnpm run postinstall
-
 # Copy the entire project after installing dependencies
 COPY . .
 
