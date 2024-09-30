@@ -49,3 +49,29 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "[CMG-DEV] Containers for $ENV started successfully."
+
+# Clean up unused Docker resources
+echo "[CMG-DEV] Cleaning up unused Docker resources..."
+
+# Remove unused images
+docker image prune -a -f
+if [ $? -ne 0 ]; then
+    echo "[CMG-DEV] Error while pruning Docker images."
+    exit 1
+fi
+
+# Clean build cache
+docker builder prune -a -f
+if [ $? -ne 0 ]; then
+    echo "[CMG-DEV] Error while cleaning build cache."
+    exit 1
+fi
+
+# Remove unused volumes
+docker volume prune -f
+if [ $? -ne 0 ]; then
+    echo "[CMG-DEV] Error while pruning Docker volumes."
+    exit 1
+fi
+
+echo "[CMG-DEV] Cleanup completed successfully."
