@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Actualizaciones de dependencias para pnpm
+  - package-ecosystem: 'npm' # Usamos "npm" para pnpm, ya que es parte del ecosistema Node.js
+    directory: '/' # Directorio donde está tu archivo package.json (raíz del proyecto)
+    schedule:
+      interval: 'daily' # Puede ser daily, weekly o monthly
+    target-branch: 'preview' # Cambia por el nombre de la rama donde quieras que se creen los PR
+    open-pull-requests-limit: 10
+    rebase-strategy: 'auto' # Puede ser "auto" o "eager"
+    labels:
+      - 'dependabot'
+    # Incluir pnpm lockfile
+    allow:
+      - dependency-type: 'direct'
+    ignore:
+      - dependency-name: '@types/*' # Ignorar actualizaciones opcionales de tipo si es necesario
