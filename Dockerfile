@@ -1,63 +1,52 @@
-# Stage 1: Build
+# Stage 1: Base setup with pnpm
 FROM node:20-slim AS base
 
-# Install necessary system packages for Prisma and other dependencies (including OpenSSL)
-# Cache system packages separately to avoid reinstalling them if they haven't changed
-RUN apt-get update && apt-get install -y \
-    openssl \
-    wget \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
+# Set environment variables for pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-# Install pnpm
-RUN npm install -g pnpm
+# Enable corepack to manage pnpm
+RUN corepack enable
 
 # Set working directory
 WORKDIR /app
 
-# Copy configuration files
-COPY package.json pnpm-lock.yaml ./
+# Copy all files into the container
+COPY . /app
 
-# Install dependencies and use cache for pnpm
-RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile
+# Stage 2: Install production dependencies
+FROM base AS prod-deps
 
-# Copy the rest of the application files
-COPY . .
+# Use cache to store pnpm dependencies and install only production dependencies
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
-# Generate Prisma client
-RUN npx prisma generate
+# Stage 3: Build the application
+FROM base AS build
+
+# Use cache and install all dependencies including dev dependencies
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Build the application
 RUN pnpm run build
 
-# Stage 2: Production
-FROM node:20-slim AS production
+# Stage 4: Final production stage
+FROM node:20-slim AS final
 
-# Install necessary system packages for Prisma
-RUN apt-get update && apt-get install -y \
-    openssl \
-    wget \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install pnpm in the production stage as well
-RUN npm install -g pnpm
+# Set environment variables for pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# Copy dependencies and build files from the build stage
-COPY --from=base /app/node_modules /app/node_modules
-COPY --from=base /app/dist /app/dist
-COPY --from=base /app/package.json /app/package.json
-COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
-COPY --from=base /app/prisma /app/prisma
+# Copy necessary files from previous stages
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=build /app/dist /app/dist
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 
-# Set environment variable for production
-ENV NODE_ENV=production
+# Expose port
+EXPOSE 8000
 
-# Expose the port on which the application runs
-EXPOSE 3000
-
-# Run Prisma migrations and seed script before starting the application
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node /app/prisma/seed.ts && pnpm run start:prod"]
+# Command to run Prisma migrations and start the application in production mode
+CMD [ "sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod" ]
