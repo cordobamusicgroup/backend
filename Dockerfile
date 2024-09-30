@@ -15,13 +15,9 @@ COPY package.json pnpm-lock.yaml /temp/dev/
 # Usar la caché de pnpm
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store cd /temp/dev && pnpm install
 
-# Instalar solo dependencias de producción (excluyendo devDependencies)
-RUN mkdir -p /temp/prod
-COPY package.json pnpm-lock.yaml /temp/prod/
-RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store cd /temp/prod && pnpm install --frozen-lockfile --prod
-
 # Etapa 3: Preparación previa al lanzamiento
 FROM base AS prerelease
+# Copiar node_modules y archivos de la etapa anterior
 COPY --from=install /temp/dev/node_modules ./node_modules
 COPY . .
 
@@ -37,14 +33,14 @@ FROM base AS release
 WORKDIR /usr/src/app
 
 # Copiar las dependencias de producción y los archivos necesarios desde las etapas anteriores
-COPY --from=install /temp/prod/node_modules ./node_modules
+COPY --from=install /temp/dev/node_modules ./node_modules
 COPY --from=prerelease /usr/src/app/dist ./dist
 COPY --from=prerelease /usr/src/app/prisma ./prisma
 COPY --from=prerelease /usr/src/app/package.json ./package.json
 COPY --from=prerelease /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Exponer el puerto 3000 que usa la aplicación
-EXPOSE 3000/tcp
+EXPOSE 6060
 
 # Ejecutar migraciones Prisma y luego iniciar la aplicación de NestJS en modo producción
 CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
