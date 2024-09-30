@@ -8,21 +8,15 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientDto } from './dto/client.dto';
 import { plainToInstance } from 'class-transformer';
-import { I18nService } from 'nestjs-i18n';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { TranslationHelper } from 'src/common/helper/translation.helper';
 import { Currency } from '@prisma/client';
 
 @Injectable()
 export class ClientsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly i18n: I18nService,
-    private readonly translationHelper: TranslationHelper,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Main method to create a client.
@@ -212,16 +206,12 @@ export class ClientsService {
     });
 
     if (existingClient) {
-      throw new BadRequestException(
-        this.translationHelper.translateError('clients.CLIENT_EXISTS', {
-          clientName: clientData.clientName,
-        }),
-      );
+      throw new BadRequestException('Client with this name already exists');
     }
 
     if (clientData.vatRegistered && !clientData.vatId) {
       throw new BadRequestException(
-        this.translationHelper.translateError('clients.CLIENT_VATIDMISSING'),
+        'VAT ID is required for VAT-registered clients',
       );
     }
   }

@@ -14,9 +14,8 @@ import { HealthModule } from './resources/healthcheck/health.module';
 import { ClientsModule } from './resources/clients/clients.module';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CountriesModule } from './resources/countries/countries.module';
-import { CookieResolver, I18nModule } from 'nestjs-i18n';
-import { join } from 'path';
 import { FinancialModule } from './resources/financial/financial.module';
+import { SeedService } from './seed/seed.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,17 +31,6 @@ import { FinancialModule } from './resources/financial/financial.module';
       }),
       inject: [ConfigService],
     }),
-    I18nModule.forRootAsync({
-      useFactory: async (configService: ConfigService) => ({
-        fallbackLanguage: configService.getOrThrow('FALLBACK_LANGUAGE'),
-        loaderOptions: {
-          path: join(__dirname, '/i18n/'),
-          watch: true,
-        },
-      }),
-      resolvers: [new CookieResolver(['user_locale'])],
-      inject: [ConfigService],
-    }),
     ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
@@ -56,6 +44,7 @@ import { FinancialModule } from './resources/financial/financial.module';
   controllers: [AppController],
   providers: [
     PrismaService,
+    SeedService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
