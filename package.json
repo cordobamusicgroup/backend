@@ -22,7 +22,7 @@
     "new:resource": "nest"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node --loader ts-node/esm prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.3",
