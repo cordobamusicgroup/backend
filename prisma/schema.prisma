@@ -1,6 +1,7 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -76,8 +77,8 @@ model Client {
   firstName     String
   lastName      String
   type          ClientType
-  addressId     Int?
-  address       Address?   @relation(fields: [addressId], references: [id])
+  addressId     Int
+  address       Address    @relation(fields: [addressId], references: [id], onDelete: Cascade)
   taxIdType     TaxIdType
   taxId         String
   vatRegistered Boolean    @default(false)
@@ -87,12 +88,12 @@ model Client {
   isPaymentInProgress       Boolean @default(false)
   isPaymentDataInValidation Boolean @default(false)
 
-  dmb ClientDMB?
+  dmb ClientDMB? @relation("ClientDMB")
 
-  balances    Balance[]
+  balances    Balance[]          @relation("ClientBalances")
   paymentData ClientPaymentData?
 
-  labels   Label[]
+  labels   Label[]   @relation("ClientLabel")
   users    User[]
   contract Contract?
 
@@ -105,7 +106,7 @@ model ClientDMB {
   updatedAt DateTime @updatedAt
 
   clientId Int    @unique
-  client   Client @relation(fields: [clientId], references: [id])
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientDMB")
 
   accessType    AccessTypeDMB @default(STANDARD)
   status        DMBStatus     @default(PENDING)
@@ -153,10 +154,10 @@ model Contract {
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
 
-  contractId   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uuid         String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
   ppd          Float?         @default(75.00)
-  status       ContractStatus @default(PENDING)
+  status       ContractStatus @default(DRAFT)
   docUrl       String?
 
   startDate DateTime
@@ -169,13 +170,29 @@ model Contract {
 }
 
 model Balance {
-  id       Int      @id @default(autoincrement())
-  clientId Int
-  client   Client   @relation(fields: [clientId], references: [id])
-  currency Currency @default(EUR)
-  amount   Float    @default(0.00)
+  id           Int           @id @default(autoincrement())
+  clientId     Int
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
+  currency     Currency      @default(EUR)
+  amount       Float         @default(0.00)
+  transactions Transaction[] @relation("BalanceTransactions")
 
   @@map("clients_balances")
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type          TransactionType
+  description   String
+  amount        Float
+  balanceAmount Float
+  balanceId     Int
+  balance       Balance         @relation(fields: [balanceId], references: [id], name: "BalanceTransactions", onDelete: Cascade)
+
+  @@map("clients_transactions")
 }
 
 model Address {
@@ -214,7 +231,7 @@ model Label {
   labelStatus LabelStatus @default(ACTIVE)
 
   clientId Int
-  client   Client @relation(fields: [clientId], references: [id])
+  client   Client @relation(fields: [clientId], references: [id], name: "ClientLabel")
 
   name      String   @unique
   website   String?
@@ -342,7 +359,7 @@ enum Distributor {
 enum PaymentMethod {
   BANK_TRANSFER
   PAYPAL
-  ADVCASH_VOLET
+  CRYPTO
 
   @@map("payment_methods")
 }
@@ -377,6 +394,14 @@ enum CommsChannels {
 }
 
 //*** Enums Types ***//
+
+enum TransactionType {
+  PAYMENT
+  ROYALTIES
+  RECALLED_PAYMENT
+  BOUNCEDBACK_PAYMENT
+  OTHER
+}
 
 enum ContractType {
   DISTRIBUTION_NONEXCLUSIVE
@@ -428,10 +453,9 @@ enum LabelStatus {
 
 enum ContractStatus {
   ACTIVE
-  INACTIVE
-  CANCELLED
+  TERMINATED
   EXPIRED
-  PENDING
+  DRAFT
 
   @@map("contracts_statuses")
 }

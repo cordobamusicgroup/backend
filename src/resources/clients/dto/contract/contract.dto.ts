@@ -1,10 +1,12 @@
 import { ContractStatus, ContractType } from '@prisma/client';
-import { Expose, Transform } from 'class-transformer';
-import { format } from 'date-fns/format';
+import { Expose } from 'class-transformer';
 
 export class ContractDto {
   @Expose()
-  contractId: string;
+  id: number;
+
+  @Expose()
+  uuid: string;
 
   @Expose()
   contractType: ContractType;

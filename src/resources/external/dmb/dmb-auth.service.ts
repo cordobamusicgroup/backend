@@ -22,7 +22,7 @@ export class DmbAuthService {
       const xsrfUrl = 'https://dmb.kontornewmedia.com/v5/dmbauth';
 
       // Login request
-      this.logger.verbose('Sending login request...');
+      this.logger.log('[DMB - Kontor] Sending login request...');
       await client.post(
         loginUrl,
         {
@@ -41,7 +41,7 @@ export class DmbAuthService {
       );
 
       // Get XSRF token
-      this.logger.verbose('Fetching XSRF token...');
+      this.logger.log('[DMB - Kontor] Fetching XSRF token...');
       await client.get(xsrfUrl, {
         withCredentials: true,
         headers: {
@@ -57,13 +57,16 @@ export class DmbAuthService {
       )?.value;
 
       if (!this.xsrfToken) {
-        this.logger.error('XSRF token not found');
+        this.logger.error('[DMB - Kontor] XSRF token not found');
         throw new Error('XSRF token not found');
       }
 
-      this.logger.verbose('Login successful, XSRF token:', this.xsrfToken);
+      this.logger.log(
+        '[DMB - Kontor] Login successful, XSRF token:',
+        this.xsrfToken,
+      );
     } catch (error) {
-      this.logger.error('Error during login:', error.message);
+      this.logger.error('[DMB - Kontor] Error during login:', error.message);
       throw error;
     }
   }
@@ -82,7 +85,7 @@ export class DmbAuthService {
         );
       }
 
-      this.logger.verbose('Ensuring authentication...');
+      this.logger.log('[DMB - Kontor] Ensuring authentication...');
       await this.login(user, pass);
     }
   }

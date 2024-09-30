@@ -9,8 +9,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ClientType, TaxIdType } from '@prisma/client';
-import { CreateAddressDto } from '../address/dto/create-address.dto';
-import { CreateContractDto } from '../contract/dto/create-contract.dto';
+import { CreateContractDto } from './contract/create-contract.dto';
+import { CreateAddressDto } from './address/create-address.dto';
+import { CreateDmbDto } from './dmb/create-dmb.dto';
 
 export class CreateClientDto {
   @IsString()
@@ -42,6 +43,11 @@ export class CreateClientDto {
   @Type(() => CreateAddressDto)
   @IsNotEmptyObject()
   address: CreateAddressDto;
+
+  @ValidateNested()
+  @Type(() => CreateDmbDto)
+  @IsNotEmptyObject()
+  dmb: CreateDmbDto;
 
   @ValidateNested()
   @Type(() => CreateContractDto)

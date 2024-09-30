@@ -1,6 +1,5 @@
 import { Controller, Post, Body, Logger, Delete } from '@nestjs/common';
 import { DmbService } from './dmb.service';
-import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('dmb')
 export class DmbController {
@@ -8,7 +7,11 @@ export class DmbController {
 
   constructor(private readonly dmbService: DmbService) {}
 
-  @Public()
+  @Post('login')
+  async login(): Promise<void> {
+    await this.dmbService.login();
+  }
+
   @Post('albums')
   async getAlbums(
     @Body('eans') eans: string[],
@@ -19,14 +22,12 @@ export class DmbController {
     return { message: 'Albums are being processed' };
   }
 
-  @Public()
   @Post('import-blv-covers')
   async importBlvCovers(@Body('eans') eans: string[]): Promise<void> {
     this.logger.verbose(`Received request to import covers for EANs ${eans}`);
     await this.dmbService.importBlvCovers(eans);
   }
 
-  @Public()
   @Delete('clear-queue')
   async clearQueue(): Promise<void> {
     this.logger.verbose(`Received request to clear the queue`);

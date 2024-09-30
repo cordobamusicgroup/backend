@@ -1,20 +1,61 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateClientDto } from './create-client.dto';
-import { IsOptional, ValidateNested } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { UpdateAddressDto } from '../address/dto/update-address.dto';
-import { CreateAddressDto } from '../address/dto/create-address.dto';
-import { UpdateContractDto } from '../contract/dto/update-contract.dto';
-import { CreateContractDto } from '../contract/dto/create-contract.dto';
+import { UpdateAddressDto } from './address/update-address.dto';
+import { UpdateContractDto } from './contract/update-contract.dto';
+import { UpdateDmbDto } from './dmb/update-dmb.dto';
+import { ClientType, TaxIdType } from '@prisma/client';
 
-export class UpdateClientDto extends PartialType(CreateClientDto) {
+export class UpdateClientDto {
+  @IsString()
+  @IsOptional()
+  clientName?: string;
+
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+
+  @IsEnum(ClientType)
+  @IsOptional()
+  type?: ClientType;
+
+  @IsEnum(TaxIdType)
+  @IsOptional()
+  taxIdType?: TaxIdType;
+
+  @IsString()
+  @IsOptional()
+  taxId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  vatRegistered?: boolean;
+
+  @IsString()
+  @IsOptional()
+  vatId?: string;
+
   @ValidateNested()
   @Type(() => UpdateAddressDto)
   @IsOptional()
-  address?: CreateAddressDto;
+  address?: UpdateAddressDto;
 
   @ValidateNested()
   @Type(() => UpdateContractDto)
   @IsOptional()
-  contract?: CreateContractDto;
+  contract?: UpdateContractDto;
+
+  @ValidateNested()
+  @Type(() => UpdateDmbDto)
+  @IsOptional()
+  dmb?: UpdateDmbDto;
 }
