@@ -29,6 +29,9 @@ RUN npx prisma generate
 # Build the application
 RUN pnpm run build
 
+# Compile the seed script
+RUN pnpm run build:seed
+
 # Stage 2: Production
 FROM node:20-slim AS production
 
@@ -58,5 +61,5 @@ ENV NODE_ENV=production
 # Expose the port on which the application runs
 EXPOSE 3000
 
-# Run Prisma migrations and seed script before starting the application
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node /app/prisma/seed.ts && pnpm run start:prod"]
+# Run Prisma migrations and the compiled seed script before starting the application
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run seed && pnpm run start:prod"]
