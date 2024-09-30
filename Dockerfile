@@ -59,4 +59,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Run Prisma migrations and seed script before starting the application
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node --loader ts-node/esm /app/prisma/seed.ts && pnpm run start:prod"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm exec ts-node ts-node/esm /app/prisma/seed.ts && pnpm run start:prod"]
