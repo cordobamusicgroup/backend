@@ -12,6 +12,7 @@ datasource db {
 model InitializationStatus {
   id          Int     @id @default(autoincrement())
   initialized Boolean @default(false)
+  adminInit   Boolean @default(false)
 
   @@map("initialization_status")
 }
