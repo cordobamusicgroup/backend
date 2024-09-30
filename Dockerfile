@@ -1,5 +1,5 @@
 # Stage 1: Base stage for installing system dependencies and pnpm
-FROM node:20-slim AS base
+FROM node:18-slim AS base
 
 # Install necessary system packages (OpenSSL, wget, gnupg)
 RUN apt-get update && apt-get install -y \
