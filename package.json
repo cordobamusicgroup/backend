@@ -4,7 +4,6 @@
   "description": "",
   "author": "Córdoba Music Group Ltd",
   "private": true,
-  "type": "module",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
