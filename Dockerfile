@@ -1,52 +1,31 @@
-# Stage 1: Base setup with pnpm
-FROM node:20-slim AS base
+FROM node:18-alpine AS base
 
-# Set environment variables for pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# Instala pnpm globalmente
+RUN npm i -g pnpm
 
-# Enable corepack to manage pnpm
-RUN corepack enable
+# Etapa de instalación de dependencias
+FROM base AS dependencies
 
-# Set working directory
 WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
 
-# Copy all files into the container
-COPY . /app
-
-# Stage 2: Install production dependencies
-FROM base AS prod-deps
-
-# Use cache to store pnpm dependencies and install only production dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
-
-# Stage 3: Build the application
+# Etapa de build
 FROM base AS build
 
-# Use cache and install all dependencies including dev dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-
-# Build the application
-RUN pnpm run build
-
-# Stage 4: Final production stage
-FROM node:20-slim AS final
-
-# Set environment variables for pnpm
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-# Set working directory
 WORKDIR /app
+COPY . .
+COPY --from=dependencies /app/node_modules ./node_modules
+RUN pnpm build
+RUN pnpm prune --prod
 
-# Copy necessary files from previous stages
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=build /app/dist /app/dist
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/pnpm-lock.yaml /app/pnpm-lock.yaml
+# Etapa de despliegue
+FROM base AS deploy
 
-# Expose port
-EXPOSE 8000
+WORKDIR /app
+COPY --from=build /app/dist/ ./dist/
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
 
-# Command to run Prisma migrations and start the application in production mode
-CMD [ "sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod" ]
+# Ejecuta las migraciones de Prisma y el seed compilado antes de iniciar la aplicación
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/prisma/seed.js && node dist/src/main.js"]
