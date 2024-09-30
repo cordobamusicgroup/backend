@@ -39,6 +39,9 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
+# Install pnpm globally in production
+RUN npm install -g pnpm
+
 # Set working directory
 WORKDIR /app
 
