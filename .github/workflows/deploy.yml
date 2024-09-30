@@ -45,11 +45,12 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
           ENV: ${{ env.ENV }}
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
         run: |
           echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
-          ssh -i /home/runner/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
+          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
           # Definir manualmente DEPLOY_PATH y ENV en la sesión SSH
           DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
           ENV="'${{ env.ENV }}'"
