@@ -1,5 +1,8 @@
 # Stage 1: Build
-FROM oven/bun:latest as base
+FROM node:20-slim as base
+
+# Install Bun globally
+RUN npm install -g bun
 
 # Set working directory
 WORKDIR /app
@@ -7,8 +10,8 @@ WORKDIR /app
 # Copy configuration files
 COPY package.json bun.lockb ./
 
-# Cache installation dependencies to avoid reinstalling them
-RUN --mount=type=cache,target=/root/.bun bun install --no-save
+# Install dependencies using Bun (Bun automatically creates a lockfile if not present)
+RUN bun install --no-cache
 
 # Copy the rest of the application files
 COPY . .
@@ -20,7 +23,10 @@ RUN bun prisma generate
 RUN bun run build
 
 # Stage 2: Production
-FROM oven/bun:latest as production
+FROM node:20-slim as production
+
+# Install Bun globally in the production stage
+RUN npm install -g bun
 
 # Set working directory
 WORKDIR /app
