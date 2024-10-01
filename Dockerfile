@@ -1,17 +1,20 @@
 # Stage 1: Build
-FROM node:20-bullseye-slim AS base
+FROM node:20-slim AS base
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 # Install dependencies into temp directory
 # this will cache them and speed up future builds
 FROM base AS install
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-# Copy node_modules from temp directory
+# Copy node_modules
 # then copy all (non-ignored) project files into the image
 FROM base AS prerelease
 COPY --from=install /app/node_modules /app/node_modules
