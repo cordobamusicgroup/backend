@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy configuration files
 COPY package.json bun.lockb ./
 
-# Install dependencies using Bun (Bun automatically creates a lockfile if not present)
-RUN bun install
+# Cache installation dependencies to avoid reinstalling them
+RUN --mount=type=cache,target=/root/.bun bun install --no-save
 
 # Copy the rest of the application files
 COPY . .
