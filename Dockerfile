@@ -11,7 +11,6 @@ RUN corepack enable
 # this will cache them and speed up future builds
 FROM base AS install
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Copy node_modules
