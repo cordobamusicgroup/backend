@@ -11,7 +11,7 @@ import {
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { ClientDto } from './dto/client.dto';
+import { ClientExtendedDto } from './dto/client-extended.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Role } from '@prisma/client';
@@ -30,7 +30,9 @@ export class ClientsController {
    */
   @Post()
   @Roles(Role.ADMIN)
-  async create(@Body() createClientDto: CreateClientDto): Promise<ClientDto> {
+  async create(
+    @Body() createClientDto: CreateClientDto,
+  ): Promise<ClientExtendedDto> {
     return this.clientsService.create(createClientDto);
   }
 
@@ -42,7 +44,7 @@ export class ClientsController {
    */
   @Get()
   @Roles(Role.ADMIN)
-  async findAll(): Promise<ClientDto[]> {
+  async findAll(): Promise<ClientExtendedDto[]> {
     return this.clientsService.getClients();
   }
 
@@ -55,7 +57,7 @@ export class ClientsController {
    */
   @Get(':id')
   @Roles(Role.ADMIN)
-  async findOne(@Param('id') id: number): Promise<ClientDto> {
+  async findOne(@Param('id') id: number): Promise<ClientExtendedDto> {
     return this.clientsService.getClientById(Number(id));
   }
 
@@ -72,7 +74,7 @@ export class ClientsController {
   async updateClient(
     @Param('id') id: number,
     @Body() updateClientDto: UpdateClientDto,
-  ): Promise<ClientDto> {
+  ): Promise<ClientExtendedDto> {
     return this.clientsService.updateClient(Number(id), updateClientDto);
   }
 

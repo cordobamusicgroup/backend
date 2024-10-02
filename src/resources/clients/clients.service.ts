@@ -6,13 +6,13 @@ import {
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { ClientDto } from './dto/client.dto';
-import { plainToInstance } from 'class-transformer';
+import { ClientExtendedDto } from './dto/client-extended.dto';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
 import { Currency } from '@prisma/client';
+import { convertToDto } from 'src/common/utils/convert-dto.util';
 
 @Injectable()
 export class ClientsService {
@@ -25,7 +25,7 @@ export class ClientsService {
    * @param userObject - The DTO containing client creation data
    * @returns The created client as a ClientDto
    */
-  async create(userObject: CreateClientDto): Promise<ClientDto> {
+  async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
     await this.validateClientData(userObject);
     const { address, contract, dmb, ...clientData } = userObject;
     const client = await this.prisma.client.create({
@@ -68,7 +68,7 @@ export class ClientsService {
   async updateClient(
     id: number,
     updateClientDto: UpdateClientDto,
-  ): Promise<ClientDto> {
+  ): Promise<ClientExtendedDto> {
     const { address, contract, dmb, ...clientData } = updateClientDto;
 
     // Actualiza los datos del cliente y las relaciones obligatorias
@@ -121,7 +121,7 @@ export class ClientsService {
    *
    * @returns An array of ClientDto objects representing all clients
    */
-  async getClients(): Promise<ClientDto[]> {
+  async getClients(): Promise<ClientExtendedDto[]> {
     const clients = await this.prisma.client.findMany({
       include: { address: true, contract: true, balances: true, dmb: true },
     });
@@ -138,7 +138,7 @@ export class ClientsService {
    * @param id - The ID of the client to retrieve
    * @returns The client as a ClientDto
    */
-  async getClientById(id: number): Promise<ClientDto> {
+  async getClientById(id: number): Promise<ClientExtendedDto> {
     const client = await this.findClientById(id);
     return this.convertToClientDto(client);
   }
@@ -242,18 +242,18 @@ export class ClientsService {
    * @param client - The client entity
    * @returns The converted ClientDto
    */
-  private async convertToClientDto(client: any): Promise<ClientDto> {
-    const addressDto = await this.convertToDto(client.address, AddressDto);
-    const contractDto = await this.convertToDto(client.contract, ContractDto);
-    const dmbDto = await this.convertToDto(client.dmb, DmbDto);
+  private async convertToClientDto(client: any): Promise<ClientExtendedDto> {
+    const addressDto = await convertToDto(client.address, AddressDto);
+    const contractDto = await convertToDto(client.contract, ContractDto);
+    const dmbDto = await convertToDto(client.dmb, DmbDto);
     const balanceDtos = await Promise.all(
-      client.balances.map((balance) => this.convertToDto(balance, BalanceDto)),
+      client.balances.map((balance) => convertToDto(balance, BalanceDto)),
     );
 
     // Add country name to the address DTO
     addressDto.countryName = await this.getCountryName(addressDto.countryId);
 
-    return this.convertToDto(
+    return convertToDto(
       {
         ...client,
         address: addressDto,
@@ -261,23 +261,8 @@ export class ClientsService {
         contract: contractDto,
         balances: balanceDtos,
       },
-      ClientDto,
+      ClientExtendedDto,
     );
-  }
-
-  /**
-   * Utility method to convert an entity to a DTO.
-   * Uses the plainToInstance method from class-transformer to perform the conversion.
-   *
-   * @param entity - The entity to be converted
-   * @param dto - The DTO class to convert to
-   * @returns The converted DTO
-   */
-  private async convertToDto<T, K>(entity: T, dto: new () => K): Promise<K> {
-    return plainToInstance(dto, entity, {
-      excludeExtraneousValues: true,
-      exposeUnsetFields: false,
-    });
   }
 
   /**
