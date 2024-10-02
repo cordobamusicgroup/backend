@@ -1,31 +1,35 @@
-# Stage 1: Build
+# Base image
 FROM node:20-slim AS base
 
-RUN apt-get update -y && apt-get install -y openssl
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# Install necessary system packages for Prisma and other dependencies (including OpenSSL)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Enable pnpm via Corepack
 RUN corepack enable
 
-# Install dependencies into temp directory
-# this will cache them and speed up future builds
-FROM base AS install
+# Set working directory
 WORKDIR /app
+
+# Copy configuration files
 COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies and use cache for pnpm
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install --frozen-lockfile
-COPY . . 
-RUN npx prisma generate
+
+# Copy the rest of the application files
+COPY . .
+
+# Generate Prisma client
+RUN pnpm prisma generate
+
+# Build the application
 RUN pnpm run build
 
-# Stage 2: Release
-FROM base AS release
-# Copy dependencies and build files from the build stage
-COPY --from=install /app/node_modules /app/node_modules
-COPY --from=install /app/dist /app/dist
-COPY --from=install /app/package.json /app/package.json
-COPY --from=install /app/pnpm-lock.yaml /app/pnpm-lock.yaml
-COPY --from=install /app/prisma /app/prisma
-
+# Set environment variable for production
 ENV NODE_ENV=production
 
+# Expose the port on which the application runs
 EXPOSE 3000
+
+# Run Prisma migrations and start the application
 CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
