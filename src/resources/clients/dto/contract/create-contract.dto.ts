@@ -1,3 +1,4 @@
+import { ContractStatus, ContractType } from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
@@ -8,7 +9,6 @@ import {
   IsNotEmpty,
   ValidateIf,
 } from 'class-validator';
-import { ContractStatus, ContractType } from '@prisma/client';
 
 export class CreateContractDto {
   @IsEnum(ContractType)
