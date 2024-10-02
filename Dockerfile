@@ -19,6 +19,7 @@ FROM base AS prerelease
 COPY --from=install /app/node_modules /app/node_modules
 COPY . . 
 ENV NODE_ENV=production
+RUN pnpx prisma generate
 RUN pnpm run build
 
 # Stage 2: Release
@@ -29,9 +30,6 @@ COPY --from=prerelease /app/dist /app/dist
 COPY --from=prerelease /app/package.json /app/package.json
 COPY --from=prerelease /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY --from=prerelease /app/prisma /app/prisma
-
-# Generate Prisma client directly in production stage
-RUN pnpm prisma generate
 
 USER node
 EXPOSE 3000
