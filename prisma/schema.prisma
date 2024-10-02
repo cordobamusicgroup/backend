@@ -229,15 +229,14 @@ model Label {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  labelStatus LabelStatus @default(ACTIVE)
-
   clientId Int
   client   Client @relation(fields: [clientId], references: [id], name: "ClientLabel")
 
-  name      String   @unique
+  name      String      @unique
+  status    LabelStatus @default(ACTIVE)
   website   String?
   countryId Int?
-  country   Country? @relation(fields: [countryId], references: [id])
+  country   Country?    @relation(fields: [countryId], references: [id])
 
   beatportStatus   LabelRegistrationStatus @default(NO_REGISTRATION)
   traxsourceStatus LabelRegistrationStatus @default(NO_REGISTRATION)
