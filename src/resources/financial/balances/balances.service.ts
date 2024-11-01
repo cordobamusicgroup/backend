@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { BalanceDto } from './dto/balance.dto';
+import { BalanceDto } from '../dto/balance.dto';
 import { Currency, TransactionType } from '@prisma/client'; // Suponiendo que el enum viene del modelo Prisma
 
 @Injectable()

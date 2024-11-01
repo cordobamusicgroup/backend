@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "clients" ALTER COLUMN "type" SET DEFAULT 'PERSON';
+
+-- AlterTable
+ALTER TABLE "contracts" ALTER COLUMN "startDate" SET DEFAULT CURRENT_TIMESTAMP;

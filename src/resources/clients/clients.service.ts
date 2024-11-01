@@ -13,6 +13,9 @@ import { BalanceDto } from '../financial/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
 import { Currency } from '@prisma/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
+import { getCountryName } from 'src/common/utils/get-countryname.util';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ClientsService {
@@ -97,6 +100,7 @@ export class ClientsService {
    *
    * @param ids - The array of client IDs to be deleted
    * @throws NotFoundException if any client IDs are not found
+   * @throws ConflictException if there are existing relations that prevent deletion
    */
   async deleteMultiple(ids: number[]): Promise<void> {
     const existingClients = await this.prisma.client.findMany({
@@ -111,9 +115,19 @@ export class ClientsService {
       );
     }
 
-    await this.prisma.client.deleteMany({
-      where: { id: { in: ids } },
-    });
+    try {
+      await this.prisma.client.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictRecordsException();
+      }
+      throw error;
+    }
   }
 
   /**
@@ -251,7 +265,10 @@ export class ClientsService {
     );
 
     // Add country name to the address DTO
-    addressDto.countryName = await this.getCountryName(addressDto.countryId);
+    addressDto.countryName = await getCountryName(
+      this.prisma,
+      addressDto.countryId,
+    );
 
     return convertToDto(
       {
@@ -263,18 +280,5 @@ export class ClientsService {
       },
       ClientExtendedDto,
     );
-  }
-
-  /**
-   * Helper method to get the country name from its ID.
-   *
-   * @param countryId - The ID of the country
-   * @returns The country name or 'Unknown' if not found
-   */
-  private async getCountryName(countryId: number): Promise<string> {
-    const country = await this.prisma.country.findUnique({
-      where: { id: countryId },
-    });
-    return country ? country.name : 'Unknown';
   }
 }

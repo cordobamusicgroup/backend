@@ -4,90 +4,59 @@ on:
   push:
     branches:
       - main
-      - preview
+      - staging
 
 jobs:
   deploy:
-    runs-on: kvm4
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Ensure .ssh directory exists
-      - name: Ensure .ssh directory exists
-        run: mkdir -p ~/.ssh
-
-      # Add server to known hosts with custom SSH port
-      - name: Add server to known hosts
+      - name: Set up SSH keys and known hosts
         run: |
+          mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      # Set environment based on branch
-      - name: Set environment
-        id: setenv
+      - name: Set deployment environment variables
+        id: set_env
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "ENV=prod" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/app/backend-prod" >> $GITHUB_ENV
-          elif [ "${{ github.ref }}" == "refs/heads/preview" ]; then
-            echo "ENV=preview" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/app/backend-preview" >> $GITHUB_ENV
+            echo "ENV=production" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/backend-production" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "ENV=staging" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/backend-staging" >> $GITHUB_ENV
+          else
+            echo "Unknown branch for deployment"; exit 1
           fi
 
-      # Debug: Print environment variables to verify their values
-      - name: Debug Environment Variables
-        run: |
-          echo "Environment: ${{ env.ENV }}"
-          echo "Deploy Path: ${{ env.DEPLOY_PATH }}"
-
-      # Deploy to server and start containers
-      - name: Deploy to server
+      # Execute the deployment on the remote server
+      - name: Deploy and start containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          ENV: ${{ env.ENV }}
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          ENV: ${{ env.ENV }}
         run: |
-          echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
-          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-          # Definir manualmente DEPLOY_PATH y ENV en la sesión SSH
-          DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
-          ENV="'${{ env.ENV }}'"
+          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
+          set -e  # Exit on any error
 
-          # Mostrar el nombre del servidor y la carpeta actual
-          echo "Logged into server: $(hostname)"
-          echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
+          echo "Switching to deployment path $DEPLOY_PATH"
+          cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
 
-          # Verificar el valor de DEPLOY_PATH
-          echo "DEPLOY_PATH is: $DEPLOY_PATH"
-
-          # Intentar cambiar al directorio de despliegue
-          cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
-
-          # Verificar si el cambio de directorio fue exitoso
-          echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
-
-          if [ -d ".git" ]; then
-            echo "Git repository detected."
-            
-            # Resetear todos los cambios locales en archivos rastreados
-            echo "Resetting all local changes..."
-            git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
-
-            git remote -v  # Verificar el repositorio remoto
-            git status  # Verificar el estado del repositorio local
-
-            # Realizar el fetch y pull
-            git fetch origin $ENV  # Obtener los cambios del repositorio remoto
-            git pull origin $ENV  # Realizar el pull de la rama correspondiente
-          else
-            echo "Error: Not a git repository or missing .git folder."
-            exit 1
+          if [ ! -d ".git" ]; then
+            echo "Error: Not a git repository"; exit 1
           fi
 
-          # Ejecutar el script de inicio de contenedores
-          chmod +x start_containers.sh &&
+          echo "Fetching latest code for branch $ENV"
+          git fetch --all
+          git reset --hard origin/$ENV
+
+          echo "Starting containers with environment: $ENV"
+          chmod +x start_containers.sh
           ./start_containers.sh $ENV
-          '
+
+          EOF

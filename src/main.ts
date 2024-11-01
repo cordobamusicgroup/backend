@@ -12,7 +12,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:6060',
-      'https://app.cmgdistro.com',
+      'https://app.cordobamusicgroup.uk',
       'https://app.cmgdistro.dev',
       /\.cmg-app\.pages\.dev$/,
     ],

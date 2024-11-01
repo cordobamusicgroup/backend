@@ -4,6 +4,10 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": [{ "include": "**/*.json", "watchAssets": true }]
+    "assets": [
+      { "include": "**/*.json", "watchAssets": true },
+      { "include": "**/*.hbs", "watchAssets": true },
+      { "include": "temp", "watchAssets": true }
+    ]
   }
 }

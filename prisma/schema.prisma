@@ -29,12 +29,25 @@ model User {
 
   preferences UserPreferences[]
   comms       UserComms[]
+  resetToken  PasswordResetToken? @relation("PasswordResetToken")
 
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String // Aquí guardamos el hash del token
+  expiresAt DateTime // Fecha de expiración del token
+  userId    Int      @unique // Relación uno a uno con el usuario
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, name: "PasswordResetToken")
+
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
 }
 
 model UserPreferences {
@@ -71,13 +84,14 @@ model UserComms {
 
 model Client {
   id        Int      @id @default(autoincrement())
+  wp_id     Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   clientName    String     @unique
   firstName     String
   lastName      String
-  type          ClientType
+  type          ClientType @default(PERSON)
   addressId     Int
   address       Address    @relation(fields: [addressId], references: [id], onDelete: Cascade)
   taxIdType     TaxIdType
@@ -93,10 +107,9 @@ model Client {
 
   balances    Balance[]          @relation("ClientBalances")
   paymentData ClientPaymentData?
-
-  labels   Label[]   @relation("ClientLabel")
-  users    User[]
-  contract Contract?
+  labels      Label[]            @relation("ClientLabel")
+  users       User[]
+  contract    Contract?
 
   @@map("clients")
 }
@@ -161,7 +174,7 @@ model Contract {
   status       ContractStatus @default(DRAFT)
   docUrl       String?
 
-  startDate DateTime
+  startDate DateTime  @default(now())
   endDate   DateTime?
   signed    Boolean   @default(false)
   signedAt  DateTime?
@@ -251,6 +264,20 @@ model Label {
 
 //*** Royalties Reports ***//
 
+model BaseRoyaltyReport {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  currency       Currency    @default(EUR)
+  distributor    Distributor
+  reportMonth    String
+  totalRoyalties Float
+
+  // Relaciones unidireccionales a Kontor y Believe
+  kontorReports  KontorRoyaltyReport[]  @relation("KontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("BelieveReports")
+}
+
 model KontorRoyaltyReport {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -260,25 +287,28 @@ model KontorRoyaltyReport {
   labelId Int?
   label   Label? @relation(fields: [labelId], references: [id])
 
-  labelName     String
-  productType   String
-  grid          String
-  ean           String
-  articleNumber String
-  isrc          String
-  artist        String
-  title         String
-  workTitle     String
-  store         String
-  channelType   String
-  channelId     String
-  country       String
-  salesPeriod   String
-  royalties     String
-  units         String
+  reportingMonth String
+  salesMonth     String
+  store          String
+  chType         String?
+  channelId      String?
+  country        String
+  labelName      String
+  productType    String
+  productTitle   String
+  productArtist  String
+  ean            String
+  isrc           String
+  grid           String
+  articleNo      String?
+  royalties      Float
+  units          Int
 
   clientRate String?
   netRenueve String?
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "KontorReports")
 
   @@map("kontor_royalties_reports")
 }
@@ -313,6 +343,9 @@ model BelieveRoyaltyReport {
   grossRevenue              Float
   clientShareRate           Float
   netRevenue                Float
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BelieveReports")
 
   @@map("believe_reports")
 }
@@ -439,6 +472,7 @@ enum TaxIdType {
 enum LabelRegistrationStatus {
   NO_REGISTRATION
   PENDING
+  REJECTED
   ACTIVE
 
   @@map("label_registrations_statuses")

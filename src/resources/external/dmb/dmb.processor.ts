@@ -1,8 +1,4 @@
-import { Processor, Process } from '@nestjs/bull';
-import { Job } from 'bull';
-import { DmbService } from './dmb.service';
-
-@Processor('dmb')
+/*@Processor('dmb')
 export class DmbProcessor {
   constructor(private readonly dmbService: DmbService) {}
 
@@ -19,4 +15,4 @@ export class DmbProcessor {
     const { ean } = job.data;
     await this.dmbService.importBlvCover(ean);
   }
-}
+} */

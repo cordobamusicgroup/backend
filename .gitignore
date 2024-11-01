@@ -38,6 +38,8 @@ lerna-debug.log*
 # dotenv environment variable files
 .env
 .env.prod
+.env.production
+.env.staging
 .env.preview
 .env.development.local
 .env.test.local
@@ -64,6 +66,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /uploads
+/temp
 /data
 dev.env
 db.dev.env

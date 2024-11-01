@@ -12,6 +12,10 @@ import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
 import { Request } from 'express';
+import { EmailService } from '../email/email.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { randomBytes } from 'crypto';
+import { InvalidCredentialsException } from 'src/common/exceptions/CustomHttpException';
 
 @Injectable()
 export class AuthService {
@@ -19,26 +23,36 @@ export class AuthService {
 
   constructor(
     private usersService: UsersService,
+    private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   /**
    * Validates a user's credentials.
-   * @param username - The username of the user.
+   * @param login - The username of the user.
    * @param password - The password of the user.
    * @returns A Promise that resolves to the User object if the credentials are valid, or null otherwise.
    * @throws UnauthorizedException if the credentials are invalid.
    */
-  async validateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.usersService.findByUsername(username);
-    const isPasswordMatch =
-      user && (await bcrypt.compare(password, user.password));
-    if (!isPasswordMatch) {
-      throw new UnauthorizedException(
-        'Failed to log in. Please check your username and password.',
-      );
+  async validateUser(login: string, password: string): Promise<User | null> {
+    try {
+      const user = login.includes('@')
+        ? await this.usersService.findByEmail(login)
+        : await this.usersService.findByUsername(login);
+
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        throw new InvalidCredentialsException();
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof InvalidCredentialsException) {
+        throw error;
+      }
+
+      throw new InvalidCredentialsException();
     }
-    return user;
   }
 
   /**
@@ -100,5 +114,99 @@ export class AuthService {
       email: userData.email,
       role: userData.role,
     };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    // Log the request regardless of the result
+    this.logger.log(`Password reset request received for ${email}`);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // If the user exists, delete any previous password reset tokens
+      await this.prisma.passwordResetToken.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      // Generate a new token and hash it
+      const token = randomBytes(16).toString('hex');
+      const salt = await bcrypt.genSalt(10);
+      const hashedToken = await bcrypt.hash(token, salt);
+
+      // Set token expiration to 24 hours
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      // Save the new token in the database
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: hashedToken,
+          expiresAt: expiresAt,
+        },
+      });
+
+      this.emailService.sendPasswordResetEmail(user.username, email, token);
+
+      this.logger.log(`Password reset email sent to ${email}`);
+    } else {
+      this.logger.warn(
+        `Password reset attempt failed for ${email}: user not found.`,
+      );
+    }
+    return;
+  }
+
+  /**
+   * Resets the user's password using the provided reset token.
+   * @param token - The reset token sent to the user.
+   * @param newPassword - The new password the user wants to set.
+   * @throws UnauthorizedException if the token is invalid or expired.
+   * @throws NotFoundException if the token is not found.
+   * @throws BadRequestException if the token has already been used.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    // Find the reset token in the database
+    const resetToken = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        expiresAt: {
+          gte: new Date(), // Ensure the token has not expired
+        },
+      },
+    });
+
+    if (!resetToken) {
+      this.logger.warn('Invalid or expired password reset token.');
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
+
+    // Verify if the token matches the stored hash
+    const isTokenValid = await bcrypt.compare(token, resetToken.token);
+    if (!isTokenValid) {
+      this.logger.warn('Invalid password reset token attempt.');
+      throw new UnauthorizedException('Invalid token.');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await this.prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { password: hashedPassword },
+    });
+
+    // Delete the reset token after it has been used
+    await this.prisma.passwordResetToken.delete({
+      where: { userId: resetToken.userId },
+    });
+
+    this.logger.log(
+      `Password successfully reset for user ID: ${resetToken.userId}`,
+    );
+    return;
   }
 }
