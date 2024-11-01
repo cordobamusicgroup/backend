@@ -14,8 +14,8 @@ export class RedisHealthIndicator extends HealthIndicator {
   constructor(private configService: ConfigService) {
     super();
     this.redisClient = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
+      host: this.configService.get<string>('APP_REDIS_HOST'),
+      port: this.configService.get<number>('APP_REDIS_PORT'),
     });
   }
 
