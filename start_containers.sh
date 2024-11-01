@@ -2,16 +2,16 @@
 
 # File name: start_containers.sh
 
-# Usage: ./start_containers.sh [environment_name]
+# Usage: ./start_containers.sh [env]
 
 # Validate argument
 if [ -z "$1" ]; then
-  echo "[Start Containers Script] No environment specified. Provide the environment name (e.g., staging, development)."
+  echo "[Start Containers Script] No environment specified."
   exit 1
 fi
 
-TARGET_ENVIRONMENT=$1
-ENVIRONMENT_FILE=".env.${TARGET_ENVIRONMENT}"
+ENV=$1
+ENV_FILE=".env.${ENV}"
 
 # Check if docker-compose is installed
 if ! command -v docker-compose &> /dev/null
@@ -21,34 +21,34 @@ then
 fi
 
 # Stop and remove existing containers
-echo "[Start Containers Script] Stopping and removing existing containers for $TARGET_ENVIRONMENT..."
-docker compose --env-file "$ENVIRONMENT_FILE" down
+echo "[Start Containers Script] Stopping and removing existing containers for $ENV..."
+docker compose --env-file "$ENV_FILE" down
 sleep 10  # Adding a delay to ensure proper shutdown
 
 if [ $? -ne 0 ]; then
-    echo "[Start Containers Script] Error while stopping and removing containers for $TARGET_ENVIRONMENT."
+    echo "[Start Containers Script] Error while stopping and removing containers for $ENV."
     exit 1
 fi
 
 # Build the containers
-echo "[Start Containers Script] Building the containers for $TARGET_ENVIRONMENT..."
-docker compose --env-file "$ENVIRONMENT_FILE" build
+echo "[Start Containers Script] Building the containers for $ENV..."
+docker compose --env-file "$ENV_FILE" build
 
 if [ $? -ne 0 ]; then
-    echo "[Start Containers Script] Error during container build for $TARGET_ENVIRONMENT."
+    echo "[Start Containers Script] Error during container build for $ENV."
     exit 1
 fi
 
 # Start the containers in the background
-echo "[Start Containers Script] Starting the containers for $TARGET_ENVIRONMENT..."
-docker compose --env-file "$ENVIRONMENT_FILE" up -d
+echo "[Start Containers Script] Starting the containers for $ENV..."
+docker compose --env-file "$ENV_FILE" up -d
 
 if [ $? -ne 0 ]; then
-    echo "[Start Containers Script] Error while starting the containers for $TARGET_ENVIRONMENT."
+    echo "[Start Containers Script] Error while starting the containers for $ENV."
     exit 1
 fi
 
-echo "[Start Containers Script] Containers for $TARGET_ENVIRONMENT started successfully."
+echo "[Start Containers Script] Containers for $ENV started successfully."
 
 # Clean up unused Docker resources
 echo "[Start Containers Script] Cleaning up unused Docker resources..."
