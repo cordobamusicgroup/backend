@@ -35,8 +35,8 @@ import { ImportsModule } from './resources/imports/imports.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         connection: {
-          host: configService.get('REDIS_HOST'),
-          port: configService.get('REDIS_PORT'),
+          host: configService.get('APP_REDIS_HOST'),
+          port: configService.get('APP_REDIS_PORT'),
         },
       }),
       inject: [ConfigService],
