@@ -50,29 +50,29 @@ jobs:
           ENV: ${{ vars.ENV }}
         run: |
           echo "Using DEPLOY_PATH: $DEPLOY_PATH"
-          ssh -i ~/.ssh/id_rsa -p "$SSH_PORT" -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" << 'EOF'
-            DEPLOY_PATH="${DEPLOY_PATH}"
-            ENV="${ENV}"
+          ssh -i ~/.ssh/id_rsa -p "$SSH_PORT" -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
+            export DEPLOY_PATH='${DEPLOY_PATH}' &&
+            export ENV='${ENV}' &&
+            
+            echo 'Logged into server: $(hostname)'
+            echo 'Current directory before cd: $(pwd)'
 
-            echo "Logged into server: $(hostname)"
-            echo "Current directory before cd: $(pwd)"
+            cd \"$DEPLOY_PATH\" || { echo 'Failed to change to DEPLOY_PATH'; exit 1; }
+            echo 'Changed to directory: $(pwd)'
 
-            cd "$DEPLOY_PATH" || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
-            echo "Changed to directory: $(pwd)"
-
-            if [ -d ".git" ]; then
-              echo "Git repository detected."
-              echo "Resetting all local changes..."
+            if [ -d '.git' ]; then
+              echo 'Git repository detected.'
+              echo 'Resetting all local changes...'
               git reset --hard HEAD
               git remote -v
               git status
 
-              git fetch origin "$ENV" && git pull origin "$ENV"
+              git fetch origin \"$ENV\" && git pull origin \"$ENV\"
             else
-              echo "Error: Not a git repository or missing .git folder."
+              echo 'Error: Not a git repository or missing .git folder.'
               exit 1
             fi
 
             chmod +x start_containers.sh &&
-            ./start_containers.sh "$ENV"
-          EOF
+            ./start_containers.sh \"$ENV\"
+          "
