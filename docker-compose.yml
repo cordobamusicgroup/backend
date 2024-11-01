@@ -7,11 +7,10 @@ services:
       dockerfile: Dockerfile
       args:
         - 'DOCKER_BUILDKIT=1'
-        - 'VERSION=${VERSION}' # Version configurable
     image: ${DOCKER_IMAGE}:${VERSION} # Usa variable de imagen y versión
     container_name: cmg-api-${ENV}
     env_file:
-      - ${ENV_FILE} # Archivo de entorno específico
+      - .env.${ENV}
     ports:
       - '${APP_PORT}:6060'
     depends_on:
@@ -24,7 +23,7 @@ services:
     container_name: cmg-db-${ENV}
     image: 'postgres:latest'
     env_file:
-      - ${DB_ENV_FILE} # Archivo de entorno para la base de datos
+      - .env.${ENV}
     volumes:
       - ./data/db/${ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
       - ./data/db/${ENV}_log:/var/log/postgresql

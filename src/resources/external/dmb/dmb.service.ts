@@ -1,10 +1,9 @@
-import {
+/*import {
   Injectable,
   NotFoundException,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { DmbAuthService } from './dmb-auth.service';
 import { AlbumDTO } from './interfaces/album.dto';
@@ -106,4 +105,4 @@ export class DmbService {
   async clearQueue(): Promise<void> {
     await this.dmbQueue.empty();
   }
-}
+}*/

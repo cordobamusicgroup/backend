@@ -6,23 +6,20 @@ import {
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { ClientDto } from './dto/client.dto';
-import { plainToInstance } from 'class-transformer';
-import { I18nService } from 'nestjs-i18n';
+import { ClientExtendedDto } from './dto/client-extended.dto';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { TranslationHelper } from 'src/common/helper/translation.helper';
 import { Currency } from '@prisma/client';
+import { convertToDto } from 'src/common/utils/convert-dto.util';
+import { getCountryName } from 'src/common/utils/get-countryname.util';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ClientsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly i18n: I18nService,
-    private readonly translationHelper: TranslationHelper,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Main method to create a client.
@@ -31,7 +28,7 @@ export class ClientsService {
    * @param userObject - The DTO containing client creation data
    * @returns The created client as a ClientDto
    */
-  async create(userObject: CreateClientDto): Promise<ClientDto> {
+  async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
     await this.validateClientData(userObject);
     const { address, contract, dmb, ...clientData } = userObject;
     const client = await this.prisma.client.create({
@@ -74,7 +71,7 @@ export class ClientsService {
   async updateClient(
     id: number,
     updateClientDto: UpdateClientDto,
-  ): Promise<ClientDto> {
+  ): Promise<ClientExtendedDto> {
     const { address, contract, dmb, ...clientData } = updateClientDto;
 
     // Actualiza los datos del cliente y las relaciones obligatorias
@@ -103,6 +100,7 @@ export class ClientsService {
    *
    * @param ids - The array of client IDs to be deleted
    * @throws NotFoundException if any client IDs are not found
+   * @throws ConflictException if there are existing relations that prevent deletion
    */
   async deleteMultiple(ids: number[]): Promise<void> {
     const existingClients = await this.prisma.client.findMany({
@@ -117,9 +115,19 @@ export class ClientsService {
       );
     }
 
-    await this.prisma.client.deleteMany({
-      where: { id: { in: ids } },
-    });
+    try {
+      await this.prisma.client.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictRecordsException();
+      }
+      throw error;
+    }
   }
 
   /**
@@ -127,7 +135,7 @@ export class ClientsService {
    *
    * @returns An array of ClientDto objects representing all clients
    */
-  async getClients(): Promise<ClientDto[]> {
+  async getClients(): Promise<ClientExtendedDto[]> {
     const clients = await this.prisma.client.findMany({
       include: { address: true, contract: true, balances: true, dmb: true },
     });
@@ -144,7 +152,7 @@ export class ClientsService {
    * @param id - The ID of the client to retrieve
    * @returns The client as a ClientDto
    */
-  async getClientById(id: number): Promise<ClientDto> {
+  async getClientById(id: number): Promise<ClientExtendedDto> {
     const client = await this.findClientById(id);
     return this.convertToClientDto(client);
   }
@@ -212,16 +220,12 @@ export class ClientsService {
     });
 
     if (existingClient) {
-      throw new BadRequestException(
-        this.translationHelper.translateError('clients.CLIENT_EXISTS', {
-          clientName: clientData.clientName,
-        }),
-      );
+      throw new BadRequestException('Client with this name already exists');
     }
 
     if (clientData.vatRegistered && !clientData.vatId) {
       throw new BadRequestException(
-        this.translationHelper.translateError('clients.CLIENT_VATIDMISSING'),
+        'VAT ID is required for VAT-registered clients',
       );
     }
   }
@@ -252,18 +256,21 @@ export class ClientsService {
    * @param client - The client entity
    * @returns The converted ClientDto
    */
-  private async convertToClientDto(client: any): Promise<ClientDto> {
-    const addressDto = await this.convertToDto(client.address, AddressDto);
-    const contractDto = await this.convertToDto(client.contract, ContractDto);
-    const dmbDto = await this.convertToDto(client.dmb, DmbDto);
+  private async convertToClientDto(client: any): Promise<ClientExtendedDto> {
+    const addressDto = await convertToDto(client.address, AddressDto);
+    const contractDto = await convertToDto(client.contract, ContractDto);
+    const dmbDto = await convertToDto(client.dmb, DmbDto);
     const balanceDtos = await Promise.all(
-      client.balances.map((balance) => this.convertToDto(balance, BalanceDto)),
+      client.balances.map((balance) => convertToDto(balance, BalanceDto)),
     );
 
     // Add country name to the address DTO
-    addressDto.countryName = await this.getCountryName(addressDto.countryId);
+    addressDto.countryName = await getCountryName(
+      this.prisma,
+      addressDto.countryId,
+    );
 
-    return this.convertToDto(
+    return convertToDto(
       {
         ...client,
         address: addressDto,
@@ -271,35 +278,7 @@ export class ClientsService {
         contract: contractDto,
         balances: balanceDtos,
       },
-      ClientDto,
+      ClientExtendedDto,
     );
-  }
-
-  /**
-   * Utility method to convert an entity to a DTO.
-   * Uses the plainToInstance method from class-transformer to perform the conversion.
-   *
-   * @param entity - The entity to be converted
-   * @param dto - The DTO class to convert to
-   * @returns The converted DTO
-   */
-  private async convertToDto<T, K>(entity: T, dto: new () => K): Promise<K> {
-    return plainToInstance(dto, entity, {
-      excludeExtraneousValues: true,
-      exposeUnsetFields: false,
-    });
-  }
-
-  /**
-   * Helper method to get the country name from its ID.
-   *
-   * @param countryId - The ID of the country
-   * @returns The country name or 'Unknown' if not found
-   */
-  private async getCountryName(countryId: number): Promise<string> {
-    const country = await this.prisma.country.findUnique({
-      where: { id: countryId },
-    });
-    return country ? country.name : 'Unknown';
   }
 }

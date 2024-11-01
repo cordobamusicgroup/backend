@@ -14,8 +14,8 @@ export class AddressDto {
   countryId: number;
 
   @Expose()
-  @Transform(({ value }) => value, { toClassOnly: true }) // Placeholder
-  countryName?: string; // This will be set later in the service
+  @Transform(({ value }) => value, { toClassOnly: true })
+  countryName?: string;
 
   @Expose()
   zip: string;

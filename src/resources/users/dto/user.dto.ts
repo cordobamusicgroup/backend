@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { ClientDto } from '../../clients/dto/client.dto';
+import { ClientExtendedDto } from '../../clients/dto/client-extended.dto';
 
 export class UserDto {
   @Expose()
@@ -14,7 +14,7 @@ export class UserDto {
   @Expose()
   role: string;
 
-  @Type(() => ClientDto)
+  @Type(() => ClientExtendedDto)
   @Expose()
-  client: ClientDto;
+  client: ClientExtendedDto;
 }

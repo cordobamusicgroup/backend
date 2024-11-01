@@ -30,8 +30,31 @@ export class AuthController {
     @Req() req,
   ) {
     const { access_token } = await this.authService.login(authLoginDto, req);
-
     return res.send({ access_token });
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body('email') email: string,
+  ): Promise<{ message: string }> {
+    await this.authService.forgotPassword(email);
+    // Always return the same response to avoid revealing if the email exists or not.
+    return {
+      message: 'If this email exists, a password reset link will be sent.',
+    };
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ): Promise<{ message: string }> {
+    await this.authService.resetPassword(token, newPassword);
+    return { message: 'Password has been successfully reset.' };
   }
 
   @UseGuards(JwtAuthGuard)
