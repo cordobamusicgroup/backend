@@ -17,6 +17,10 @@ jobs:
       - name: Set up SSH keys and known hosts
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Set deployment environment variables
@@ -40,7 +44,7 @@ jobs:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
           ENV: ${{ env.ENV }}
         run: |
-          ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+          ssh -t -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
             echo "Switching to deployment path $DEPLOY_PATH"
             cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
 
