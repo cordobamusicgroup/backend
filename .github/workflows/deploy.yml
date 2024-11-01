@@ -52,9 +52,9 @@ jobs:
           echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
           ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
 
-            # Definir DEPLOY_PATH y mapear la rama "main" a "production"
+            # Definir DEPLOY_PATH y asegurar que solo se use "production" con la rama "main"
             DEPLOY_PATH="'${{ vars.DEPLOY_PATH }}'"
-            BRANCH="'${{ vars.ENV }}'"
+            BRANCH="'${{ github.ref_name }}'"
             ENV=$([ "$BRANCH" == "main" ] && echo "production" || echo "$BRANCH")
 
             # Mostrar el nombre del servidor y la carpeta actual
