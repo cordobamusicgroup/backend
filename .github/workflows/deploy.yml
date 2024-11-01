@@ -41,12 +41,15 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
         run: |
-          ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+          ssh -t -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
             echo "Switching to deployment path $DEPLOY_PATH"
-            cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "Error: Deployment path does not exist on the server"; exit 1
+            fi
+            cd $DEPLOY_PATH
 
             if [ ! -d ".git" ]; then
-              echo "Error: Not a git repository"; exit 1
+              echo "Error: Not a git repository in $DEPLOY_PATH"; exit 1
             fi
 
             echo "Fetching latest code for branch $ENV"
