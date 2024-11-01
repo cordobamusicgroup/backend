@@ -6,11 +6,18 @@
 
 # Validate argument
 if [ -z "$1" ]; then
-  echo "[Start Containers Script] No environment specified."
+  echo "[Start Containers Script] No environment specified. Use 'production' or 'staging'."
   exit 1
 fi
 
 ENV=$1
+
+# Ensure ENV is either 'production' or 'staging'
+if [[ "$ENV" != "production" && "$ENV" != "staging" ]]; then
+  echo "[Start Containers Script] Invalid environment specified. Only 'production' or 'staging' are allowed."
+  exit 1
+fi
+
 ENV_FILE=".env.${ENV}"
 
 # Check if docker compose is installed
