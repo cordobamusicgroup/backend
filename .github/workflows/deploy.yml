@@ -32,7 +32,6 @@ jobs:
             echo "Unknown branch for deployment"; exit 1
           fi
 
-      # Execute the deployment on the remote server
       - name: Deploy and start containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -41,21 +40,19 @@ jobs:
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
           ENV: ${{ env.ENV }}
         run: |
-          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST
+          ssh -i /root/.ssh/github_runner_key -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+            echo "Switching to deployment path $DEPLOY_PATH"
+            cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
 
-          echo "Switching to deployment path $DEPLOY_PATH"
-          cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
+            if [ ! -d ".git" ]; then
+              echo "Error: Not a git repository"; exit 1
+            fi
 
-          if [ ! -d ".git" ]; then
-            echo "Error: Not a git repository"; exit 1
-          fi
+            echo "Fetching latest code for branch $ENV"
+            git fetch --all
+            git reset --hard origin/$ENV
 
-          echo "Fetching latest code for branch $ENV"
-          git fetch --all
-          git reset --hard origin/$ENV
-
-          echo "Starting containers with environment: $ENV"
-          chmod +x start_containers.sh
-          ./start_containers.sh $ENV
-
+            echo "Starting containers with environment: $ENV"
+            chmod +x start_containers.sh
+            ./start_containers.sh $ENV
           EOF
