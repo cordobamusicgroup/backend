@@ -33,6 +33,14 @@ jobs:
             echo "Error: Environment variables not set."; exit 1
           fi
 
+      - name: Debug Environment Variables
+        run: |
+          echo "DEPLOY_PATH is: $DEPLOY_PATH"
+          echo "ENV is: $ENV"
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          ENV: ${{ vars.ENV }}
+
       - name: Deploy and start containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -40,23 +48,45 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
-        run: |
-          ssh -t -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
-            echo "Switching to deployment path $DEPLOY_PATH"
-            if [ ! -d "$DEPLOY_PATH" ]; then
-              echo "Error: Deployment path does not exist on the server"; exit 1
-            fi
-            cd $DEPLOY_PATH
+          run: |
+            echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
+            ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << EOF
+              # Definir manualmente DEPLOY_PATH y ENV en la sesión SSH
+              DEPLOY_PATH="${{ env.DEPLOY_PATH }}"
+              ENV="${{ env.ENV }}"
 
-            if [ ! -d ".git" ]; then
-              echo "Error: Not a git repository in $DEPLOY_PATH"; exit 1
-            fi
+              # Mostrar el nombre del servidor y la carpeta actual
+              echo "Logged into server: $(hostname)"
+              echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
 
-            echo "Fetching latest code for branch $ENV"
-            git fetch --all > /dev/null 2>&1
-            git reset --hard origin/$ENV > /dev/null 2>&1
+              # Verificar el valor de DEPLOY_PATH
+              echo "DEPLOY_PATH is: $DEPLOY_PATH"
 
-            echo "Starting containers with environment: $ENV"
-            chmod +x start_containers.sh
-            ./start_containers.sh $ENV
-          EOF
+              # Intentar cambiar al directorio de despliegue
+              cd "$DEPLOY_PATH" || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
+
+              # Verificar si el cambio de directorio fue exitoso
+              echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
+
+              if [ -d ".git" ]; then
+                echo "Git repository detected."
+
+                # Resetear todos los cambios locales en archivos rastreados
+                echo "Resetting all local changes..."
+                git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
+
+                git remote -v  # Verificar el repositorio remoto
+                git status  # Verificar el estado del repositorio local
+
+                # Realizar fetch y pull de la rama correspondiente
+                git fetch origin "$ENV" && git pull origin "$ENV"  # Obtener los cambios del repositorio remoto
+              else
+                echo "Error: Not a git repository or missing .git folder."
+                exit 1
+              fi
+
+              # Ejecutar el script de inicio de contenedores
+              chmod +x start_containers.sh &&
+              ./start_containers.sh "$ENV"
+            EOF
+
