@@ -49,30 +49,46 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
         run: |
-          echo "Using DEPLOY_PATH: $DEPLOY_PATH"
-          ssh -i ~/.ssh/id_rsa -p "$SSH_PORT" -o StrictHostKeyChecking=no "$SSH_USERNAME@$SSH_HOST" "
-            export DEPLOY_PATH='${DEPLOY_PATH}' &&
-            export ENV='${ENV}' &&
-            
-            echo 'Logged into server: $(hostname)'
-            echo 'Current directory before cd: $(pwd)'
+          echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
+          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
 
-            cd \"$DEPLOY_PATH\" || { echo 'Failed to change to DEPLOY_PATH'; exit 1; }
-            echo 'Changed to directory: $(pwd)'
+            # Definir DEPLOY_PATH y mapear la rama "main" a "production"
+            DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
+            BRANCH="'${{ env.ENV }}'"
+            ENV=$([ "$BRANCH" == "main" ] && echo "production" || echo "$BRANCH")
 
-            if [ -d '.git' ]; then
-              echo 'Git repository detected.'
-              echo 'Resetting all local changes...'
-              git reset --hard HEAD
-              git remote -v
-              git status
+            # Mostrar el nombre del servidor y la carpeta actual
+            echo "Logged into server: $(hostname)"
+            echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
 
-              git fetch origin \"$ENV\" && git pull origin \"$ENV\"
+            # Verificar el valor de DEPLOY_PATH
+            echo "DEPLOY_PATH is: $DEPLOY_PATH"
+
+            # Intentar cambiar al directorio de despliegue
+            cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
+
+            # Verificar si el cambio de directorio fue exitoso
+            echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
+
+            if [ -d ".git" ]; then
+              echo "Git repository detected."
+              
+              # Resetear todos los cambios locales en archivos rastreados
+              echo "Resetting all local changes..."
+              git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
+
+              git remote -v  # Verificar el repositorio remoto
+              git status  # Verificar el estado del repositorio local
+
+              # Realizar el fetch y pull de la rama correspondiente
+              git fetch origin $BRANCH
+              git pull origin $BRANCH
             else
-              echo 'Error: Not a git repository or missing .git folder.'
+              echo "Error: Not a git repository or missing .git folder."
               exit 1
             fi
 
+            # Ejecutar el script de inicio de contenedores
             chmod +x start_containers.sh &&
-            ./start_containers.sh \"$ENV\"
-          "
+            ./start_containers.sh $ENV
+          '
