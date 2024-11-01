@@ -53,8 +53,8 @@ jobs:
           ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
 
             # Definir DEPLOY_PATH y mapear la rama "main" a "production"
-            DEPLOY_PATH="'${{ env.DEPLOY_PATH }}'"
-            BRANCH="'${{ env.ENV }}'"
+            DEPLOY_PATH="'${{ vars.DEPLOY_PATH }}'"
+            BRANCH="'${{ vars.ENV }}'"
             ENV=$([ "$BRANCH" == "main" ] && echo "production" || echo "$BRANCH")
 
             # Mostrar el nombre del servidor y la carpeta actual
