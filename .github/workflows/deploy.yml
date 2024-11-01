@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     steps:
       - name: Checkout repository
@@ -19,21 +20,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)" > /dev/null 2>&1
+          ssh-add ~/.ssh/id_rsa > /dev/null 2>&1
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Set deployment environment variables
-        id: set_env
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          ENV: ${{ vars.ENV }}
         run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "ENV=production" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/backend-production" >> $GITHUB_ENV
-          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
-            echo "ENV=staging" >> $GITHUB_ENV
-            echo "DEPLOY_PATH=/root/docker-apps/cordobamusicgroup/backend-staging" >> $GITHUB_ENV
-          else
-            echo "Unknown branch for deployment"; exit 1
+          if [ -z "$DEPLOY_PATH" ] || [ -z "$ENV" ]; then
+            echo "Error: Environment variables not set."; exit 1
           fi
 
       - name: Deploy and start containers on server
@@ -41,10 +38,10 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
-          ENV: ${{ env.ENV }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          ENV: ${{ vars.ENV }}
         run: |
-          ssh -t -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+          ssh -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
             echo "Switching to deployment path $DEPLOY_PATH"
             cd $DEPLOY_PATH || { echo "Deployment path does not exist"; exit 1; }
 
@@ -53,8 +50,8 @@ jobs:
             fi
 
             echo "Fetching latest code for branch $ENV"
-            git fetch --all
-            git reset --hard origin/$ENV
+            git fetch --all > /dev/null 2>&1
+            git reset --hard origin/$ENV > /dev/null 2>&1
 
             echo "Starting containers with environment: $ENV"
             chmod +x start_containers.sh
