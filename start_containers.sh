@@ -13,11 +13,16 @@ fi
 ENV=$1
 ENV_FILE=".env.${ENV}"
 
-# Check if docker-compose is installed
-if ! command -v docker-compose &> /dev/null
-then
-    echo "[Start Containers Script] docker-compose is not installed. Please install it and try again."
+# Check if docker compose is installed
+if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
+    echo "[Start Containers Script] Docker Compose is not installed. Please install it and try again."
     exit 1
+fi
+
+# Check if the .env file exists
+if [ ! -f "$ENV_FILE" ]; then
+  echo "[Start Containers Script] Environment file $ENV_FILE does not exist."
+  exit 1
 fi
 
 # Stop and remove existing containers
@@ -50,7 +55,7 @@ fi
 
 echo "[Start Containers Script] Containers for $ENV started successfully."
 
-# Clean up unused Docker resources
+# Optional: Clean up unused Docker resources
 echo "[Start Containers Script] Cleaning up unused Docker resources..."
 
 # Remove unused images
