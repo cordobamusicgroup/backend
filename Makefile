@@ -1,21 +1,23 @@
 ENV ?= production
-ENV_FILE = .env.$(ENV)
-IMAGE_NAME = cmg-api-$(ENV)
-DOCKER_COMPOSE = docker compose --env-file $(ENV_FILE)
-START_SCRIPT = ./start_containers.sh $(ENV)
-
+ENV_FILE := .env.$(ENV)
+IMAGE_NAME := cmg-api-$(ENV)
+DOCKER_COMPOSE := docker compose --env-file $(ENV_FILE)
+START_SCRIPT := ./start_containers.sh $(ENV)
 
 .PHONY: build start stop restart clean deploy
 
 # Construir la imagen Docker
 build:
 	@echo "Building Docker images for $(ENV)..."
+	@echo "Using env file: $(ENV_FILE)" # Imprime la ruta del archivo env para verificación
 	$(DOCKER_COMPOSE) build
 
 # Iniciar contenedores en modo detach
 start:
 	@echo "Starting containers for $(ENV)..."
+	@echo "Using env file: $(ENV_FILE)" # Imprime la ruta del archivo env para verificación
 	$(DOCKER_COMPOSE) up -d
+
 
 # Detener y eliminar contenedores
 stop:
