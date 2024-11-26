@@ -1,4 +1,4 @@
-// src/resources/financial/reports/base-report.processor.ts
+// src/imports/import-processor.ts
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
@@ -6,14 +6,14 @@ import { RedisService } from 'src/common/services/redis.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'fast-csv';
-import { Logger } from '@nestjs/common';
-import { Distributor } from '@prisma/client';
-import { mapCsvToRecord } from 'src/resources/financial/reports/utils/csv-mapper.util';
+import { Logger, Injectable } from '@nestjs/common';
+import { mapLabelCsvToIntermediate } from '../label-csv-mapper.util';
 
-@Processor('base-report')
-export class BaseReportProcessor extends WorkerHost {
-  private readonly logger = new Logger(BaseReportProcessor.name);
-  private readonly redisKey = 'base-report:progress';
+@Processor('label-import')
+@Injectable()
+export class LabelImportProcessor extends WorkerHost {
+  private readonly logger = new Logger(LabelImportProcessor.name);
+  private readonly redisKey = 'label-import:progress';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -23,16 +23,14 @@ export class BaseReportProcessor extends WorkerHost {
   }
 
   async process(job: Job): Promise<void> {
-    const { filePath, reportingMonth, distributor } = job.data;
+    const { filePath } = job.data;
     const errorLogPath = path.join(
       path.dirname(filePath),
-      `error_log_${job.id}.txt`,
+      `error_log_${job.id}-label-import.txt`,
     );
     const lastProcessedIndex = await this.getLastProcessedIndex(job.id);
 
-    this.logger.log(
-      `[JOB ${job.id}] Starting CSV processing for distributor: ${distributor}`,
-    );
+    this.logger.log(`[JOB ${job.id}] Starting CSV processing.`);
     this.logger.log(`[JOB ${job.id}] File path: ${filePath}`);
 
     if (!fs.existsSync(filePath)) {
@@ -40,11 +38,7 @@ export class BaseReportProcessor extends WorkerHost {
       return;
     }
 
-    const records = await this.readCsvFile(
-      filePath,
-      distributor,
-      reportingMonth,
-    );
+    const records = await this.readCsvFile(filePath);
     if (records.length === 0) {
       this.logger.error(`[JOB ${job.id}] No records to process in CSV file.`);
       return;
@@ -55,9 +49,7 @@ export class BaseReportProcessor extends WorkerHost {
     );
 
     await this.processRecords(
-      records.slice(lastProcessedIndex), // Slice to only process uncompleted rows
-      distributor,
-      reportingMonth,
+      records.slice(lastProcessedIndex),
       job,
       errorLogPath,
       lastProcessedIndex,
@@ -66,25 +58,13 @@ export class BaseReportProcessor extends WorkerHost {
     await this.cleanUp(filePath, errorLogPath);
   }
 
-  private async readCsvFile(
-    filePath: string,
-    distributor: Distributor,
-    reportingMonth: string,
-  ): Promise<any[]> {
+  private async readCsvFile(filePath: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
       const records = [];
       fs.createReadStream(filePath)
-        .pipe(parse({ headers: true, delimiter: ';', ignoreEmpty: true }))
+        .pipe(parse({ headers: true, ignoreEmpty: true, delimiter: ',' }))
         .on('data', (row) => {
-          try {
-            const record = mapCsvToRecord(row, distributor);
-            if (distributor === Distributor.BELIEVE) {
-              record.reportingMonth = record.reportingMonth || reportingMonth;
-            }
-            records.push(record);
-          } catch (error) {
-            this.logger.error(`Error mapping row: ${error.message}`);
-          }
+          records.push(mapLabelCsvToIntermediate(row));
         })
         .on('end', () => resolve(records))
         .on('error', (error) => reject(error));
@@ -93,30 +73,40 @@ export class BaseReportProcessor extends WorkerHost {
 
   private async processRecords(
     records: any[],
-    distributor: Distributor,
-    reportingMonth: string,
     job: Job,
     errorLogPath: string,
     initialIndex: number,
   ) {
     for (let i = 0; i < records.length; i++) {
       const recordIndex = initialIndex + i + 1;
+      const { labelData, wp_id } = records[i];
+
       try {
-        if (distributor === Distributor.KONTOR) {
-          await this.prisma.kontorRoyaltyReport.create({
+        const client = await this.prisma.client.findUnique({
+          where: { wp_id: wp_id },
+        });
+
+        this.logger.log(
+          `wp_id: ${wp_id}, client: ${client ? client.id : 'No encontrado'}`,
+        );
+
+        if (!client) {
+          throw new Error(`Cliente con wp_id ${wp_id} no encontrado.`);
+        }
+
+        const existingLabel = await this.prisma.label.findUnique({
+          where: { name: labelData.name },
+        });
+
+        if (!existingLabel) {
+          await this.prisma.label.create({
             data: {
-              ...records[i],
-              reportingMonth,
-              currency: 'EUR',
+              ...labelData,
+              clientId: client.id,
             },
           });
-        } else if (distributor === Distributor.BELIEVE) {
-          await this.prisma.believeRoyaltyReport.create({
-            data: {
-              ...records[i],
-              currency: 'USD',
-            },
-          });
+        } else {
+          throw new Error(`Label "${labelData.name}" already exists`);
         }
 
         await this.saveProgress(job.id, recordIndex);

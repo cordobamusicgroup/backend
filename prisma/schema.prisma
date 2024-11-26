@@ -17,6 +17,20 @@ model InitializationStatus {
   @@map("initialization_status")
 }
 
+model S3File {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fileName String
+  type     String
+  folder   String?
+  bucket   String
+  key      String
+
+  @@map("s3_files")
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -84,7 +98,7 @@ model UserComms {
 
 model Client {
   id        Int      @id @default(autoincrement())
-  wp_id     Int?
+  wp_id     Int?     @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -105,11 +119,12 @@ model Client {
 
   dmb ClientDMB? @relation("ClientDMB")
 
-  balances    Balance[]          @relation("ClientBalances")
-  paymentData ClientPaymentData?
-  labels      Label[]            @relation("ClientLabel")
-  users       User[]
-  contract    Contract?
+  balances          Balance[]           @relation("ClientBalances")
+  paymentData       ClientPaymentData?
+  labels            Label[]             @relation("ClientLabel")
+  users             User[]
+  contract          Contract?
+  UserRoyaltyReport UserRoyaltyReport[]
 
   @@map("clients")
 }
@@ -270,12 +285,36 @@ model BaseRoyaltyReport {
   updatedAt      DateTime    @updatedAt
   currency       Currency    @default(EUR)
   distributor    Distributor
-  reportMonth    String
+  reportingMonth String
+  totalRoyalties Float
+  totalEarnings  Float
+
+  kontorReports  KontorRoyaltyReport[]  @relation("BaseKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("BaseBelieveReports")
+
+  userReports UserRoyaltyReport[] @relation("BaseUserReports")
+
+  @@unique([distributor, reportingMonth])
+  @@map("base_royalties_reports")
+}
+
+model UserRoyaltyReport {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  currency       Currency    @default(EUR)
+  distributor    Distributor
+  reportingMonth String
   totalRoyalties Float
 
-  // Relaciones unidireccionales a Kontor y Believe
-  kontorReports  KontorRoyaltyReport[]  @relation("KontorReports")
-  believeReports BelieveRoyaltyReport[] @relation("BelieveReports")
+  kontorReports  KontorRoyaltyReport[]  @relation("UserKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("UserBelieveReports")
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseUserReports")
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id])
 }
 
 model KontorRoyaltyReport {
@@ -304,11 +343,13 @@ model KontorRoyaltyReport {
   royalties      Float
   units          Int
 
-  clientRate String?
-  netRenueve String?
+  cmg_clientRate Float?
+  cmg_netRevenue Float?
 
   baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "KontorReports")
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseKontorReports")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserKontorReports")
 
   @@map("kontor_royalties_reports")
 }
@@ -344,8 +385,13 @@ model BelieveRoyaltyReport {
   clientShareRate           Float
   netRevenue                Float
 
+  cmg_clientRate Float?
+  cmg_netRevenue Float?
+
   baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BelieveReports")
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseBelieveReports")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserBelieveReports")
 
   @@map("believe_reports")
 }
@@ -354,6 +400,8 @@ model UnlinkedReport {
   id                   Int                    @id @default(autoincrement())
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
+  distributor          Distributor
+  reportingMonth       String
   labelName            String
   count                Int
   UnlinkedReportDetail UnlinkedReportDetail[]
@@ -366,7 +414,7 @@ model UnlinkedReportDetail {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   unlinkedReportId Int
-  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id])
+  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id], onDelete: Cascade)
   data             Json
 
   @@map("unlinked_details_reports")

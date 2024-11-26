@@ -6,7 +6,7 @@ import { ModifyBalanceDto } from '../dto/modify-balance.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
-@Controller('balances')
+@Controller('admin/balances')
 @UseGuards(RolesGuard)
 export class BalancesController {
   constructor(private readonly balancesService: BalancesService) {}

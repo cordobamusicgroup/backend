@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'fast-csv';
 import { Logger, Injectable } from '@nestjs/common';
-import { mapClientCsvToIntermediate } from '../utils/csv-mapper.util';
+import { mapClientCsvToIntermediate } from '../client-csv-mapper.util';
 
 @Processor('client-import')
 @Injectable()
@@ -26,7 +26,7 @@ export class ClientImportProcessor extends WorkerHost {
     const { filePath } = job.data;
     const errorLogPath = path.join(
       path.dirname(filePath),
-      `error_log_${job.id}.txt`,
+      `error_log_${job.id}-clientimport.txt`,
     );
     const lastProcessedIndex = await this.getLastProcessedIndex(job.id);
 

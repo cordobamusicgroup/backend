@@ -31,3 +31,53 @@ export class ConflictRecordsException extends CustomHttpException {
     );
   }
 }
+
+export class UnlinkedReportsExistException extends CustomHttpException {
+  constructor() {
+    super(
+      1004,
+      'Unable to proceed, there are unlinked reports for the given period and distributor.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+export class BaseReportAlreadyExistsException extends CustomHttpException {
+  constructor() {
+    super(
+      1005,
+      'Base report already exists for the given distributor and reporting month.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+export class UserRoyaltyReportsAlreadyExistException extends CustomHttpException {
+  constructor(baseReportId: number) {
+    super(
+      1006,
+      `User royalty reports already exist for baseReportId: ${baseReportId}`,
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+export class NoReportsFoundException extends CustomHttpException {
+  constructor() {
+    super(
+      1008,
+      'No reports found for the given distributor and reporting month.',
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}
+
+export class BaseReportNotFoundException extends CustomHttpException {
+  constructor() {
+    super(
+      1009,
+      'Base report does not exist for the given distributor and reporting month.',
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}

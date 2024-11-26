@@ -21,7 +21,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { join } from 'path';
 import { S3Module } from './providers/s3.module';
 import { BullModule } from '@nestjs/bullmq';
-import { RedisModule } from './common/services/redis.module';
+import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
 
 @Global()
@@ -68,7 +68,7 @@ import { ImportsModule } from './resources/imports/imports.module';
     }),
     ScheduleModule.forRoot(),
     S3Module,
-    RedisModule,
+    CommonModule,
     PrismaModule,
     UsersModule,
     ClientsModule,

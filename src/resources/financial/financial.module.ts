@@ -6,34 +6,26 @@ import { BalancesController } from './balances/balances.controller';
 import { FinancialService } from './financial.service';
 import { BalancesService } from './balances/balances.service';
 import { RouterModule } from '@nestjs/core';
-import { ReportsController } from './reports/reports.controller';
-import { BaseReportProcessor } from './reports/base-report.processor';
-import { BullModule } from '@nestjs/bullmq';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
     PrismaModule,
-    BullModule.registerQueue({
-      name: 'base-report',
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: 5000,
-      },
-    }),
+    ReportsModule,
     RouterModule.register([
       {
         path: 'financial',
         module: FinancialModule,
-        children: [],
+        children: [
+          {
+            path: 'reports',
+            module: ReportsModule,
+          },
+        ],
       },
     ]),
   ],
-  providers: [
-    FinancialService,
-    PrismaService,
-    BalancesService,
-    BaseReportProcessor,
-  ],
-  controllers: [BalancesController, ReportsController],
+  providers: [FinancialService, PrismaService, BalancesService],
+  controllers: [BalancesController],
 })
 export class FinancialModule {}

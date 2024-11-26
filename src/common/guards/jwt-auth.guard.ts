@@ -1,4 +1,8 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -33,5 +37,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     // Proceed with JWT authentication if the route is not public
     return (await super.canActivate(context)) as boolean;
+  }
+
+  /**
+   * Handle the request and provide custom error message if unauthorized.
+   * @param err - The error encountered during authentication.
+   * @param user - The authenticated user, if any.
+   * @param info - Additional information about the authentication process.
+   * @returns The authenticated user or throws a custom unauthorized exception.
+   */
+  handleRequest(err: any, user: any) {
+    if (err || !user) {
+      throw new UnauthorizedException();
+    }
+    return user;
   }
 }
