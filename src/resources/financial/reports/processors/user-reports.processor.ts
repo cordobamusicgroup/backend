@@ -6,9 +6,11 @@ import { ProgressService } from 'src/common/services/progress.service';
 import { Distributor } from '@prisma/client';
 import { UserRoyaltyReportsAlreadyExistException } from 'src/common/exceptions/CustomHttpException';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
-import { AuthService } from 'src/resources/auth/auth.service';
 import { EmailService } from 'src/resources/email/email.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
+import { S3Service } from 'src/common/services/s3.service';
+import * as fs from 'fs';
+import { convertUserReportsToCsv } from '../utils/convert-user-reports-csv';
 
 @Processor('user-reports')
 export class UserReportsProcessor extends WorkerHost {
@@ -18,8 +20,8 @@ export class UserReportsProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly progressService: ProgressService,
     private readonly loggerTxt: LoggerTxtService,
-    private readonly authService: AuthService,
     private readonly emailService: EmailService,
+    private readonly s3UploadService: S3Service,
   ) {
     super();
   }
@@ -57,6 +59,12 @@ export class UserReportsProcessor extends WorkerHost {
           );
         case 'delete':
           return await this.deleteUserRoyaltyReports(
+            job.data.baseReportId,
+            job.data.email,
+            job.id,
+          );
+        case 'export':
+          return await this.exportUserReports(
             job.data.baseReportId,
             job.data.email,
             job.id,
@@ -246,6 +254,81 @@ export class UserReportsProcessor extends WorkerHost {
         'error',
         'DeleteUserReports',
         `Error deleting user royalty reports: ${error.message}`,
+        jobId,
+      );
+      throw error;
+    }
+  }
+
+  async exportUserReports(baseReportId: number, email: string, jobId?: string) {
+    try {
+      this.logMessage(
+        'info',
+        'ExportUserReports',
+        `Starting export of user royalty reports for baseReportId: ${baseReportId}`,
+        jobId,
+      );
+
+      const userReports = await this.prisma.userRoyaltyReport.findMany({
+        where: { baseReportId },
+        include: { client: true },
+      });
+
+      if (userReports.length === 0) {
+        const errorMessage = `No user reports found for baseReportId: ${baseReportId}`;
+        this.logMessage('error', 'ExportUserReports', errorMessage, jobId);
+        throw new Error(errorMessage);
+      }
+
+      for (const userReport of userReports) {
+        let records;
+        if (userReport.distributor === Distributor.KONTOR) {
+          records = await this.prisma.kontorRoyaltyReport.findMany({
+            where: { userReportId: userReport.id },
+          });
+        } else if (userReport.distributor === Distributor.BELIEVE) {
+          records = await this.prisma.believeRoyaltyReport.findMany({
+            where: { userReportId: userReport.id },
+          });
+        } else {
+          const errorMessage = `Unknown distributor: ${userReport.distributor}`;
+          this.logMessage('error', 'ExportUserReports', errorMessage, jobId);
+          throw new Error(errorMessage);
+        }
+
+        const csvData = await convertUserReportsToCsv(records);
+        const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${baseReportId}_${userReport.id}.csv`;
+        const filePath = `/tmp/${fileName}`;
+        fs.writeFileSync(filePath, csvData);
+
+        const s3Key = `user-reports/${baseReportId}/${userReport.clientId}/${fileName}`;
+        const s3File = await this.s3UploadService.uploadFile(
+          'cmg-dev-royalties',
+          s3Key,
+          filePath,
+        );
+
+        await this.prisma.userRoyaltyReport.update({
+          where: { id: userReport.id },
+          data: { s3FileId: s3File.id },
+        });
+      }
+
+      this.logMessage(
+        'info',
+        'ExportUserReports',
+        `User royalty reports exported successfully for baseReportId: ${baseReportId}`,
+        jobId,
+      );
+
+      return {
+        message: 'User royalty reports exported successfully.',
+      };
+    } catch (error) {
+      this.logMessage(
+        'error',
+        'ExportUserReports',
+        `Error exporting user royalty reports: ${error.message}`,
         jobId,
       );
       throw error;

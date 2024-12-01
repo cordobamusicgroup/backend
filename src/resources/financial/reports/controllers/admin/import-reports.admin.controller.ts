@@ -7,13 +7,15 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { diskStorage } from 'multer';
-import { Distributor } from '@prisma/client';
+import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ProcessReportsService } from '../services/process-reports.service';
-import { UploadCsvDto } from '../dto/upload-csv.dto';
+import { ProcessReportsService } from '../../services/process-reports.service';
+import { UploadCsvDto } from '../../dto/upload-csv.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('admin/import')
-export class ImportReportsController {
+@Roles(Role.ADMIN)
+export class ImportReportsAdminController {
   constructor(private readonly reportsService: ProcessReportsService) {}
 
   @Post('kontor')

@@ -8,14 +8,17 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { BaseReportService } from '../services/base-report.service';
-import { ProcessReportsService } from '../services/process-reports.service';
-import { CreateBaseReportDto } from '../dto/create-base-report.dto';
-import { UserReportsService } from '../services/user-reports.service';
+import { BaseReportService } from '../../services/base-report.service';
+import { ProcessReportsService } from '../../services/process-reports.service';
+import { CreateBaseReportDto } from '../../dto/create-base-report.dto';
+import { UserReportsService } from '../../services/user-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('admin/base-reports')
-export class BaseReportsController {
+@Roles(Role.ADMIN)
+export class BaseReportsAdminController {
   constructor(
     private readonly baseReportService: BaseReportService,
     private readonly reportsService: ProcessReportsService,

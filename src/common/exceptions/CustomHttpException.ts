@@ -81,3 +81,45 @@ export class BaseReportNotFoundException extends CustomHttpException {
     );
   }
 }
+
+export class UserAlreadyExistsException extends CustomHttpException {
+  constructor() {
+    super(1010, 'User already exists', HttpStatus.CONFLICT);
+  }
+}
+
+export class EmailAlreadyExistsException extends CustomHttpException {
+  constructor() {
+    super(1011, 'Email already exists', HttpStatus.CONFLICT);
+  }
+}
+
+export class PasswordTooWeakException extends CustomHttpException {
+  constructor() {
+    super(1012, 'Password is too weak', HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class InvalidOrExpiredTokenException extends CustomHttpException {
+  constructor() {
+    super(1013, 'Invalid or expired token', HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class RecordNotFoundException extends CustomHttpException {
+  constructor(entity: string) {
+    super(1014, `${entity} not found`, HttpStatus.NOT_FOUND);
+  }
+}
+
+export class UnauthorizedException extends CustomHttpException {
+  constructor() {
+    super(1015, 'Unauthorized access', HttpStatus.UNAUTHORIZED);
+  }
+}
+
+export class ValidationException extends CustomHttpException {
+  constructor(message: string) {
+    super(1016, message, HttpStatus.BAD_REQUEST);
+  }
+}

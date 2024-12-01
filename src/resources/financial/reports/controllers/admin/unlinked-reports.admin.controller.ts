@@ -10,13 +10,13 @@ import {
 
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ProcessReportsService } from '../services/process-reports.service';
-import { LinkUnlinkedReportDto } from '../dto/link-unlinked-report.dto';
-import { UnlinkedReportService } from '../services/unlinked-report.service';
+import { ProcessReportsService } from '../../services/process-reports.service';
+import { LinkUnlinkedReportDto } from '../../dto/link-unlinked-report.dto';
+import { UnlinkedReportService } from '../../services/unlinked-report.service';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
-export class ReportsAdminController {
+export class UnlinkedReportsAdminController {
   constructor(
     private readonly reportsService: ProcessReportsService,
     private readonly unlinkedReportService: UnlinkedReportService,

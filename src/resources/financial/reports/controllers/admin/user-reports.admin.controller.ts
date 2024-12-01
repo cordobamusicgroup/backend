@@ -7,11 +7,14 @@ import {
   Request,
   Get,
 } from '@nestjs/common';
-import { UserReportsService } from '../services/user-reports.service';
+import { UserReportsService } from '../../services/user-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('admin/user-reports')
-export class UserReportsController {
+@Roles(Role.ADMIN)
+export class UserReportsAdminController {
   constructor(private readonly userReports: UserReportsService) {}
 
   @Post('generate/:baseReportId')
@@ -44,5 +47,18 @@ export class UserReportsController {
   @UseGuards(JwtAuthGuard)
   async getAllUserReports() {
     return this.userReports.getAllUserReports();
+  }
+
+  @Post('export/:baseReportId')
+  @UseGuards(JwtAuthGuard)
+  async exportUserRoyaltyReports(
+    @Param('baseReportId') baseReportId: number,
+    @Request() req,
+  ) {
+    return this.userReports.createUserReportsJob(
+      Number(baseReportId),
+      'export',
+      req.user,
+    );
   }
 }

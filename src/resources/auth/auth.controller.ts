@@ -16,6 +16,7 @@ import { CurrentUserResponseDto } from './dto/current-user-data.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -50,10 +51,9 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
-    @Body('token') token: string,
-    @Body('newPassword') newPassword: string,
+    @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
-    await this.authService.resetPassword(token, newPassword);
+    await this.authService.resetPassword(resetPasswordDto);
     return { message: 'Password has been successfully reset.' };
   }
 

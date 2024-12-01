@@ -1,26 +1,36 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { AuthService } from 'src/resources/auth/auth.service';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
+import { UsersService } from 'src/resources/users/users.service';
+import { S3Service } from 'src/common/services/s3.service';
+import { UserReportDto } from '../dto/user-report.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class UserReportsService {
   private readonly logger = new Logger(UserReportsService.name);
 
   constructor(
-    private readonly authService: AuthService,
+    private usersService: UsersService,
     private readonly prisma: PrismaService,
     @InjectQueue('user-reports') private userReportsQueue: Queue,
+    private readonly s3Service: S3Service,
   ) {}
 
   async createUserReportsJob(
     baseReportId: number,
-    action: 'generate' | 'delete',
+    action: 'generate' | 'delete' | 'export',
     user: JwtPayloadDto,
   ) {
-    const { email } = await this.authService.getCurrentUserData(user);
+    const { email } = await this.usersService.findByUsername(user.username);
 
     try {
       let result;
@@ -33,6 +43,9 @@ export class UserReportsService {
       } else if (action === 'delete') {
         await this.userReportsQueue.add('delete', { baseReportId, email });
         result = { message: 'User royalty reports queued for deletion.' };
+      } else if (action === 'export') {
+        await this.userReportsQueue.add('export', { baseReportId, email });
+        result = { message: 'User royalty reports queued for export.' };
       }
 
       return result;
@@ -42,14 +55,77 @@ export class UserReportsService {
     }
   }
 
-  async getAllUserReports() {
+  async getAllUserReports(): Promise<UserReportDto[]> {
     try {
       const reports = await this.prisma.userRoyaltyReport.findMany();
-      return reports;
+      const reportsWithUrls = await Promise.all(
+        reports.map(async (report) => {
+          const s3File = await this.s3Service.getFile({ id: report.s3FileId });
+          return { ...report, s3Url: s3File.url };
+        }),
+      );
+      return plainToInstance(UserReportDto, reportsWithUrls, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       this.logger.error(`Failed to get user reports: ${error.message}`);
       throw new HttpException(
         `Failed to get user reports: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getCurrentUserReports(user: JwtPayloadDto): Promise<UserReportDto[]> {
+    try {
+      const userData = await this.usersService.findByUsername(user.username);
+
+      const reports = await this.prisma.userRoyaltyReport.findMany({
+        where: { clientId: userData.clientId },
+      });
+      const reportsWithUrls = await Promise.all(
+        reports.map(async (report) => {
+          const s3File = await this.s3Service.getFile({ id: report.s3FileId });
+          return { ...report, s3Url: s3File.url };
+        }),
+      );
+      return plainToInstance(UserReportDto, reportsWithUrls, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get current user reports: ${error.message}`);
+      throw new HttpException(
+        `Failed to get current user reports: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getUserReportFile(
+    reportId: number,
+    user: JwtPayloadDto,
+  ): Promise<string> {
+    try {
+      const report = await this.prisma.userRoyaltyReport.findUnique({
+        where: { id: reportId },
+      });
+
+      if (!report) {
+        throw new HttpException('Report not found', HttpStatus.NOT_FOUND);
+      }
+
+      const userData = await this.usersService.findByUsername(user.username);
+
+      if (report.clientId !== userData.clientId) {
+        throw new NotFoundException();
+      }
+
+      const s3File = await this.s3Service.getFile({ id: report.s3FileId });
+      return s3File.url;
+    } catch (error) {
+      this.logger.error(`Failed to get user report file: ${error.message}`);
+      throw new HttpException(
+        `Failed to get user report file: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -3,4 +3,6 @@ export class CurrentUserResponseDto {
   username: string;
   email: string;
   role: string;
+  clientId: number; // Add clientId
+  clientName: string; // Add clientName
 }

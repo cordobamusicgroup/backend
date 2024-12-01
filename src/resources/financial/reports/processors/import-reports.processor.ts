@@ -5,7 +5,7 @@ import { Logger } from '@nestjs/common';
 import { ImportReportDto } from '../dto/import-report.dto';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { ProgressService } from 'src/common/services/progress.service';
-import { S3UploadService } from 'src/common/services/s3-upload.service';
+import { S3Service } from 'src/common/services/s3.service';
 import { ProcessReportsService } from '../services/process-reports.service';
 import cleanUp from '../utils/cleanup.util';
 import * as fs from 'fs';
@@ -19,7 +19,7 @@ export class ImportReportsProcessor extends WorkerHost {
     private readonly reportsService: ProcessReportsService,
     private readonly progressService: ProgressService,
     private readonly loggerTxt: LoggerTxtService,
-    private readonly s3UploadService: S3UploadService,
+    private readonly s3UploadService: S3Service,
   ) {
     super();
   }

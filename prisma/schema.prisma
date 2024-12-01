@@ -21,12 +21,13 @@ model S3File {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  fileName  String
+  type      String
+  folder    String?
+  bucket    String
+  key       String
 
-  fileName String
-  type     String
-  folder   String?
-  bucket   String
-  key      String
+  UserRoyaltyReport UserRoyaltyReport[]
 
   @@map("s3_files")
 }
@@ -284,6 +285,7 @@ model BaseRoyaltyReport {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   currency       Currency    @default(EUR)
+  reportPaid     Boolean     @default(false)
   distributor    Distributor
   reportingMonth String
   totalRoyalties Float
@@ -306,6 +308,9 @@ model UserRoyaltyReport {
   distributor    Distributor
   reportingMonth String
   totalRoyalties Float
+
+  s3FileId Int? // Relación unidireccional
+  s3File   S3File? @relation(fields: [s3FileId], references: [id])
 
   kontorReports  KontorRoyaltyReport[]  @relation("UserKontorReports")
   believeReports BelieveRoyaltyReport[] @relation("UserBelieveReports")
