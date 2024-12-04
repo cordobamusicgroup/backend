@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Distributor } from '@prisma/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import {
@@ -8,17 +8,48 @@ import {
   UserRoyaltyReportsAlreadyExistException,
   BaseReportNotFoundException,
 } from 'src/common/exceptions/CustomHttpException';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class BaseReportService {
   private readonly logger = new Logger(BaseReportService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
+  ) {}
+
+  private async checkForExistingImportJob(
+    distributor: Distributor,
+    reportingMonth: string,
+  ): Promise<boolean> {
+    const jobs = await this.importReportsQueue.getJobs([
+      'active',
+      'waiting',
+      'delayed',
+    ]);
+    return jobs.some(
+      (job) =>
+        job.data.distributor === distributor &&
+        job.data.reportingMonth === reportingMonth,
+    );
+  }
 
   async createBaseReport(distributor: Distributor, reportingMonth: string) {
     this.logger.log(
       `Creating base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
     );
+
+    if (await this.checkForExistingImportJob(distributor, reportingMonth)) {
+      this.logger.warn(
+        `An import job is already in progress for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+      throw new BadRequestException(
+        'An import job is already in progress for the given distributor and reporting month.',
+      );
+    }
 
     try {
       const existingReport = await this.prisma.baseRoyaltyReport.findUnique({
@@ -43,8 +74,8 @@ export class BaseReportService {
         throw new UnlinkedReportsExistException();
       }
 
-      let totalRoyalties = 0;
-      let totalEarnings = 0;
+      let totalRoyalties = new Decimal(0);
+      let totalEarnings = new Decimal(0);
       let baseReport;
 
       if (distributor === Distributor.KONTOR) {
@@ -63,24 +94,26 @@ export class BaseReportService {
         }
 
         totalRoyalties = kontorReports.reduce(
-          (sum, report) => sum + report.royalties,
-          0,
+          (sum, report) => sum.plus(report.royalties),
+          new Decimal(0),
         );
         totalEarnings = kontorReports.reduce((sum, report) => {
-          const ppd = report.cmg_clientRate;
-          const earningsOurs = report.royalties * (1 - ppd / 100);
-          return sum + earningsOurs;
-        }, 0);
+          const ppd = new Decimal(report.cmg_clientRate);
+          const earningsOurs = new Decimal(report.royalties).mul(
+            new Decimal(1).minus(ppd.div(100)),
+          );
+          return sum.plus(earningsOurs);
+        }, new Decimal(0));
 
         this.logger.log(
-          `Creating base report for Kontor with totalRoyalties: ${totalRoyalties}, totalEarnings: ${totalEarnings}`,
+          `Creating base report for Kontor with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
         );
         baseReport = await this.prisma.baseRoyaltyReport.create({
           data: {
             distributor,
             reportingMonth,
-            totalRoyalties,
-            totalEarnings,
+            totalRoyalties: totalRoyalties.toNumber(),
+            totalEarnings: totalEarnings.toNumber(),
           },
         });
 
@@ -104,23 +137,23 @@ export class BaseReportService {
         }
 
         totalRoyalties = believeReports.reduce(
-          (sum, report) => sum + report.netRevenue,
-          0,
+          (sum, report) => sum.plus(report.netRevenue),
+          new Decimal(0),
         );
         totalEarnings = believeReports.reduce((sum, report) => {
-          const ppd = report.cmg_clientRate;
-          return sum + report.netRevenue * (ppd / 100);
-        }, 0);
+          const ppd = new Decimal(report.cmg_clientRate);
+          return sum.plus(new Decimal(report.netRevenue).mul(ppd.div(100)));
+        }, new Decimal(0));
 
         this.logger.log(
-          `Creating base report for Believe with totalRoyalties: ${totalRoyalties}, totalEarnings: ${totalEarnings}`,
+          `Creating base report for Believe with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
         );
         baseReport = await this.prisma.baseRoyaltyReport.create({
           data: {
             distributor,
             reportingMonth,
-            totalRoyalties,
-            totalEarnings,
+            totalRoyalties: totalRoyalties.toNumber(),
+            totalEarnings: totalEarnings.toNumber(),
           },
         });
 
@@ -176,6 +209,14 @@ export class BaseReportService {
           where: { reportingMonth: baseReport.reportingMonth },
         });
       }
+
+      // Delete unlinked reports for the given period and distributor
+      await this.prisma.unlinkedReport.deleteMany({
+        where: {
+          distributor: baseReport.distributor,
+          reportingMonth: baseReport.reportingMonth,
+        },
+      });
 
       await this.prisma.baseRoyaltyReport.delete({
         where: { id: baseReport.id },

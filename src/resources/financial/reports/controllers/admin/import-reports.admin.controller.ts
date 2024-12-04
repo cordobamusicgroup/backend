@@ -5,18 +5,23 @@ import {
   Body,
   BadRequestException,
   UseInterceptors,
+  Delete,
 } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ProcessReportsService } from '../../services/process-reports.service';
+import { ReportsService } from '../../services/reports.service';
 import { UploadCsvDto } from '../../dto/upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { ImportedReportsService } from '../../services/imported-reports.service';
 
 @Controller('admin/import')
 @Roles(Role.ADMIN)
 export class ImportReportsAdminController {
-  constructor(private readonly reportsService: ProcessReportsService) {}
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly importedReportsService: ImportedReportsService,
+  ) {}
 
   @Post('kontor')
   @UseInterceptors(
@@ -62,12 +67,42 @@ export class ImportReportsAdminController {
       }),
     }),
   )
-  async uploadBelieveCsv(@UploadedFile() file: Express.Multer.File) {
+  async uploadBelieveCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('reportingMonth') reportingMonth: string,
+  ) {
+    if (!reportingMonth || !/^(\d{4})(0[1-9]|1[0-2])$/.test(reportingMonth)) {
+      throw new BadRequestException(
+        'Invalid reportingMonth format. Expected format is YYYYMM.',
+      );
+    }
+
     const uploadCsvDto: UploadCsvDto = {
       file,
-      reportingMonth: null,
+      reportingMonth,
       distributor: Distributor.BELIEVE,
     };
     return this.reportsService.uploadCsvToQueue(uploadCsvDto);
+  }
+
+  @Delete('delete')
+  async deleteImportedReports(
+    @Body('reportingMonth') reportingMonth: string,
+    @Body('distributor') distributor: Distributor,
+  ) {
+    if (!reportingMonth || !/^(\d{4})(0[1-9]|1[0-2])$/.test(reportingMonth)) {
+      throw new BadRequestException(
+        'Invalid reportingMonth format. Expected format is YYYYMM.',
+      );
+    }
+
+    if (!distributor || !Object.values(Distributor).includes(distributor)) {
+      throw new BadRequestException('Invalid distributor.');
+    }
+
+    return this.importedReportsService.deleteImportedReports(
+      reportingMonth,
+      distributor,
+    );
   }
 }

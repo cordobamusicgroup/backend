@@ -11,6 +11,7 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { S3Service } from 'src/common/services/s3.service';
 import * as fs from 'fs';
 import { convertUserReportsToCsv } from '../utils/convert-user-reports-csv';
+import Decimal from 'decimal.js';
 
 @Processor('user-reports')
 export class UserReportsProcessor extends WorkerHost {
@@ -146,7 +147,7 @@ export class UserReportsProcessor extends WorkerHost {
       const userReportsData = [];
 
       for (const clientId of clientIds) {
-        let totalRoyalties = 0;
+        let totalRoyalties = new Decimal(0);
 
         if (baseReport.distributor === Distributor.KONTOR) {
           const filteredReports = baseReport.kontorReports.filter(
@@ -156,8 +157,8 @@ export class UserReportsProcessor extends WorkerHost {
               report.label.client.id === clientId,
           );
           totalRoyalties = filteredReports.reduce(
-            (sum, report) => sum + report.cmg_netRevenue,
-            0,
+            (sum, report) => sum.plus(report.cmg_netRevenue),
+            new Decimal(0),
           );
         }
 
@@ -169,8 +170,8 @@ export class UserReportsProcessor extends WorkerHost {
               report.label.client.id === clientId,
           );
           totalRoyalties = filteredReports.reduce(
-            (sum, report) => sum + report.cmg_netRevenue,
-            0,
+            (sum, report) => sum.plus(report.cmg_netRevenue),
+            new Decimal(0),
           );
         }
 
@@ -178,7 +179,7 @@ export class UserReportsProcessor extends WorkerHost {
           data: {
             distributor: baseReport.distributor,
             reportingMonth: baseReport.reportingMonth,
-            totalRoyalties: totalRoyalties,
+            totalRoyalties: totalRoyalties.toNumber(),
             baseReportId: baseReport.id,
             clientId: clientId,
           },

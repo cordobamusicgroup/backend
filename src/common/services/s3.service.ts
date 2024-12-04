@@ -95,13 +95,18 @@ export class S3Service {
       Key: fileRecord.key,
     };
 
-    const command = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    try {
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
 
-    return {
-      url,
-      expiration: 3600,
-    };
+      return {
+        url,
+        expiration: 3600,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to retrieve file from S3: ${error.message}`);
+      throw new Error('Failed to retrieve file from S3.');
+    }
   }
 
   /**

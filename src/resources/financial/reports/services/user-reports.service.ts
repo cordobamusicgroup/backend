@@ -60,8 +60,14 @@ export class UserReportsService {
       const reports = await this.prisma.userRoyaltyReport.findMany();
       const reportsWithUrls = await Promise.all(
         reports.map(async (report) => {
-          const s3File = await this.s3Service.getFile({ id: report.s3FileId });
-          return { ...report, s3Url: s3File.url };
+          try {
+            const s3File = await this.s3Service.getFile({
+              id: report.s3FileId,
+            });
+            return { ...report, s3Url: s3File.url };
+          } catch (error) {
+            return { ...report, s3Url: 'Pending' };
+          }
         }),
       );
       return plainToInstance(UserReportDto, reportsWithUrls, {
@@ -83,13 +89,8 @@ export class UserReportsService {
       const reports = await this.prisma.userRoyaltyReport.findMany({
         where: { clientId: userData.clientId },
       });
-      const reportsWithUrls = await Promise.all(
-        reports.map(async (report) => {
-          const s3File = await this.s3Service.getFile({ id: report.s3FileId });
-          return { ...report, s3Url: s3File.url };
-        }),
-      );
-      return plainToInstance(UserReportDto, reportsWithUrls, {
+
+      return plainToInstance(UserReportDto, reports, {
         excludeExtraneousValues: true,
       });
     } catch (error) {
@@ -101,7 +102,7 @@ export class UserReportsService {
     }
   }
 
-  async getUserReportFile(
+  async getUserDownloadUrl(
     reportId: number,
     user: JwtPayloadDto,
   ): Promise<string> {
@@ -120,12 +121,28 @@ export class UserReportsService {
         throw new NotFoundException();
       }
 
+      if (!report.s3FileId) {
+        throw new HttpException(
+          'File not generated yet, please try again later',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
       const s3File = await this.s3Service.getFile({ id: report.s3FileId });
-      return s3File.url;
+      if (!s3File.url) {
+        throw new HttpException(
+          'File not generated yet, please try again later',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return s3File.url; // Return the URL as a string
     } catch (error) {
-      this.logger.error(`Failed to get user report file: ${error.message}`);
+      this.logger.error(`Failed to get download URL: ${error.message}`);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
-        `Failed to get user report file: ${error.message}`,
+        `Failed to get download URL: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

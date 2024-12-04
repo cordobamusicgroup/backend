@@ -17,7 +17,7 @@ export async function convertUserReportsToCsv(records: any[]): Promise<string> {
     { value: 'isrc', label: 'ISRC' },
     { value: 'grid', label: 'GRID' },
     { value: 'articleNo', label: 'Article Number' },
-    { value: 'royalties', label: 'Royalties' },
+    { value: 'cmg_netRevenue', label: 'Royalties' },
     { value: 'units', label: 'Units' },
   ];
 

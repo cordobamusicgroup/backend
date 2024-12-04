@@ -6,9 +6,10 @@ import { ImportReportDto } from '../dto/import-report.dto';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { ProgressService } from 'src/common/services/progress.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { ProcessReportsService } from '../services/process-reports.service';
+import { ReportsService } from '../services/reports.service';
 import cleanUp from '../utils/cleanup.util';
 import * as fs from 'fs';
+import { PrismaService } from 'src/resources/prisma/prisma.service';
 
 @Processor('import-reports')
 export class ImportReportsProcessor extends WorkerHost {
@@ -16,10 +17,11 @@ export class ImportReportsProcessor extends WorkerHost {
   private readonly redisKey = 'import-reports:progress';
 
   constructor(
-    private readonly reportsService: ProcessReportsService,
+    private readonly reportsService: ReportsService,
     private readonly progressService: ProgressService,
     private readonly loggerTxt: LoggerTxtService,
     private readonly s3UploadService: S3Service,
+    private readonly prisma: PrismaService,
   ) {
     super();
   }

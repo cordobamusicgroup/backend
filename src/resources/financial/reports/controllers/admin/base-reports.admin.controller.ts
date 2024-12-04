@@ -9,7 +9,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { BaseReportService } from '../../services/base-report.service';
-import { ProcessReportsService } from '../../services/process-reports.service';
+import { ReportsService } from '../../services/reports.service';
 import { CreateBaseReportDto } from '../../dto/create-base-report.dto';
 import { UserReportsService } from '../../services/user-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -21,7 +21,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 export class BaseReportsAdminController {
   constructor(
     private readonly baseReportService: BaseReportService,
-    private readonly reportsService: ProcessReportsService,
+    private readonly reportsService: ReportsService,
     private readonly userReports: UserReportsService,
   ) {}
 

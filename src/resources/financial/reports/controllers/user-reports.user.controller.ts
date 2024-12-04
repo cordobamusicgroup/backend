@@ -12,9 +12,10 @@ export class UserReportsUserController {
     return this.userReports.getCurrentUserReports(req.user);
   }
 
-  @Get('file/:id')
+  @Get('download/:id')
   @UseGuards(JwtAuthGuard)
   async getUserReportFile(@Param('id') id: number, @Request() req) {
-    return this.userReports.getUserReportFile(Number(id), req.user);
+    const url = await this.userReports.getUserDownloadUrl(Number(id), req.user);
+    return { url }; // Return the URL in the response
   }
 }

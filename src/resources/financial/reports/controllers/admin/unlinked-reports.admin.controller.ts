@@ -10,17 +10,13 @@ import {
 
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ProcessReportsService } from '../../services/process-reports.service';
+import { ReportsService } from '../../services/reports.service';
 import { LinkUnlinkedReportDto } from '../../dto/link-unlinked-report.dto';
-import { UnlinkedReportService } from '../../services/unlinked-report.service';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
 export class UnlinkedReportsAdminController {
-  constructor(
-    private readonly reportsService: ProcessReportsService,
-    private readonly unlinkedReportService: UnlinkedReportService,
-  ) {}
+  constructor(private readonly reportsService: ReportsService) {}
 
   // Unlinked Reports Endpoints
 
@@ -30,7 +26,7 @@ export class UnlinkedReportsAdminController {
    */
   @Get('unlinked')
   async getAllUnlinkedReports() {
-    return this.unlinkedReportService.getAllUnlinkedReports();
+    return this.reportsService.getAllUnlinkedReports();
   }
 
   /**
@@ -43,6 +39,6 @@ export class UnlinkedReportsAdminController {
   async LinkUnlinkedReports(
     @Body() linkUnlinkedReportDto: LinkUnlinkedReportDto,
   ) {
-    return this.unlinkedReportService.linkUnlinkedReport(linkUnlinkedReportDto);
+    return this.reportsService.linkUnlinkedReport(linkUnlinkedReportDto);
   }
 }
