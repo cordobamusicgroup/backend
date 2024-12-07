@@ -2,16 +2,18 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { BalancesController } from './balances/balances.controller';
 import { FinancialService } from './financial.service';
-import { BalancesService } from './balances/balances.service';
 import { RouterModule } from '@nestjs/core';
 import { ReportsModule } from './reports/reports.module';
+import { UsersModule } from '../users/users.module';
+import { BalancesModule } from './balances/balances.module';
 
 @Module({
   imports: [
     PrismaModule,
     ReportsModule,
+    BalancesModule,
+    UsersModule,
     RouterModule.register([
       {
         path: 'financial',
@@ -21,11 +23,14 @@ import { ReportsModule } from './reports/reports.module';
             path: 'reports',
             module: ReportsModule,
           },
+          {
+            path: 'balances',
+            module: BalancesModule,
+          },
         ],
       },
     ]),
   ],
-  providers: [FinancialService, PrismaService, BalancesService],
-  controllers: [BalancesController],
+  providers: [FinancialService, PrismaService],
 })
 export class FinancialModule {}

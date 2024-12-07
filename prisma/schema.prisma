@@ -124,7 +124,7 @@ model Client {
   labels            Label[]             @relation("ClientLabel")
   users             User[]
   contract          Contract?
-  UserRoyaltyReport UserRoyaltyReport[]
+  userRoyaltyReport UserRoyaltyReport[]
 
   @@map("clients")
 }
@@ -206,6 +206,7 @@ model Balance {
   amount       Float         @default(0.00)
   transactions Transaction[] @relation("BalanceTransactions")
 
+  @@unique([currency, clientId])
   @@map("clients_balances")
 }
 
@@ -216,8 +217,10 @@ model Transaction {
 
   type          TransactionType
   description   String
-  amount        Float
-  balanceAmount Float
+  amount        Decimal
+  balanceAmount Decimal
+
+  distributor Distributor?
 
   balanceId Int
   balance   Balance @relation(fields: [balanceId], references: [id], name: "BalanceTransactions", onDelete: Cascade)
@@ -296,6 +299,7 @@ model BaseRoyaltyReport {
   totalEarnings  Float
 
   debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
 
   kontorReports  KontorRoyaltyReport[]  @relation("BaseKontorReports")
   believeReports BelieveRoyaltyReport[] @relation("BaseBelieveReports")
@@ -317,6 +321,7 @@ model UserRoyaltyReport {
   totalRoyalties Float
 
   debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
 
   s3FileId Int? // Relación unidireccional
   s3File   S3File? @relation(fields: [s3FileId], references: [id])
@@ -327,9 +332,9 @@ model UserRoyaltyReport {
   baseReportId Int?
   baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseUserReports")
 
-  clientId    Int?
-  client      Client?       @relation(fields: [clientId], references: [id])
-  Transaction Transaction[] @relation("TransactionUserReport")
+  clientId     Int?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  transactions Transaction[] @relation("TransactionUserReport")
 }
 
 model KontorRoyaltyReport {

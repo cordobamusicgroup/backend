@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  forwardRef,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { LinkUnlinkedReportDto } from '../dto/link-unlinked-report.dto';

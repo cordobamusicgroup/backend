@@ -66,4 +66,14 @@ export class BaseReportsAdminController {
       req.user,
     );
   }
+
+  @Post('generate-payments/:baseReportId')
+  async generatePayments(@Param('baseReportId') baseReportId: number) {
+    return this.baseReportService.generatePayments(Number(baseReportId));
+  }
+
+  @Delete('delete-payments/:baseReportId')
+  async deletePayments(@Param('baseReportId') baseReportId: number) {
+    return this.baseReportService.deletePayments(Number(baseReportId));
+  }
 }

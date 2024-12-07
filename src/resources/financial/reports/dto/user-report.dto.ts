@@ -1,3 +1,4 @@
+import { DebitState } from '@prisma/client';
 import { Expose } from 'class-transformer';
 
 export class UserReportDto {
@@ -24,4 +25,10 @@ export class UserReportDto {
 
   @Expose()
   totalRoyalties: number; // New field
+
+  @Expose()
+  debitState: DebitState;
+
+  @Expose()
+  paidOn: Date;
 }
