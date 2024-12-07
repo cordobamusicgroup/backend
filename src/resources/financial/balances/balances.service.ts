@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { BalanceDto } from '../dto/balance.dto';
 import { Currency, TransactionType } from '@prisma/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { UsersService } from 'src/resources/users/users.service';
@@ -87,8 +86,13 @@ export class BalancesService {
     const userData = await this.usersService.findByUsername(user.username);
     const clientId = userData.clientId;
 
-    let balance = await this.prisma.balance.findFirst({
-      where: { clientId, currency },
+    let balance = await this.prisma.balance.findUnique({
+      where: {
+        currency_clientId: {
+          currency,
+          clientId,
+        },
+      },
       include: { transactions: true },
     });
 
@@ -100,25 +104,5 @@ export class BalancesService {
     }
 
     return balance.transactions;
-  }
-
-  /**
-   * Retrieves a balance along with its transactions by balance ID.
-   * @param balanceId - The ID of the balance.
-   * @returns The balance with its transactions.
-   */
-  private async getBalanceWithTransactions(
-    balanceId: number,
-  ): Promise<BalanceDto> {
-    const balance = await this.prisma.balance.findUnique({
-      where: { id: balanceId },
-      include: { transactions: true },
-    });
-
-    if (!balance) {
-      throw new NotFoundException(`Balance with ID ${balanceId} not found`);
-    }
-
-    return balance;
   }
 }
