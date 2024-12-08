@@ -5,7 +5,7 @@ CREATE TYPE "currencies" AS ENUM ('USD', 'EUR', 'GBP');
 CREATE TYPE "distributors" AS ENUM ('BELIEVE', 'KONTOR');
 
 -- CreateEnum
-CREATE TYPE "payment_methods" AS ENUM ('BANK_TRANSFER', 'PAYPAL', 'ADVCASH_VOLET');
+CREATE TYPE "payment_methods" AS ENUM ('BANK_TRANSFER', 'PAYPAL', 'CRYPTO');
 
 -- CreateEnum
 CREATE TYPE "AccessTypeDMB" AS ENUM ('STANDARD', 'ADVANCED');
@@ -17,6 +17,12 @@ CREATE TYPE "roles" AS ENUM ('ADMIN', 'ADMIN_CONTENT', 'ADMIN_LEGAL', 'ADMIN_MAN
 CREATE TYPE "communication_channels" AS ENUM ('MOBILE', 'PHONE', 'SKYPE', 'X_TWITTER', 'FACEBOOK', 'INSTAGRAM', 'TIKTOK', 'TWITCH', 'VK');
 
 -- CreateEnum
+CREATE TYPE "TransactionType" AS ENUM ('PAYMENT', 'ROYALTIES', 'RECALLED_PAYMENT', 'BOUNCEDBACK_PAYMENT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "DebitState" AS ENUM ('PAID', 'UNPAID', 'OPEN');
+
+-- CreateEnum
 CREATE TYPE "contracts_types" AS ENUM ('DISTRIBUTION_NONEXCLUSIVE', 'DISTRIBUTION_EXCLUSIVE', 'LICENSING', 'PUBLISHING', 'MANAGEMENT', 'PRODUCTION', 'PROMOTION', 'OTHER');
 
 -- CreateEnum
@@ -26,13 +32,13 @@ CREATE TYPE "clients_types" AS ENUM ('PERSON', 'BUSINESS');
 CREATE TYPE "clients_tax_id_types" AS ENUM ('COMPANY_NUMBER', 'NATIONAL_ID', 'PASSPORT', 'RESIDENT_PERMIT', 'ID_CARD', 'DRIVERS_LICENSE');
 
 -- CreateEnum
-CREATE TYPE "label_registrations_statuses" AS ENUM ('NO_REGISTRATION', 'PENDING', 'ACTIVE');
+CREATE TYPE "label_registrations_statuses" AS ENUM ('NO_REGISTRATION', 'PENDING', 'REJECTED', 'ACTIVE');
 
 -- CreateEnum
 CREATE TYPE "label_statuses" AS ENUM ('ACTIVE', 'DISABLED');
 
 -- CreateEnum
-CREATE TYPE "contracts_statuses" AS ENUM ('ACTIVE', 'INACTIVE', 'CANCELLED', 'EXPIRED', 'PENDING');
+CREATE TYPE "contracts_statuses" AS ENUM ('ACTIVE', 'TERMINATED', 'EXPIRED', 'DRAFT');
 
 -- CreateEnum
 CREATE TYPE "dmb_statuses" AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING');
@@ -41,8 +47,23 @@ CREATE TYPE "dmb_statuses" AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING');
 CREATE TABLE "initialization_status" (
     "id" SERIAL NOT NULL,
     "initialized" BOOLEAN NOT NULL DEFAULT false,
+    "adminInit" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "initialization_status_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "s3_files" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "folder" TEXT,
+    "bucket" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+
+    CONSTRAINT "s3_files_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -58,6 +79,17 @@ CREATE TABLE "users" (
     "clientId" INTEGER,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "password_reset_tokens" (
+    "id" SERIAL NOT NULL,
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -89,18 +121,20 @@ CREATE TABLE "users_comms" (
 -- CreateTable
 CREATE TABLE "clients" (
     "id" SERIAL NOT NULL,
+    "wp_id" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "clientName" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "type" "clients_types" NOT NULL,
-    "addressId" INTEGER,
+    "type" "clients_types" NOT NULL DEFAULT 'PERSON',
+    "addressId" INTEGER NOT NULL,
     "taxIdType" "clients_tax_id_types" NOT NULL,
     "taxId" TEXT NOT NULL,
-    "vatRegistred" BOOLEAN NOT NULL DEFAULT false,
+    "vatRegistered" BOOLEAN NOT NULL DEFAULT false,
     "vatId" TEXT,
     "isBlocked" BOOLEAN NOT NULL DEFAULT false,
+    "isPaymentsBlocked" BOOLEAN NOT NULL DEFAULT false,
     "isPaymentInProgress" BOOLEAN NOT NULL DEFAULT false,
     "isPaymentDataInValidation" BOOLEAN NOT NULL DEFAULT false,
 
@@ -148,22 +182,23 @@ CREATE TABLE "clients_payment_banks" (
 );
 
 -- CreateTable
-CREATE TABLE "agreements" (
+CREATE TABLE "contracts" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "clientId" INTEGER,
-    "contractId" INTEGER NOT NULL,
+    "uuid" UUID NOT NULL DEFAULT gen_random_uuid(),
     "contractType" "contracts_types" NOT NULL DEFAULT 'DISTRIBUTION_EXCLUSIVE',
     "ppd" DOUBLE PRECISION DEFAULT 75.00,
-    "status" "contracts_statuses" NOT NULL DEFAULT 'PENDING',
-    "startDate" TIMESTAMP(3) NOT NULL,
-    "endDate" TIMESTAMP(3) NOT NULL,
+    "status" "contracts_statuses" NOT NULL DEFAULT 'DRAFT',
+    "docUrl" TEXT,
+    "startDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endDate" TIMESTAMP(3),
     "signed" BOOLEAN NOT NULL DEFAULT false,
     "signedAt" TIMESTAMP(3),
     "signedBy" TEXT,
 
-    CONSTRAINT "agreements_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "contracts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -174,6 +209,23 @@ CREATE TABLE "clients_balances" (
     "amount" DOUBLE PRECISION NOT NULL DEFAULT 0.00,
 
     CONSTRAINT "clients_balances_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "clients_transactions" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "type" "TransactionType" NOT NULL,
+    "description" TEXT NOT NULL,
+    "amount" DECIMAL(65,30) NOT NULL,
+    "balanceAmount" DECIMAL(65,30) NOT NULL,
+    "distributor" "distributors",
+    "balanceId" INTEGER NOT NULL,
+    "baseReportId" INTEGER,
+    "userReportId" INTEGER,
+
+    CONSTRAINT "clients_transactions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -205,9 +257,9 @@ CREATE TABLE "labels" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "labelStatus" "label_statuses" NOT NULL DEFAULT 'ACTIVE',
     "clientId" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
+    "status" "label_statuses" NOT NULL DEFAULT 'ACTIVE',
     "website" TEXT,
     "countryId" INTEGER,
     "beatportStatus" "label_registrations_statuses" NOT NULL DEFAULT 'NO_REGISTRATION',
@@ -219,30 +271,66 @@ CREATE TABLE "labels" (
 );
 
 -- CreateTable
+CREATE TABLE "base_royalties_reports" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "currency" "currencies" NOT NULL DEFAULT 'EUR',
+    "distributor" "distributors" NOT NULL,
+    "reportingMonth" TEXT NOT NULL,
+    "totalRoyalties" DOUBLE PRECISION NOT NULL,
+    "totalEarnings" DOUBLE PRECISION NOT NULL,
+    "debitState" "DebitState" NOT NULL DEFAULT 'UNPAID',
+    "paidOn" TIMESTAMP(3),
+
+    CONSTRAINT "base_royalties_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserRoyaltyReport" (
+    "id" SERIAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "currency" "currencies" NOT NULL DEFAULT 'EUR',
+    "distributor" "distributors" NOT NULL,
+    "reportingMonth" TEXT NOT NULL,
+    "totalRoyalties" DOUBLE PRECISION NOT NULL,
+    "debitState" "DebitState" NOT NULL DEFAULT 'UNPAID',
+    "paidOn" TIMESTAMP(3),
+    "s3FileId" INTEGER,
+    "baseReportId" INTEGER,
+    "clientId" INTEGER,
+
+    CONSTRAINT "UserRoyaltyReport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "kontor_royalties_reports" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "currency" "currencies" NOT NULL DEFAULT 'EUR',
     "labelId" INTEGER,
+    "reportingMonth" TEXT NOT NULL,
+    "salesMonth" TEXT NOT NULL,
+    "store" TEXT NOT NULL,
+    "chType" TEXT,
+    "channelId" TEXT,
+    "country" TEXT NOT NULL,
     "labelName" TEXT NOT NULL,
     "productType" TEXT NOT NULL,
-    "grid" TEXT NOT NULL,
+    "productTitle" TEXT NOT NULL,
+    "productArtist" TEXT NOT NULL,
     "ean" TEXT NOT NULL,
-    "articleNumber" TEXT NOT NULL,
     "isrc" TEXT NOT NULL,
-    "artist" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "workTitle" TEXT NOT NULL,
-    "store" TEXT NOT NULL,
-    "channelType" TEXT NOT NULL,
-    "channelId" TEXT NOT NULL,
-    "country" TEXT NOT NULL,
-    "salesPeriod" TEXT NOT NULL,
-    "royalties" TEXT NOT NULL,
-    "units" TEXT NOT NULL,
-    "clientRate" TEXT,
-    "netRenueve" TEXT,
+    "grid" TEXT NOT NULL,
+    "articleNo" TEXT,
+    "royalties" DECIMAL(65,30) NOT NULL,
+    "units" INTEGER NOT NULL,
+    "cmg_clientRate" DECIMAL(65,30),
+    "cmg_netRevenue" DECIMAL(65,30),
+    "baseReportId" INTEGER,
+    "userReportId" INTEGER,
 
     CONSTRAINT "kontor_royalties_reports_pkey" PRIMARY KEY ("id")
 );
@@ -270,11 +358,15 @@ CREATE TABLE "believe_reports" (
     "salesType" TEXT NOT NULL,
     "quantity" TEXT NOT NULL,
     "clientPaymentCurrency" TEXT NOT NULL,
-    "unitPrice" DOUBLE PRECISION NOT NULL,
-    "mechanicalFee" DOUBLE PRECISION NOT NULL,
-    "grossRevenue" DOUBLE PRECISION NOT NULL,
-    "clientShareRate" DOUBLE PRECISION NOT NULL,
-    "netRevenue" DOUBLE PRECISION NOT NULL,
+    "unitPrice" DECIMAL(65,30) NOT NULL,
+    "mechanicalFee" DECIMAL(65,30) NOT NULL,
+    "grossRevenue" DECIMAL(65,30) NOT NULL,
+    "clientShareRate" DECIMAL(65,30) NOT NULL,
+    "netRevenue" DECIMAL(65,30) NOT NULL,
+    "cmg_clientRate" DECIMAL(65,30),
+    "cmg_netRevenue" DECIMAL(65,30),
+    "baseReportId" INTEGER,
+    "userReportId" INTEGER,
 
     CONSTRAINT "believe_reports_pkey" PRIMARY KEY ("id")
 );
@@ -284,6 +376,8 @@ CREATE TABLE "unlinked_reports" (
     "id" SERIAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "distributor" "distributors" NOT NULL,
+    "reportingMonth" TEXT NOT NULL,
     "labelName" TEXT NOT NULL,
     "count" INTEGER NOT NULL,
 
@@ -308,6 +402,12 @@ CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "password_reset_tokens_userId_key" ON "password_reset_tokens"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "clients_wp_id_key" ON "clients"("wp_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "clients_clientName_key" ON "clients"("clientName");
 
 -- CreateIndex
@@ -317,10 +417,13 @@ CREATE UNIQUE INDEX "clients_dmb_clientId_key" ON "clients_dmb"("clientId");
 CREATE UNIQUE INDEX "clients_payment_data_clientId_key" ON "clients_payment_data"("clientId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "agreements_clientId_key" ON "agreements"("clientId");
+CREATE UNIQUE INDEX "contracts_clientId_key" ON "contracts"("clientId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "agreements_contractId_key" ON "agreements"("contractId");
+CREATE UNIQUE INDEX "contracts_uuid_key" ON "contracts"("uuid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "clients_balances_currency_clientId_key" ON "clients_balances"("currency", "clientId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "countries_shortCode_key" ON "countries"("shortCode");
@@ -331,8 +434,14 @@ CREATE UNIQUE INDEX "countries_code_key" ON "countries"("code");
 -- CreateIndex
 CREATE UNIQUE INDEX "labels_name_key" ON "labels"("name");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "base_royalties_reports_distributor_reportingMonth_key" ON "base_royalties_reports"("distributor", "reportingMonth");
+
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "users_preferences" ADD CONSTRAINT "users_preferences_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -341,10 +450,10 @@ ALTER TABLE "users_preferences" ADD CONSTRAINT "users_preferences_userId_fkey" F
 ALTER TABLE "users_comms" ADD CONSTRAINT "users_comms_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "clients" ADD CONSTRAINT "clients_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "clients_addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "clients" ADD CONSTRAINT "clients_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "clients_addresses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "clients_dmb" ADD CONSTRAINT "clients_dmb_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "clients_dmb" ADD CONSTRAINT "clients_dmb_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "clients_payment_data" ADD CONSTRAINT "clients_payment_data_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -353,10 +462,19 @@ ALTER TABLE "clients_payment_data" ADD CONSTRAINT "clients_payment_data_clientId
 ALTER TABLE "clients_payment_data" ADD CONSTRAINT "clients_payment_data_clientBankId_fkey" FOREIGN KEY ("clientBankId") REFERENCES "clients_payment_banks"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "agreements" ADD CONSTRAINT "agreements_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "contracts" ADD CONSTRAINT "contracts_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "clients_balances" ADD CONSTRAINT "clients_balances_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "clients_balances" ADD CONSTRAINT "clients_balances_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "clients_transactions" ADD CONSTRAINT "clients_transactions_balanceId_fkey" FOREIGN KEY ("balanceId") REFERENCES "clients_balances"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "clients_transactions" ADD CONSTRAINT "clients_transactions_baseReportId_fkey" FOREIGN KEY ("baseReportId") REFERENCES "base_royalties_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "clients_transactions" ADD CONSTRAINT "clients_transactions_userReportId_fkey" FOREIGN KEY ("userReportId") REFERENCES "UserRoyaltyReport"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "clients_addresses" ADD CONSTRAINT "clients_addresses_countryId_fkey" FOREIGN KEY ("countryId") REFERENCES "countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -368,10 +486,31 @@ ALTER TABLE "labels" ADD CONSTRAINT "labels_clientId_fkey" FOREIGN KEY ("clientI
 ALTER TABLE "labels" ADD CONSTRAINT "labels_countryId_fkey" FOREIGN KEY ("countryId") REFERENCES "countries"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "UserRoyaltyReport" ADD CONSTRAINT "UserRoyaltyReport_s3FileId_fkey" FOREIGN KEY ("s3FileId") REFERENCES "s3_files"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserRoyaltyReport" ADD CONSTRAINT "UserRoyaltyReport_baseReportId_fkey" FOREIGN KEY ("baseReportId") REFERENCES "base_royalties_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserRoyaltyReport" ADD CONSTRAINT "UserRoyaltyReport_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "kontor_royalties_reports" ADD CONSTRAINT "kontor_royalties_reports_labelId_fkey" FOREIGN KEY ("labelId") REFERENCES "labels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "kontor_royalties_reports" ADD CONSTRAINT "kontor_royalties_reports_baseReportId_fkey" FOREIGN KEY ("baseReportId") REFERENCES "base_royalties_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "kontor_royalties_reports" ADD CONSTRAINT "kontor_royalties_reports_userReportId_fkey" FOREIGN KEY ("userReportId") REFERENCES "UserRoyaltyReport"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "believe_reports" ADD CONSTRAINT "believe_reports_labelId_fkey" FOREIGN KEY ("labelId") REFERENCES "labels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "unlinked_details_reports" ADD CONSTRAINT "unlinked_details_reports_unlinkedReportId_fkey" FOREIGN KEY ("unlinkedReportId") REFERENCES "unlinked_reports"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "believe_reports" ADD CONSTRAINT "believe_reports_baseReportId_fkey" FOREIGN KEY ("baseReportId") REFERENCES "base_royalties_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "believe_reports" ADD CONSTRAINT "believe_reports_userReportId_fkey" FOREIGN KEY ("userReportId") REFERENCES "UserRoyaltyReport"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "unlinked_details_reports" ADD CONSTRAINT "unlinked_details_reports_unlinkedReportId_fkey" FOREIGN KEY ("unlinkedReportId") REFERENCES "unlinked_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;

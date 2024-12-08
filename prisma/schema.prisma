@@ -114,6 +114,7 @@ model Client {
   vatId         String?
 
   isBlocked                 Boolean @default(false)
+  isPaymentsBlocked         Boolean @default(false)
   isPaymentInProgress       Boolean @default(false)
   isPaymentDataInValidation Boolean @default(false)
 

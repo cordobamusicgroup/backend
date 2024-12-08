@@ -12,9 +12,11 @@ export class UserDto {
   email: string;
 
   @Expose()
+  fullName: string;
+
+  @Expose()
   role: string;
 
-  @Type(() => ClientExtendedDto)
   @Expose()
-  client: ClientExtendedDto;
+  clientId?: number;
 }
