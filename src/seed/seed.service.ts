@@ -13,7 +13,7 @@ export class SeedService {
   async seedCountries() {
     const countriesData = JSON.parse(
       fs.readFileSync(
-        path.join(__dirname, '..', '..', 'seed', 'countries.json'),
+        path.join(__dirname, '..', 'seed', 'countries.json'),
         'utf-8',
       ),
     );
