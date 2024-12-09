@@ -400,9 +400,11 @@ export class BaseReportService {
       );
       totalEarnings = reports.reduce((sum, report) => {
         const ppd = new Decimal(report.cmg_clientRate);
-        const earningsOurs = new Decimal(report.royalties).mul(
-          new Decimal(1).minus(ppd.div(100)),
-        );
+        const earningsOurs = ppd.equals(0)
+          ? new Decimal(100)
+          : new Decimal(report.royalties).mul(
+              new Decimal(1).minus(ppd.div(100)),
+            );
         return sum.plus(earningsOurs);
       }, new Decimal(0));
     } else if (distributor === Distributor.BELIEVE) {
@@ -412,7 +414,11 @@ export class BaseReportService {
       );
       totalEarnings = reports.reduce((sum, report) => {
         const ppd = new Decimal(report.cmg_clientRate);
-        return sum.plus(new Decimal(report.netRevenue).mul(ppd.div(100)));
+        return sum.plus(
+          ppd.equals(0)
+            ? new Decimal(100)
+            : new Decimal(report.netRevenue).mul(ppd.div(100)),
+        );
       }, new Decimal(0));
     }
 
