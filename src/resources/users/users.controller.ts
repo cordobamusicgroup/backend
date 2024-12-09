@@ -1,48 +1,29 @@
 import {
   Body,
   Controller,
+  Patch,
+  UseGuards,
+  Request,
   Get,
-  Post,
-  Put,
-  Delete,
-  Param,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
 
 @Controller('users')
-@Roles(Role.ADMIN)
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.registerUser(createUserDto);
+  @Patch('edit-profile')
+  async editProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+    const user = req.user;
+    return this.usersService.updateUser(user.id, updateUserDto);
   }
 
-  @Get('all')
-  async getUsers() {
-    return this.usersService.getAllUsers();
-  }
-
-  @Put(':id')
-  async updateUser(
-    @Param('id') id: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.usersService.updateUser(id, updateUserDto);
-  }
-
-  @Delete()
-  async deleteMultipleUsers(@Body() body: { ids: number[] }) {
-    return this.usersService.deleteMultipleUsers(body.ids);
-  }
-
-  @Get('all-dto')
-  async getUsersWithDto() {
-    return this.usersService.getAllUsersWithDto();
+  @Get('current')
+  async getCurrentUser(@Request() req) {
+    const user = req.user;
+    return this.usersService.findByUsername(user.username);
   }
 }

@@ -123,6 +123,7 @@ export class AuthService {
 
     return {
       id: userData.id,
+      fullName: userData.fullName,
       username: userData.username,
       email: userData.email,
       role: userData.role,

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -18,6 +19,8 @@ import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private prisma: PrismaService,
     private mailerService: MailerService,
@@ -193,6 +196,7 @@ export class UsersService {
    * @param updateUserDto - The DTO containing the fields to update
    * @returns The updated user
    * @throws UserNotFoundException if the user is not found
+   * @throws BadRequestException if the current password is incorrect
    */
   async updateUser(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
@@ -200,13 +204,31 @@ export class UsersService {
       throw new UserNotFoundException();
     }
 
+    const updateData: any = { ...updateUserDto };
+
+    if (updateUserDto.currentPassword && updateUserDto.newPassword) {
+      const isPasswordValid = await bcrypt.compare(
+        updateUserDto.currentPassword,
+        user.password,
+      );
+      if (!isPasswordValid) {
+        throw new BadRequestException('Current password is incorrect.');
+      }
+      updateData.password = await bcrypt.hash(updateUserDto.newPassword, 10);
+      this.logger.log(`Password changed for user ID ${id}`);
+    }
+
+    delete updateData.currentPassword;
+    delete updateData.newPassword;
+
     try {
-      return await this.prisma.user.update({
+      const updatedUser = await this.prisma.user.update({
         where: { id },
-        data: {
-          ...updateUserDto,
-          id: undefined, // Ensure 'id' is not included in the update data
-        },
+        data: updateData,
+      });
+      this.logger.log(`User ID ${id} updated`);
+      return plainToInstance(UserDto, updatedUser, {
+        excludeExtraneousValues: true,
       });
     } catch (error) {
       throw new InternalServerErrorException('Error updating user.');
@@ -251,6 +273,37 @@ export class UsersService {
       return plainToInstance(UserDto, users, { excludeExtraneousValues: true });
     } catch (error) {
       throw new InternalServerErrorException('Error fetching user list.');
+    }
+  }
+
+  /**
+   * Changes the clientId of the current user.
+   * @param username - The username of the current user
+   * @param clientId - The new clientId to set
+   * @returns The updated user
+   * @throws UserNotFoundException if the user is not found
+   * @throws BadRequestException if the clientId is not found
+   */
+  async changeClientId(username: string, clientId: number) {
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+    if (!client) {
+      throw new BadRequestException(`Client with ID ${clientId} not found`);
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { username },
+        data: { clientId: clientId },
+      });
+    } catch (error) {
+      throw error;
     }
   }
 }

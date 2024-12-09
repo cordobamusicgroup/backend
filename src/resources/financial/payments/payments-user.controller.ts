@@ -8,7 +8,7 @@ import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 export class PaymentsUserController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Get('authorized')
+  @Get('withdrawal-authorized')
   async getClientPaymentStatus(@Request() req) {
     const user: JwtPayloadDto = req.user;
     return this.paymentsService.getClientPaymentStatus(user);
