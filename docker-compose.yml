@@ -14,8 +14,8 @@ services:
     ports:
       - '${APP_PORT}:6060'
     volumes:
-      - ./temp:/temp
-      - ./logs:/logs
+      - ./temp:/app/temp
+      - ./logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
