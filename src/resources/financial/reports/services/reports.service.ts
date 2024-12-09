@@ -159,7 +159,7 @@ export class ReportsService {
 
       // Find contract associated with the label's client
       const contract = await this.findContract(label.client.id);
-      if (!contract || !contract.ppd) {
+      if (contract == null || contract.ppd == undefined) {
         this.loggerTxt.logError(
           `Row ${rowIndex}: Contract with valid PPD not found for client ID ${label.client.id}`,
           jobId,
