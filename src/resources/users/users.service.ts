@@ -1,28 +1,56 @@
 import {
+  BadRequestException,
   Injectable,
-  ConflictException,
-  NotFoundException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import { UserDto } from './dto/user.dto';
+import {
+  UserNotFoundException,
+  UserAlreadyExistsException,
+  EmailAlreadyExistsException,
+} from 'src/common/exceptions/CustomHttpException';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private mailerService: MailerService,
+  ) {}
 
   /**
-   * Crea un nuevo usuario en la base de datos.
-   * @param username - El nombre de usuario
-   * @param email - El correo electrónico
-   * @param password - La contraseña sin hash
-   * @returns El usuario creado
-   * @throws ConflictException si el username o email ya están en uso
-   * @throws InternalServerErrorException si ocurre algún otro error
+   * Creates a new user in the database.
+   * @param createUserDto - The DTO containing the user data
+   * @returns The created user
+   * @throws UserAlreadyExistsException if the username is already in use
+   * @throws EmailAlreadyExistsException if the email is already in use
+   * @throws InternalServerErrorException if any other error occurs
    */
-  async createUser(username: string, email: string, password: string) {
+  async createUser(createUserDto: CreateUserDto) {
+    const { username, email, fullName, role, clientId } = createUserDto;
+    const existingUserByUsername = await this.prisma.user.findUnique({
+      where: { username },
+    });
+    if (existingUserByUsername) {
+      throw new UserAlreadyExistsException();
+    }
+
+    const existingUserByEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUserByEmail) {
+      throw new EmailAlreadyExistsException();
+    }
+
+    const password = this.generateRandomPassword();
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
       return await this.prisma.user.create({
@@ -30,57 +58,124 @@ export class UsersService {
           username,
           email,
           password: hashedPassword,
+          fullName,
+          role,
+          clientId,
         },
       });
     } catch (error) {
-      if (error.code === 'P2002') {
-        // Prisma error code for unique constraint violation
-        throw new ConflictException('El username o email ya están en uso.');
-      }
-      throw new InternalServerErrorException('Error al crear el usuario.');
+      throw new InternalServerErrorException('Error creating user.');
     }
   }
 
   /**
-   * Busca un usuario por su nombre de usuario.
-   * @param username - El nombre de usuario
-   * @returns El usuario encontrado o lanza una excepción si no existe
-   * @throws NotFoundException si el usuario no es encontrado
+   * Registers a new user with a randomly generated password and sends an email with the account information.
+   * @param createUserDto - The DTO containing the user data
+   * @returns The created user
+   * @throws UserAlreadyExistsException if the username is already in use
+   * @throws EmailAlreadyExistsException if the email is already in use
+   * @throws InternalServerErrorException if any other error occurs
+   */
+  async registerUser(createUserDto: CreateUserDto) {
+    const { username, email, fullName, role, clientId } = createUserDto;
+    const existingUserByUsername = await this.prisma.user.findUnique({
+      where: { username },
+    });
+    if (existingUserByUsername) {
+      throw new UserAlreadyExistsException();
+    }
+
+    const existingUserByEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUserByEmail) {
+      throw new EmailAlreadyExistsException();
+    }
+
+    const password = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          username,
+          email,
+          password: hashedPassword,
+          fullName,
+          role,
+          clientId,
+        },
+      });
+
+      await this.sendAccountInfoEmail(email, username, password);
+
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException('Error registering user.');
+    }
+  }
+
+  private generateRandomPassword(): string {
+    return Math.random().toString(36).slice(-8);
+  }
+
+  private async sendAccountInfoEmail(
+    email: string,
+    username: string,
+    password: string,
+  ) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Your Account Information',
+        template: './account-info', // The path to the HBS template
+        context: {
+          username,
+          password,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Error sending account information email.',
+      );
+    }
+  }
+
+  /**
+   * Finds a user by their username.
+   * @param username - The username
+   * @returns The found user or throws an exception if not found
+   * @throws UserNotFoundException if the user is not found
    */
   async findByUsername(username: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
     if (!user) {
-      throw new NotFoundException(
-        `No se encontró un usuario con el username: ${username}`,
-      );
+      throw new UserNotFoundException();
     }
     return user;
   }
 
   /**
-   * Busca un usuario por su correo electrónico.
-   * @param email - El correo electrónico del usuario
-   * @returns El usuario encontrado o lanza una excepción si no existe
-   * @throws NotFoundException si el usuario no es encontrado
+   * Finds a user by their email.
+   * @param email - The user's email
+   * @returns The found user or throws an exception if not found
+   * @throws UserNotFoundException if the user is not found
    */
   async findByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
     if (!user) {
-      throw new NotFoundException(
-        `No se encontró un usuario con el email: ${email}`,
-      );
+      throw new UserNotFoundException();
     }
     return user;
   }
 
   /**
-   * Obtiene todos los usuarios con sus relaciones de cliente.
-   * @returns Lista de usuarios transformada en DTOs
-   * @throws InternalServerErrorException si ocurre algún error durante la consulta
+   * Gets all users with their client relations.
+   * @returns List of users transformed into DTOs
+   * @throws InternalServerErrorException if any error occurs during the query
    */
   async getAllUsers() {
     try {
@@ -91,9 +186,124 @@ export class UsersService {
       });
       return plainToInstance(UserDto, users, { excludeExtraneousValues: true });
     } catch (error) {
-      throw new InternalServerErrorException(
-        'Error al obtener la lista de usuarios.',
+      throw new InternalServerErrorException('Error fetching user list.');
+    }
+  }
+
+  /**
+   * Updates a user by their ID.
+   * @param id - The ID of the user to update
+   * @param updateUserDto - The DTO containing the fields to update
+   * @returns The updated user
+   * @throws UserNotFoundException if the user is not found
+   * @throws BadRequestException if the current password is incorrect
+   */
+  async updateUser(id: number, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+
+    const updateData: any = { ...updateUserDto };
+
+    if (updateUserDto.currentPassword && updateUserDto.newPassword) {
+      const isPasswordValid = await bcrypt.compare(
+        updateUserDto.currentPassword,
+        user.password,
       );
+      if (!isPasswordValid) {
+        throw new BadRequestException('Current password is incorrect.');
+      }
+      updateData.password = await bcrypt.hash(updateUserDto.newPassword, 10);
+      this.logger.log(`Password changed for user ID ${id}`);
+    }
+
+    delete updateData.currentPassword;
+    delete updateData.newPassword;
+
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+      this.logger.log(`User ID ${id} updated`);
+      return plainToInstance(UserDto, updatedUser, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Error updating user.');
+    }
+  }
+
+  /**
+   * Deletes multiple users by their IDs.
+   * @param ids - The array of user IDs to delete
+   * @throws UserNotFoundException if any user IDs are not found
+   */
+  async deleteMultipleUsers(ids: number[]) {
+    const existingUsers = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+    });
+
+    if (existingUsers.length !== ids.length) {
+      const existingIds = existingUsers.map((user) => user.id);
+      const missingIds = ids.filter((id) => !existingIds.includes(id));
+      throw new BadRequestException(
+        `Users with IDs ${missingIds.join(', ')} not found`,
+      );
+    }
+
+    try {
+      await this.prisma.user.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Error deleting users.');
+    }
+  }
+
+  /**
+   * Gets all users transformed into DTOs.
+   * @returns List of users transformed into DTOs
+   * @throws InternalServerErrorException if any error occurs during the query
+   */
+  async getAllUsersWithDto() {
+    try {
+      const users = await this.prisma.user.findMany();
+      return plainToInstance(UserDto, users, { excludeExtraneousValues: true });
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching user list.');
+    }
+  }
+
+  /**
+   * Changes the clientId of the current user.
+   * @param username - The username of the current user
+   * @param clientId - The new clientId to set
+   * @returns The updated user
+   * @throws UserNotFoundException if the user is not found
+   * @throws BadRequestException if the clientId is not found
+   */
+  async changeClientId(username: string, clientId: number) {
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+    if (!client) {
+      throw new BadRequestException(`Client with ID ${clientId} not found`);
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { username },
+        data: { clientId: clientId },
+      });
+    } catch (error) {
+      throw error;
     }
   }
 }

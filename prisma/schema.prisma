@@ -1,7 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
-  binaryTargets   = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -15,6 +14,21 @@ model InitializationStatus {
   adminInit   Boolean @default(false)
 
   @@map("initialization_status")
+}
+
+model S3File {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  fileName  String
+  type      String
+  folder    String?
+  bucket    String
+  key       String
+
+  UserRoyaltyReport UserRoyaltyReport[]
+
+  @@map("s3_files")
 }
 
 model User {
@@ -84,7 +98,7 @@ model UserComms {
 
 model Client {
   id        Int      @id @default(autoincrement())
-  wp_id     Int?
+  wp_id     Int?     @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -100,16 +114,18 @@ model Client {
   vatId         String?
 
   isBlocked                 Boolean @default(false)
+  isPaymentsBlocked         Boolean @default(false)
   isPaymentInProgress       Boolean @default(false)
   isPaymentDataInValidation Boolean @default(false)
 
   dmb ClientDMB? @relation("ClientDMB")
 
-  balances    Balance[]          @relation("ClientBalances")
-  paymentData ClientPaymentData?
-  labels      Label[]            @relation("ClientLabel")
-  users       User[]
-  contract    Contract?
+  balances          Balance[]           @relation("ClientBalances")
+  paymentData       ClientPaymentData?
+  labels            Label[]             @relation("ClientLabel")
+  users             User[]
+  contract          Contract?
+  userRoyaltyReport UserRoyaltyReport[]
 
   @@map("clients")
 }
@@ -191,6 +207,7 @@ model Balance {
   amount       Float         @default(0.00)
   transactions Transaction[] @relation("BalanceTransactions")
 
+  @@unique([currency, clientId])
   @@map("clients_balances")
 }
 
@@ -201,10 +218,18 @@ model Transaction {
 
   type          TransactionType
   description   String
-  amount        Float
-  balanceAmount Float
-  balanceId     Int
-  balance       Balance         @relation(fields: [balanceId], references: [id], name: "BalanceTransactions", onDelete: Cascade)
+  amount        Decimal
+  balanceAmount Decimal
+
+  distributor Distributor?
+
+  balanceId Int
+  balance   Balance @relation(fields: [balanceId], references: [id], name: "BalanceTransactions", onDelete: Cascade)
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "TransactionBaseReport")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "TransactionUserReport")
 
   @@map("clients_transactions")
 }
@@ -270,12 +295,47 @@ model BaseRoyaltyReport {
   updatedAt      DateTime    @updatedAt
   currency       Currency    @default(EUR)
   distributor    Distributor
-  reportMonth    String
+  reportingMonth String
+  totalRoyalties Float
+  totalEarnings  Float
+
+  debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
+
+  kontorReports  KontorRoyaltyReport[]  @relation("BaseKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("BaseBelieveReports")
+
+  userReports UserRoyaltyReport[] @relation("BaseUserReports")
+  Transaction Transaction[]       @relation("TransactionBaseReport")
+
+  @@unique([distributor, reportingMonth])
+  @@map("base_royalties_reports")
+}
+
+model UserRoyaltyReport {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  currency       Currency    @default(EUR)
+  distributor    Distributor
+  reportingMonth String
   totalRoyalties Float
 
-  // Relaciones unidireccionales a Kontor y Believe
-  kontorReports  KontorRoyaltyReport[]  @relation("KontorReports")
-  believeReports BelieveRoyaltyReport[] @relation("BelieveReports")
+  debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
+
+  s3FileId Int? // Relación unidireccional
+  s3File   S3File? @relation(fields: [s3FileId], references: [id])
+
+  kontorReports  KontorRoyaltyReport[]  @relation("UserKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("UserBelieveReports")
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseUserReports")
+
+  clientId     Int?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  transactions Transaction[] @relation("TransactionUserReport")
 }
 
 model KontorRoyaltyReport {
@@ -301,14 +361,16 @@ model KontorRoyaltyReport {
   isrc           String
   grid           String
   articleNo      String?
-  royalties      Float
+  royalties      Decimal
   units          Int
 
-  clientRate String?
-  netRenueve String?
+  cmg_clientRate Decimal?
+  cmg_netRevenue Decimal?
 
   baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "KontorReports")
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseKontorReports")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserKontorReports")
 
   @@map("kontor_royalties_reports")
 }
@@ -338,14 +400,19 @@ model BelieveRoyaltyReport {
   salesType                 String
   quantity                  String
   clientPaymentCurrency     String
-  unitPrice                 Float
-  mechanicalFee             Float
-  grossRevenue              Float
-  clientShareRate           Float
-  netRevenue                Float
+  unitPrice                 Decimal
+  mechanicalFee             Decimal
+  grossRevenue              Decimal
+  clientShareRate           Decimal
+  netRevenue                Decimal
+
+  cmg_clientRate Decimal?
+  cmg_netRevenue Decimal?
 
   baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BelieveReports")
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseBelieveReports")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserBelieveReports")
 
   @@map("believe_reports")
 }
@@ -354,6 +421,8 @@ model UnlinkedReport {
   id                   Int                    @id @default(autoincrement())
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
+  distributor          Distributor
+  reportingMonth       String
   labelName            String
   count                Int
   UnlinkedReportDetail UnlinkedReportDetail[]
@@ -366,7 +435,7 @@ model UnlinkedReportDetail {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   unlinkedReportId Int
-  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id])
+  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id], onDelete: Cascade)
   data             Json
 
   @@map("unlinked_details_reports")
@@ -434,6 +503,12 @@ enum TransactionType {
   RECALLED_PAYMENT
   BOUNCEDBACK_PAYMENT
   OTHER
+}
+
+enum DebitState {
+  PAID
+  UNPAID
+  OPEN
 }
 
 enum ContractType {

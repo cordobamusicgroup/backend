@@ -1,9 +1,5 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+// Remove NotFoundException from imports
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '@prisma/client';
@@ -15,7 +11,13 @@ import { Request } from 'express';
 import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
-import { InvalidCredentialsException } from 'src/common/exceptions/CustomHttpException';
+import {
+  InvalidCredentialsException,
+  InvalidOrExpiredTokenException,
+  RecordNotFoundException,
+  UnauthorizedException,
+} from 'src/common/exceptions/CustomHttpException';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -106,13 +108,27 @@ export class AuthService {
   ): Promise<CurrentUserResponseDto> {
     const userData = await this.usersService.findByUsername(user.username);
     if (!userData) {
-      throw new NotFoundException('User not found');
+      throw new RecordNotFoundException('User');
     }
+
+    let clientData = { id: null, clientName: 'Unknown' };
+    if (userData.clientId) {
+      const client = await this.prisma.client.findUnique({
+        where: { id: userData.clientId },
+      });
+      if (client) {
+        clientData = { id: client.id, clientName: client.clientName };
+      }
+    }
+
     return {
       id: userData.id,
+      fullName: userData.fullName,
       username: userData.username,
       email: userData.email,
       role: userData.role,
+      clientId: clientData.id,
+      clientName: clientData.clientName,
     };
   }
 
@@ -162,13 +178,14 @@ export class AuthService {
 
   /**
    * Resets the user's password using the provided reset token.
-   * @param token - The reset token sent to the user.
-   * @param newPassword - The new password the user wants to set.
+   * @param resetPasswordDto - The DTO containing the reset token and new password.
    * @throws UnauthorizedException if the token is invalid or expired.
    * @throws NotFoundException if the token is not found.
    * @throws BadRequestException if the token has already been used.
    */
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
+    const { token, newPassword } = resetPasswordDto;
+
     // Find the reset token in the database
     const resetToken = await this.prisma.passwordResetToken.findFirst({
       where: {
@@ -180,14 +197,14 @@ export class AuthService {
 
     if (!resetToken) {
       this.logger.warn('Invalid or expired password reset token.');
-      throw new UnauthorizedException('Invalid or expired token.');
+      throw new InvalidOrExpiredTokenException();
     }
 
     // Verify if the token matches the stored hash
     const isTokenValid = await bcrypt.compare(token, resetToken.token);
     if (!isTokenValid) {
       this.logger.warn('Invalid password reset token attempt.');
-      throw new UnauthorizedException('Invalid token.');
+      throw new UnauthorizedException();
     }
 
     // Hash the new password

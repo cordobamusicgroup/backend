@@ -1,52 +1,41 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { BalanceDto } from '../dto/balance.dto';
-import { Currency, TransactionType } from '@prisma/client'; // Suponiendo que el enum viene del modelo Prisma
+import { Currency, TransactionType } from '@prisma/client';
+import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
+import { UsersService } from 'src/resources/users/users.service';
+import { ModifyBalanceDto } from './dto/modify-balance.dto';
 
 @Injectable()
 export class BalancesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+  ) {}
 
-  async modifyBalance(
-    clientId: number,
-    currency: Currency,
-    amount: number,
-    description: string,
-    operationType: 'CREDIT' | 'DEBIT',
-  ): Promise<BalanceDto> {
-    const balance = await this.prisma.balance.findFirst({
-      where: {
-        clientId,
-        currency,
-      },
+  /**
+   * Modifies the balance for a given client and currency.
+   * If the balance does not exist, it creates a new one.
+   * @param modifyBalanceDto - Data transfer object containing modification details.
+   * @returns The created transaction.
+   */
+  async modifyBalance(modifyBalanceDto: ModifyBalanceDto): Promise<any> {
+    const { clientId, currency, amount, description } = modifyBalanceDto;
+
+    let balance = await this.prisma.balance.findFirst({
+      where: { clientId, currency },
     });
 
     if (!balance) {
-      throw new NotFoundException(
-        `Balance for client ID ${clientId} and currency ${currency} not found`,
-      );
+      balance = await this.prisma.balance.create({
+        data: { clientId, currency, amount: 0 },
+      });
     }
 
-    // Calculating new balance amount based on operation type
-    let newBalanceAmount = balance.amount;
-    if (operationType === 'CREDIT') {
-      newBalanceAmount += amount;
-    } else if (operationType === 'DEBIT') {
-      newBalanceAmount -= amount;
-    } else {
-      throw new BadRequestException(
-        'Invalid operation type. Must be CREDIT or DEBIT.',
-      );
-    }
+    const newBalanceAmount = balance.amount + amount;
 
-    // Create transaction
-    await this.prisma.transaction.create({
+    const transaction = await this.prisma.transaction.create({
       data: {
-        type: TransactionType.OTHER, // Since it's a manual transaction
+        type: TransactionType.OTHER,
         description,
         amount,
         balanceAmount: newBalanceAmount,
@@ -54,27 +43,66 @@ export class BalancesService {
       },
     });
 
-    // Update balance with the new amount
     await this.prisma.balance.update({
       where: { id: balance.id },
       data: { amount: newBalanceAmount },
     });
 
-    return this.getBalanceWithTransactions(balance.id);
+    return transaction;
   }
 
-  private async getBalanceWithTransactions(
-    balanceId: number,
-  ): Promise<BalanceDto> {
-    const balance = await this.prisma.balance.findUnique({
-      where: { id: balanceId },
+  /**
+   * Retrieves the balances for a given user.
+   * @param user - JWT payload containing user information.
+   * @returns An array of balances.
+   */
+  async getUserBalances(user: JwtPayloadDto) {
+    const userData = await this.usersService.findByUsername(user.username);
+    const clientId = userData.clientId;
+
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      include: { balances: true },
+    });
+
+    if (!client) {
+      throw new NotFoundException(`Client with ID ${clientId} not found`);
+    }
+
+    return client.balances.map((balance) => ({
+      currency: balance.currency,
+      total: balance.amount,
+    }));
+  }
+
+  /**
+   * Retrieves the transactions for a given user's balance and currency.
+   * If the balance does not exist, it creates a new one.
+   * @param user - JWT payload containing user information.
+   * @param currency - The currency of the balance.
+   * @returns An array of transactions.
+   */
+  async getBalanceTransactions(user: JwtPayloadDto, currency: Currency) {
+    const userData = await this.usersService.findByUsername(user.username);
+    const clientId = userData.clientId;
+
+    let balance = await this.prisma.balance.findUnique({
+      where: {
+        currency_clientId: {
+          currency,
+          clientId,
+        },
+      },
       include: { transactions: true },
     });
 
     if (!balance) {
-      throw new NotFoundException(`Balance with ID ${balanceId} not found`);
+      balance = await this.prisma.balance.create({
+        data: { clientId, currency, amount: 0 },
+        include: { transactions: true },
+      });
     }
 
-    return balance;
+    return balance.transactions;
   }
 }

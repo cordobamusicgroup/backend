@@ -24,4 +24,28 @@ export class EmailService {
       },
     });
   }
+
+  async sendJobResultEmail(
+    email: string,
+    subject: string,
+    message: string,
+    logFilePath: string,
+  ): Promise<void> {
+    await this.mailerService.sendMail({
+      to: email,
+      subject: subject,
+      template: './basic-template',
+      context: {
+        subject, // Include subject in the context
+        title: subject,
+        message: message,
+      },
+      attachments: [
+        {
+          filename: 'log.txt',
+          path: logFilePath,
+        },
+      ],
+    });
+  }
 }

@@ -1,5 +1,4 @@
-import { Expose, Type } from 'class-transformer';
-import { ClientExtendedDto } from '../../clients/dto/client-extended.dto';
+import { Expose } from 'class-transformer';
 
 export class UserDto {
   @Expose()
@@ -12,9 +11,11 @@ export class UserDto {
   email: string;
 
   @Expose()
+  fullName: string;
+
+  @Expose()
   role: string;
 
-  @Type(() => ClientExtendedDto)
   @Expose()
-  client: ClientExtendedDto;
+  clientId?: number;
 }
