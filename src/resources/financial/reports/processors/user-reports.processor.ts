@@ -304,7 +304,7 @@ export class UserReportsProcessor extends WorkerHost {
 
         const s3Key = `user-reports/${baseReportId}/${userReport.clientId}/${fileName}`;
         const s3File = await this.s3UploadService.uploadFile(
-          'cmg-dev-royalties',
+          process.env.S3_BUCKET_NAME_ROYALTIES,
           s3Key,
           filePath,
         );

@@ -147,4 +147,34 @@ export class UserReportsService {
       );
     }
   }
+
+  async deleteExportedFilesFromS3(
+    baseReportId: number,
+  ): Promise<{ message: string }> {
+    try {
+      const reports = await this.prisma.userRoyaltyReport.findMany({
+        where: { baseReportId },
+      });
+
+      for (const report of reports) {
+        if (report.s3FileId) {
+          await this.s3Service.deleteFile({ id: report.s3FileId });
+          await this.prisma.userRoyaltyReport.update({
+            where: { id: report.id },
+            data: { s3FileId: null },
+          });
+        }
+      }
+
+      return { message: 'Exported files deleted successfully from S3.' };
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete exported files from S3: ${error.message}`,
+      );
+      throw new HttpException(
+        `Failed to delete exported files from S3: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
