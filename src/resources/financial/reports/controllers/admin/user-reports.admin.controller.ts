@@ -61,4 +61,10 @@ export class UserReportsAdminController {
       req.user,
     );
   }
+
+  @Delete('delete-export/:baseReportId')
+  @UseGuards(JwtAuthGuard)
+  async deleteExportedFilesFromS3(@Param('baseReportId') baseReportId: number) {
+    return this.userReports.deleteExportedFilesFromS3(Number(baseReportId));
+  }
 }

@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
@@ -106,6 +107,38 @@ export class S3Service {
     } catch (error) {
       this.logger.error(`Failed to retrieve file from S3: ${error.message}`);
       throw new Error('Failed to retrieve file from S3.');
+    }
+  }
+
+  /**
+   * Deletes a file from S3 and removes its record from the database.
+   * @param params - Object containing the ID of the file to be deleted
+   */
+  async deleteFile(params: { id: number }): Promise<void> {
+    const fileRecord = await this.prisma.s3File.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!fileRecord) {
+      throw new Error('File not found.');
+    }
+
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: fileRecord.bucket,
+          Key: fileRecord.key,
+        }),
+      );
+      await this.prisma.s3File.delete({
+        where: { id: params.id },
+      });
+      this.logger.log(
+        `File deleted from S3: ${fileRecord.bucket}/${fileRecord.key}`,
+      );
+    } catch (error) {
+      this.logger.error(`Failed to delete file from S3: ${error.message}`);
+      throw new Error('Failed to delete file from S3.');
     }
   }
 
