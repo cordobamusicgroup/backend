@@ -46,11 +46,6 @@ export class UsersAdminController {
     return this.usersService.deleteMultipleUsers(body.ids);
   }
 
-  @Get('all-dto')
-  async getUsersWithDto() {
-    return this.usersService.getAllUsersWithDto();
-  }
-
   @Patch('view-as-client')
   async changeClientId(@Request() req, @Body() body: { clientId: number }) {
     const user = req.user;
