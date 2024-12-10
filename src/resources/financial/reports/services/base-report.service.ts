@@ -386,6 +386,15 @@ export class BaseReportService {
       `Recalculated totals for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
     );
 
+    // Update the base report with the recalculated totals
+    await this.prisma.baseRoyaltyReport.update({
+      where: { distributor_reportingMonth: { distributor, reportingMonth } },
+      data: {
+        totalRoyalties: totalRoyalties.toNumber(),
+        totalEarnings: totalEarnings.toNumber(),
+      },
+    });
+
     return {
       totalRoyalties: totalRoyalties.toNumber(),
       totalEarnings: totalEarnings.toNumber(),
