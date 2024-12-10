@@ -1,18 +1,8 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  Delete,
-  Body,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body } from '@nestjs/common';
 import { BaseReportService } from '../../services/base-report.service';
 import { ReportsService } from '../../services/reports.service';
 import { CreateBaseReportDto } from '../../dto/create-base-report.dto';
 import { UserReportsService } from '../../services/user-reports.service';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
@@ -36,44 +26,30 @@ export class BaseReportsAdminController {
     return this.baseReportService.createBaseReport(distributor, reportingMonth);
   }
 
-  @Delete('delete/:baseReportId')
-  async deleteBaseReport(@Param('baseReportId') baseReportId: number) {
-    return this.baseReportService.deleteBaseReport(Number(baseReportId));
+  @Delete('delete')
+  async deleteBaseReport(@Body() createBaseReportDto: CreateBaseReportDto) {
+    const { distributor, reportingMonth } = createBaseReportDto;
+    return this.baseReportService.deleteBaseReport(distributor, reportingMonth);
   }
 
-  @Post('GenerateUserReports/:baseReportId')
-  @UseGuards(JwtAuthGuard)
-  async generateUserRoyaltyReports(
-    @Param('baseReportId') baseReportId: number,
-    @Request() req,
-  ) {
-    return this.userReports.createUserReportsJob(
-      Number(baseReportId),
-      'generate',
-      req.user,
+  @Post('generate-payments')
+  async generatePayments(@Body() createBaseReportDto: CreateBaseReportDto) {
+    const { distributor, reportingMonth } = createBaseReportDto;
+    return this.baseReportService.generatePayments(distributor, reportingMonth);
+  }
+
+  @Delete('delete-payments')
+  async deletePayments(@Body() createBaseReportDto: CreateBaseReportDto) {
+    const { distributor, reportingMonth } = createBaseReportDto;
+    return this.baseReportService.deletePayments(distributor, reportingMonth);
+  }
+
+  @Post('recalculate-totals')
+  async recalculateTotals(@Body() createBaseReportDto: CreateBaseReportDto) {
+    const { distributor, reportingMonth } = createBaseReportDto;
+    return this.baseReportService.recalculateTotals(
+      distributor,
+      reportingMonth,
     );
-  }
-
-  @Delete('DeleteUserReports/:baseReportId')
-  @UseGuards(JwtAuthGuard)
-  async deleteUserRoyaltyReports(
-    @Param('baseReportId') baseReportId: number,
-    @Request() req,
-  ) {
-    return this.userReports.createUserReportsJob(
-      Number(baseReportId),
-      'delete',
-      req.user,
-    );
-  }
-
-  @Post('generate-payments/:baseReportId')
-  async generatePayments(@Param('baseReportId') baseReportId: number) {
-    return this.baseReportService.generatePayments(Number(baseReportId));
-  }
-
-  @Delete('delete-payments/:baseReportId')
-  async deletePayments(@Param('baseReportId') baseReportId: number) {
-    return this.baseReportService.deletePayments(Number(baseReportId));
   }
 }
