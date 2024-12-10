@@ -28,9 +28,14 @@ export class UsersAdminController {
     return this.usersService.registerUser(createUserDto);
   }
 
-  @Get('all')
+  @Get()
   async getUsers() {
     return this.usersService.getAllUsers();
+  }
+
+  @Get(':id')
+  async getUserById(@Param('id') id: number) {
+    return this.usersService.findById(Number(id));
   }
 
   @Put(':id')
@@ -38,17 +43,12 @@ export class UsersAdminController {
     @Param('id') id: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.updateUser(id, updateUserDto);
+    return this.usersService.updateUser(Number(id), updateUserDto);
   }
 
   @Delete()
   async deleteMultipleUsers(@Body() body: { ids: number[] }) {
     return this.usersService.deleteMultipleUsers(body.ids);
-  }
-
-  @Get('all-dto')
-  async getUsersWithDto() {
-    return this.usersService.getAllUsersWithDto();
   }
 
   @Patch('view-as-client')

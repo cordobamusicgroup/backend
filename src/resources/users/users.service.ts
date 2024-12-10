@@ -26,6 +26,10 @@ export class UsersService {
     private mailerService: MailerService,
   ) {}
 
+  private convertToDto(user: any): UserDto {
+    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+  }
+
   /**
    * Creates a new user in the database.
    * @param createUserDto - The DTO containing the user data
@@ -53,7 +57,7 @@ export class UsersService {
     const password = this.generateRandomPassword();
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
-      return await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           username,
           email,
@@ -63,6 +67,7 @@ export class UsersService {
           clientId,
         },
       });
+      return this.convertToDto(user);
     } catch (error) {
       throw new InternalServerErrorException('Error creating user.');
     }
@@ -108,7 +113,7 @@ export class UsersService {
 
       await this.sendAccountInfoEmail(email, username, password);
 
-      return user;
+      return this.convertToDto(user);
     } catch (error) {
       throw new InternalServerErrorException('Error registering user.');
     }
@@ -153,7 +158,7 @@ export class UsersService {
     if (!user) {
       throw new UserNotFoundException();
     }
-    return user;
+    return this.convertToDto(user);
   }
 
   /**
@@ -169,7 +174,23 @@ export class UsersService {
     if (!user) {
       throw new UserNotFoundException();
     }
-    return user;
+    return this.convertToDto(user);
+  }
+
+  /**
+   * Finds a user by their ID.
+   * @param id - The user ID
+   * @returns The found user or throws an exception if not found
+   * @throws UserNotFoundException if the user is not found
+   */
+  async findById(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+    return this.convertToDto(user);
   }
 
   /**
@@ -184,7 +205,7 @@ export class UsersService {
           client: true,
         },
       });
-      return plainToInstance(UserDto, users, { excludeExtraneousValues: true });
+      return users.map((user) => this.convertToDto(user));
     } catch (error) {
       throw new InternalServerErrorException('Error fetching user list.');
     }
@@ -227,9 +248,7 @@ export class UsersService {
         data: updateData,
       });
       this.logger.log(`User ID ${id} updated`);
-      return plainToInstance(UserDto, updatedUser, {
-        excludeExtraneousValues: true,
-      });
+      return this.convertToDto(updatedUser);
     } catch (error) {
       throw new InternalServerErrorException('Error updating user.');
     }
@@ -263,20 +282,6 @@ export class UsersService {
   }
 
   /**
-   * Gets all users transformed into DTOs.
-   * @returns List of users transformed into DTOs
-   * @throws InternalServerErrorException if any error occurs during the query
-   */
-  async getAllUsersWithDto() {
-    try {
-      const users = await this.prisma.user.findMany();
-      return plainToInstance(UserDto, users, { excludeExtraneousValues: true });
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching user list.');
-    }
-  }
-
-  /**
    * Changes the clientId of the current user.
    * @param username - The username of the current user
    * @param clientId - The new clientId to set
@@ -298,10 +303,11 @@ export class UsersService {
     }
 
     try {
-      return await this.prisma.user.update({
+      const updatedUser = await this.prisma.user.update({
         where: { username },
         data: { clientId: clientId },
       });
+      return this.convertToDto(updatedUser);
     } catch (error) {
       throw error;
     }
