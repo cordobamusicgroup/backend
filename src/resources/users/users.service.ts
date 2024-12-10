@@ -8,14 +8,15 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import { UserDto } from './dto/user.dto';
-import {
-  UserNotFoundException,
-  UserAlreadyExistsException,
-  EmailAlreadyExistsException,
-} from 'src/common/exceptions/CustomHttpException';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
+import {
+  UserAlreadyExistsException,
+  EmailAlreadyExistsException,
+  UserNotFoundException,
+} from 'src/common/exceptions/CustomHttpException';
 
 @Injectable()
 export class UsersService {
@@ -141,6 +142,39 @@ export class UsersService {
     } catch (error) {
       throw new InternalServerErrorException(
         'Error sending account information email.',
+      );
+    }
+  }
+
+  /**
+   * Resends the account information email to the user with a new random password.
+   * @param email - The user's email
+   * @returns A success message if the email is sent successfully
+   * @throws UserNotFoundException if the user is not found
+   * @throws InternalServerErrorException if any error occurs
+   */
+  async resendAccountInfoEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    try {
+      await this.prisma.user.update({
+        where: { email },
+        data: { password: hashedPassword },
+      });
+
+      await this.sendAccountInfoEmail(email, user.username, newPassword);
+      return { message: 'Account information email sent successfully' };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Error resending account information email.',
       );
     }
   }

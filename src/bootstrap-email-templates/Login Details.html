@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+      /* Add custom classes and styles that you want inlined here */
+      ul {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <preview>Your account has been created</preview>
+  <body class="bg-light">
+    <div class="container">
+      <div class="card my-10">
+        <div class="card-body">
+          <h3>Login Details</h3>
+          <hr />
+          <div class="space-y-3">
+            <p class="text-gray-700">Hello,</p>
+            <p class="text-gray-700">
+              Welcome to the new service of Córdoba Music Group. Your account
+              has been created successfully. Here are your account details:
+            </p>
+            <p class="text-gray-700"><strong>Username:</strong> {{username}}</p>
+            <p class="text-gray-700"><strong>Password:</strong> {{password}}</p>
+            <p class="text-gray-700">
+              Please change your password after logging in for the first time.
+            </p>
+            <!-- Button for Login -->
+            <a
+              class="btn btn-primary w-full"
+              href="{{FRONTEND_URL}}/auth/login"
+              target="_blank"
+              >Login</a
+            >
+            <p class="text-gray-700">
+              If the button does not work, copy and paste the link in your
+              browser:
+              <a href="{{FRONTEND_URL}}/auth/login">{{FRONTEND_URL}}/login</a>
+            </p>
+            <p class="text-gray-700">
+              Our platform is in continuous development and we will keep working
+              on it constantly with your feedback.
+            </p>
+
+            <!-- Greetings  -->
+            <p class="text-gray-700">
+              For any questions, please contact the label &amp; artists support
+              team:
+              <a href="mailto:support@cordobamusicgroup.co.uk"
+                >support@cordobamusicgroup.co.uk</a
+              >
+            </p>
+            <p class="text-gray-700">Best,</p>
+
+            <p class="text-gray-700">
+              <strong>Córdoba Music Group<br /> </strong
+              ><em>be unique with your music!</em>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
