@@ -111,66 +111,64 @@ export class BaseReportService {
   }
 
   /**
-   * Deletes a base report by its ID.
-   * @param baseReportId The ID of the base report to delete.
+   * Deletes a base report by distributor and reporting month.
+   * @param distributor The distributor for which to delete the base report.
+   * @param reportingMonth The reporting month for which to delete the base report.
    * @returns A promise that resolves to an object containing a message.
    */
-  async deleteBaseReport(baseReportId: number) {
-    this.logger.log(`Deleting base report with ID: ${baseReportId}`);
+  async deleteBaseReport(distributor: Distributor, reportingMonth: string) {
+    this.logger.log(
+      `Deleting base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    );
 
-    try {
-      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-        where: { id: baseReportId },
-      });
+    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+      where: { distributor_reportingMonth: { distributor, reportingMonth } },
+    });
 
-      if (!baseReport) {
-        this.logger.warn(`Base report does not exist with ID: ${baseReportId}`);
-        throw new BaseReportNotFoundException();
-      }
-
-      const userReports = await this.prisma.userRoyaltyReport.findMany({
-        where: { baseReportId: baseReport.id },
-      });
-
-      if (userReports.length > 0) {
-        this.logger.warn(
-          `User reports exist for baseReportId: ${baseReport.id}`,
-        );
-        throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
-      }
-
-      if (baseReport.distributor === Distributor.KONTOR) {
-        await this.prisma.kontorRoyaltyReport.deleteMany({
-          where: { reportingMonth: baseReport.reportingMonth },
-        });
-      } else if (baseReport.distributor === Distributor.BELIEVE) {
-        await this.prisma.believeRoyaltyReport.deleteMany({
-          where: { reportingMonth: baseReport.reportingMonth },
-        });
-      }
-
-      // Delete unlinked reports for the given period and distributor
-      await this.prisma.unlinkedReport.deleteMany({
-        where: {
-          distributor: baseReport.distributor,
-          reportingMonth: baseReport.reportingMonth,
-        },
-      });
-
-      await this.prisma.baseRoyaltyReport.delete({
-        where: { id: baseReport.id },
-      });
-
-      this.logger.log(
-        `Base report deleted successfully with ID: ${baseReportId}`,
+    if (!baseReport) {
+      this.logger.warn(
+        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
-      return {
-        message: 'Base report deleted successfully.',
-      };
-    } catch (error) {
-      this.logger.error(`Failed to delete base report: ${error.message}`);
-      throw error;
+      throw new BaseReportNotFoundException();
     }
+
+    const userReports = await this.prisma.userRoyaltyReport.findMany({
+      where: { baseReportId: baseReport.id },
+    });
+
+    if (userReports.length > 0) {
+      this.logger.warn(`User reports exist for baseReportId: ${baseReport.id}`);
+      throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
+    }
+
+    if (baseReport.distributor === Distributor.KONTOR) {
+      await this.prisma.kontorRoyaltyReport.deleteMany({
+        where: { reportingMonth: baseReport.reportingMonth },
+      });
+    } else if (baseReport.distributor === Distributor.BELIEVE) {
+      await this.prisma.believeRoyaltyReport.deleteMany({
+        where: { reportingMonth: baseReport.reportingMonth },
+      });
+    }
+
+    // Delete unlinked reports for the given period and distributor
+    await this.prisma.unlinkedReport.deleteMany({
+      where: {
+        distributor: baseReport.distributor,
+        reportingMonth: baseReport.reportingMonth,
+      },
+    });
+
+    await this.prisma.baseRoyaltyReport.delete({
+      where: { id: baseReport.id },
+    });
+
+    this.logger.log(
+      `Base report deleted successfully with ID: ${baseReport.id}`,
+    );
+    return {
+      message: 'Base report deleted successfully.',
+    };
   }
 
   /**
@@ -182,26 +180,31 @@ export class BaseReportService {
   }
 
   /**
-   * Generates payments for a base report by its ID.
-   * @param baseReportId The ID of the base report for which to generate payments.
+   * Generates payments for a base report by distributor and reporting month.
+   * @param distributor The distributor for which to generate payments.
+   * @param reportingMonth The reporting month for which to generate payments.
    * @returns A promise that resolves to an object containing a message.
    */
-  async generatePayments(baseReportId: number) {
-    this.logger.log(`Generating payments for base report ID: ${baseReportId}`);
+  async generatePayments(distributor: Distributor, reportingMonth: string) {
+    this.logger.log(
+      `Generating payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    );
 
     const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { id: baseReportId },
+      where: { distributor_reportingMonth: { distributor, reportingMonth } },
       include: { userReports: true },
     });
 
     if (!baseReport) {
-      this.logger.warn(`Base report does not exist with ID: ${baseReportId}`);
+      this.logger.warn(
+        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
       throw new BaseReportNotFoundException();
     }
 
     if (baseReport.debitState === 'PAID') {
       this.logger.warn(
-        `Payments have already been generated for base report ID: ${baseReportId}`,
+        `Payments have already been generated for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
       throw new BadRequestException(
         'Payments have already been generated for this base report.',
@@ -279,21 +282,35 @@ export class BaseReportService {
     });
 
     this.logger.log(
-      `Payments generated successfully for base report ID: ${baseReportId}`,
+      `Payments generated successfully for base report ID: ${baseReport.id}`,
     );
     return { message: 'Payments generated successfully.' };
   }
 
   /**
-   * Deletes payments for a base report by its ID.
-   * @param baseReportId The ID of the base report for which to delete payments.
+   * Deletes payments for a base report by distributor and reporting month.
+   * @param distributor The distributor for which to delete payments.
+   * @param reportingMonth The reporting month for which to delete payments.
    * @returns A promise that resolves to an object containing a message.
    */
-  async deletePayments(baseReportId: number) {
-    this.logger.log(`Deleting payments for base report ID: ${baseReportId}`);
+  async deletePayments(distributor: Distributor, reportingMonth: string) {
+    this.logger.log(
+      `Deleting payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    );
+
+    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+      where: { distributor_reportingMonth: { distributor, reportingMonth } },
+    });
+
+    if (!baseReport) {
+      this.logger.warn(
+        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+      throw new BaseReportNotFoundException();
+    }
 
     const transactions = await this.prisma.transaction.findMany({
-      where: { baseReportId },
+      where: { baseReportId: baseReport.id },
     });
 
     for (const transaction of transactions) {
@@ -324,20 +341,55 @@ export class BaseReportService {
 
     // Revert user reports debitState to UNPAID
     await this.prisma.userRoyaltyReport.updateMany({
-      where: { baseReportId },
+      where: { baseReportId: baseReport.id },
       data: { debitState: 'UNPAID' },
     });
 
     // Revert base report debitState to UNPAID
     await this.prisma.baseRoyaltyReport.update({
-      where: { id: baseReportId },
+      where: { id: baseReport.id },
       data: { debitState: 'UNPAID' },
     });
 
     this.logger.log(
-      `Payments deleted successfully for base report ID: ${baseReportId}`,
+      `Payments deleted successfully for base report ID: ${baseReport.id}`,
     );
     return { message: 'Payments deleted successfully.' };
+  }
+
+  /**
+   * Recalculates total royalties and earnings for the given distributor and reporting month.
+   * @param distributor The distributor for which to recalculate totals.
+   * @param reportingMonth The reporting month for which to recalculate totals.
+   * @returns A promise that resolves to an object containing the recalculated totals.
+   */
+  async recalculateTotals(distributor: Distributor, reportingMonth: string) {
+    this.logger.log(
+      `Recalculating totals for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    );
+
+    const reports = await this.getReports(distributor, reportingMonth);
+
+    if (reports.length === 0) {
+      this.logger.warn(
+        `No reports found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+      throw new NoReportsFoundException();
+    }
+
+    const { totalRoyalties, totalEarnings } = this.calculateTotals(
+      reports,
+      distributor,
+    );
+
+    this.logger.log(
+      `Recalculated totals for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
+    );
+
+    return {
+      totalRoyalties: totalRoyalties.toNumber(),
+      totalEarnings: totalEarnings.toNumber(),
+    };
   }
 
   // Private methods section
@@ -391,7 +443,7 @@ export class BaseReportService {
    */
   private calculateTotals(reports: any[], distributor: Distributor) {
     let totalRoyalties = new Decimal(0);
-    let totalEarnings = new Decimal(0);
+    let totalEarnings = new Decimal(0); // Representa el valor restante (ganancias)
 
     if (distributor === Distributor.KONTOR) {
       totalRoyalties = reports.reduce(
@@ -399,13 +451,9 @@ export class BaseReportService {
         new Decimal(0),
       );
       totalEarnings = reports.reduce((sum, report) => {
-        const ppd = new Decimal(report.cmg_clientRate);
-        const earningsOurs = ppd.equals(0)
-          ? new Decimal(100)
-          : new Decimal(report.royalties).mul(
-              new Decimal(1).minus(ppd.div(100)),
-            );
-        return sum.plus(earningsOurs);
+        const report_royalties = new Decimal(report.royalties);
+        const cmg_netRevenue = new Decimal(report.cmg_netRevenue);
+        return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje restante)
       }, new Decimal(0));
     } else if (distributor === Distributor.BELIEVE) {
       totalRoyalties = reports.reduce(
@@ -413,12 +461,9 @@ export class BaseReportService {
         new Decimal(0),
       );
       totalEarnings = reports.reduce((sum, report) => {
-        const ppd = new Decimal(report.cmg_clientRate);
-        return sum.plus(
-          ppd.equals(0)
-            ? new Decimal(100)
-            : new Decimal(report.netRevenue).mul(ppd.div(100)),
-        );
+        const report_royalties = new Decimal(report.royalties);
+        const cmg_netRevenue = new Decimal(report.cmg_netRevenue);
+        return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje)
       }, new Decimal(0));
     }
 
