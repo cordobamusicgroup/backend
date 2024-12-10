@@ -59,4 +59,9 @@ export class UsersAdminController {
       Number(body.clientId),
     );
   }
+
+  @Post('resend-account-info')
+  async resendAccountInfo(@Body() body: { email: string }) {
+    return this.usersService.resendAccountInfoEmail(body.email);
+  }
 }
