@@ -137,6 +137,7 @@ export class UsersService {
         context: {
           username,
           password,
+          FRONTEND_URL: process.env.FRONTEND_URL,
         },
       });
     } catch (error) {
