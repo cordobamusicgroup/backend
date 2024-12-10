@@ -40,8 +40,8 @@ export class AuthService {
   async validateUser(login: string, password: string): Promise<User | null> {
     try {
       const user = login.includes('@')
-        ? await this.usersService.findByEmail(login)
-        : await this.usersService.findByUsername(login);
+        ? await this.prisma.user.findUnique({ where: { email: login } })
+        : await this.prisma.user.findUnique({ where: { username: login } });
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new InvalidCredentialsException();
