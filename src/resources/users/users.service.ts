@@ -178,6 +178,22 @@ export class UsersService {
   }
 
   /**
+   * Finds a user by their ID.
+   * @param id - The user ID
+   * @returns The found user or throws an exception if not found
+   * @throws UserNotFoundException if the user is not found
+   */
+  async findById(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new UserNotFoundException();
+    }
+    return this.convertToDto(user);
+  }
+
+  /**
    * Gets all users with their client relations.
    * @returns List of users transformed into DTOs
    * @throws InternalServerErrorException if any error occurs during the query
