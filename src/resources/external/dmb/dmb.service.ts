@@ -1,4 +1,4 @@
-/*import {
+import {
   Injectable,
   NotFoundException,
   HttpException,
@@ -10,6 +10,8 @@ import { AlbumDTO } from './interfaces/album.dto';
 import { navigateAndEditAlbum } from './lib/core/navigate-edit-album.util';
 import { extractProductId } from './lib/utils/getProductId';
 import { downloadBlvCover } from './lib/external/downloadBlvCover';
+import env from 'src/config/env.config';
+import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
 export class DmbService {
@@ -20,10 +22,7 @@ export class DmbService {
 
   async login() {
     try {
-      await this.dmbAuthService.login(
-        process.env.DMB_USER,
-        process.env.DMB_PASS,
-      );
+      await this.dmbAuthService.login(env.APP_DMB_USER, env.APP_DMB_PASS);
       await extractProductId(this.dmbAuthService, '872076d6555065');
     } catch (error) {
       throw new HttpException(error, HttpStatus.SERVICE_UNAVAILABLE);
@@ -105,4 +104,4 @@ export class DmbService {
   async clearQueue(): Promise<void> {
     await this.dmbQueue.empty();
   }
-}*/
+}

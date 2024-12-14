@@ -1,18 +1,18 @@
 import { Controller, Post, Get, Delete, Body } from '@nestjs/common';
-import { BaseReportService } from '../../services/base-report.service';
-import { ReportsService } from '../../services/reports.service';
-import { CreateBaseReportDto } from '../../dto/create-base-report.dto';
-import { UserReportsService } from '../../services/user-reports.service';
+import { AdminBaseReportService } from '../../services/admin-base-report.service';
+import { AdminReportsHelperService } from '../../services/admin-reports-helper.service';
+import { CreateBaseReportDto } from '../../dto/admin-create-base-report.dto';
+import { UserFinancialReportsService } from '../../services/user-financial-reports.service';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('admin/base-reports')
 @Roles(Role.ADMIN)
-export class BaseReportsAdminController {
+export class AdminBaseReportsController {
   constructor(
-    private readonly baseReportService: BaseReportService,
-    private readonly reportsService: ReportsService,
-    private readonly userReports: UserReportsService,
+    private readonly baseReportService: AdminBaseReportService,
+    private readonly reportsService: AdminReportsHelperService,
+    private readonly userReports: UserFinancialReportsService,
   ) {}
 
   @Get()

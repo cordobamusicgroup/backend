@@ -10,17 +10,17 @@ import {
 import { diskStorage } from 'multer';
 import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ReportsService } from '../../services/reports.service';
-import { UploadCsvDto } from '../../dto/upload-csv.dto';
+import { AdminReportsHelperService } from '../../services/admin-reports-helper.service';
+import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ImportedReportsService } from '../../services/imported-reports.service';
+import { AdminImportedReportsService } from '../../services/admin-imported-reports.service';
 
 @Controller('admin/import')
 @Roles(Role.ADMIN)
-export class ImportReportsAdminController {
+export class AdminImportReportsController {
   constructor(
-    private readonly reportsService: ReportsService,
-    private readonly importedReportsService: ImportedReportsService,
+    private readonly reportsService: AdminReportsHelperService,
+    private readonly importedReportsService: AdminImportedReportsService,
   ) {}
 
   @Post('kontor')

@@ -1,6 +1,7 @@
 // src/common/services/redis.service.ts
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
+import env from 'src/config/env.config';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -8,9 +9,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   constructor() {
     this.client = new Redis({
-      host: process.env.APP_REDIS_HOST,
-      port: parseInt(process.env.APP_REDIS_PORT, 10),
-      password: process.env.APP_REDIS_PASSWORD || undefined, // Agrega password si es necesario
+      host: env.APP_REDIS_HOST,
+      port: env.APP_REDIS_PORT,
     });
   }
 

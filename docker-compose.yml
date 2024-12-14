@@ -7,12 +7,12 @@ services:
       dockerfile: Dockerfile
       args:
         - 'DOCKER_BUILDKIT=1'
-    image: ${DOCKER_IMAGE}:${VERSION} # Usa variable de imagen y versión
+    image: ${DOCKER_IMAGE}:${DOCKER_VERSION} # Usa variable de imagen y versión
     container_name: cmg-api-${ENV}
     env_file:
-      - .env.${ENV}
+      - .env.${DOCKER_ENV}
     ports:
-      - '${APP_PORT}:6060'
+      - '${DOCKER_APP_PORT}:6060'
     volumes:
       - ./temp:/app/temp
       - ./logs:/app/logs
@@ -23,26 +23,26 @@ services:
         condition: service_healthy
 
   postgres:
-    container_name: cmg-db-${ENV}
+    container_name: cmg-db-${DOCKER_ENV}
     image: 'postgres:latest'
     env_file:
       - .env.${ENV}
     volumes:
-      - ./data/db/${ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
-      - ./data/db/${ENV}_log:/var/log/postgresql
+      - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
+      - ./data/db/${DOCKER_ENV}_log:/var/log/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
       timeout: 10s
       retries: 5
     ports:
-      - '${DB_PORT}:5432'
+      - '${DOCKER_DB_PORT}:5432'
 
   redis:
-    container_name: cmg-redis-${ENV}
+    container_name: cmg-redis-${DOCKER_ENV}
     image: 'redis:latest'
     ports:
-      - '${REDIS_PORT}:6379'
+      - '${DOCKER_REDIS_PORT}:6379'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s

@@ -4,6 +4,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import * as multerS3 from 'multer-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 import { S3Module } from './s3.module';
+import env from 'src/config/env.config';
 
 @Global() // Makes the module globally available
 @Module({
@@ -14,7 +15,7 @@ import { S3Module } from './s3.module';
       useFactory: async (s3Client: S3Client) => ({
         storage: multerS3({
           s3: s3Client,
-          bucket: process.env.S3_BUCKET_NAME,
+          bucket: env.AWS_S3_BUCKET_NAME,
           key: (req, file, cb) => {
             const filename = `${Date.now()}-${file.originalname}`;
             console.log('Uploading file with filename:', filename); // Verification log

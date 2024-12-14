@@ -17,6 +17,7 @@ import {
   EmailAlreadyExistsException,
   UserNotFoundException,
 } from 'src/common/exceptions/CustomHttpException';
+import env from 'src/config/env.config';
 
 @Injectable()
 export class UsersService {
@@ -137,7 +138,7 @@ export class UsersService {
         context: {
           username,
           password,
-          FRONTEND_URL: process.env.FRONTEND_URL,
+          FRONTEND_URL: env.APP_FRONTEND_URL,
         },
       });
     } catch (error) {

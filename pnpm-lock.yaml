@@ -113,6 +113,9 @@ dependencies:
   ioredis:
     specifier: ^5.4.1
     version: 5.4.1
+  js-yaml:
+    specifier: ^4.1.0
+    version: 4.1.0
   multer:
     specifier: 1.4.5-lts.1
     version: 1.4.5-lts.1
@@ -154,6 +157,9 @@ devDependencies:
   '@types/bcrypt':
     specifier: ^5.0.2
     version: 5.0.2
+  '@types/js-yaml':
+    specifier: ^4.0.9
+    version: 4.0.9
   '@types/multer':
     specifier: ^1.4.12
     version: 1.4.12
@@ -2816,6 +2822,10 @@ packages:
     resolution: {integrity: sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ==}
     dependencies:
       '@types/istanbul-lib-report': 3.0.3
+    dev: true
+
+  /@types/js-yaml@4.0.9:
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
     dev: true
 
   /@types/json-schema@7.0.15:

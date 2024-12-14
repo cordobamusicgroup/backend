@@ -1,22 +1,16 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { UsersService } from 'src/resources/users/users.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { UserReportDto } from '../dto/user-report.dto';
+import { AdminFinancialReportDto } from '../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
-export class UserReportsService {
-  private readonly logger = new Logger(UserReportsService.name);
+export class AdminFinancialReportsService {
+  private readonly logger = new Logger(AdminFinancialReportsService.name);
 
   constructor(
     private usersService: UsersService,
@@ -55,7 +49,7 @@ export class UserReportsService {
     }
   }
 
-  async getAllUserReports(): Promise<UserReportDto[]> {
+  async getAllUserReports(): Promise<AdminFinancialReportDto[]> {
     try {
       const reports = await this.prisma.userRoyaltyReport.findMany();
       const reportsWithUrls = await Promise.all(
@@ -70,79 +64,13 @@ export class UserReportsService {
           }
         }),
       );
-      return plainToInstance(UserReportDto, reportsWithUrls, {
+      return plainToInstance(AdminFinancialReportDto, reportsWithUrls, {
         excludeExtraneousValues: true,
       });
     } catch (error) {
       this.logger.error(`Failed to get user reports: ${error.message}`);
       throw new HttpException(
         `Failed to get user reports: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async getCurrentUserReports(user: JwtPayloadDto): Promise<UserReportDto[]> {
-    try {
-      const userData = await this.usersService.findByUsername(user.username);
-
-      const reports = await this.prisma.userRoyaltyReport.findMany({
-        where: { clientId: userData.clientId },
-      });
-
-      return plainToInstance(UserReportDto, reports, {
-        excludeExtraneousValues: true,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to get current user reports: ${error.message}`);
-      throw new HttpException(
-        `Failed to get current user reports: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async getUserDownloadUrl(
-    reportId: number,
-    user: JwtPayloadDto,
-  ): Promise<string> {
-    try {
-      const report = await this.prisma.userRoyaltyReport.findUnique({
-        where: { id: reportId },
-      });
-
-      if (!report) {
-        throw new HttpException('Report not found', HttpStatus.NOT_FOUND);
-      }
-
-      const userData = await this.usersService.findByUsername(user.username);
-
-      if (report.clientId !== userData.clientId) {
-        throw new NotFoundException();
-      }
-
-      if (!report.s3FileId) {
-        throw new HttpException(
-          'File not generated yet, please try again later',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      const s3File = await this.s3Service.getFile({ id: report.s3FileId });
-      if (!s3File.url) {
-        throw new HttpException(
-          'File not generated yet, please try again later',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      return s3File.url; // Return the URL as a string
-    } catch (error) {
-      this.logger.error(`Failed to get download URL: ${error.message}`);
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to get download URL: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

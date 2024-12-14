@@ -14,8 +14,8 @@ import Decimal from 'decimal.js';
 import * as dayjs from 'dayjs';
 
 @Injectable()
-export class BaseReportService {
-  private readonly logger = new Logger(BaseReportService.name);
+export class AdminBaseReportService {
+  private readonly logger = new Logger(AdminBaseReportService.name);
 
   constructor(
     private readonly prisma: PrismaService,
