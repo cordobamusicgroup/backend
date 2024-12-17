@@ -12,7 +12,7 @@ services:
     env_file:
       - .env.${DOCKER_ENV}
     environment:
-      - APP_DATABASE_URL: 'postgresql://${DB_POSTGRES_USER}:${DB_POSTGRES_PASSWORD}@${DB_POSTGRES_HOST}:${DB_POSTGRES_PORT}/${DB_POSTGRES_DB}?schema=public'
+      APP_DATABASE_URL: 'postgresql://${DB_POSTGRES_USER}:${DB_POSTGRES_PASSWORD}@${DB_POSTGRES_HOST}:${DB_POSTGRES_PORT}/${DB_POSTGRES_DB}?schema=public'
     ports:
       - '${DOCKER_APP_PORT}:6060'
     volumes:
