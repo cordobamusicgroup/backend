@@ -5,6 +5,11 @@
 # Validate argument
 VALID_ENVS=("production" "staging")
 
+if [[ -z "$1" ]]; then
+  echo "[Start Containers Script] No environment specified. Use 'production' or 'staging'."
+  exit 1
+fi
+
 if [[ ! " ${VALID_ENVS[@]} " =~ " $1 " ]]; then
   echo "[Start Containers Script] Invalid environment specified. Use 'production' or 'staging'."
   exit 1
@@ -12,6 +17,13 @@ fi
 
 ENV=$1
 ENV_FILE=".env.${ENV}"
+
+echo "[Debug] ENV argument received: '$1'"
+ENV=$1
+echo "[Debug] ENV set to: '$ENV'"
+ENV_FILE=".env.${ENV}"
+echo "[Debug] ENV_FILE set to: '$ENV_FILE'"
+
 
 # Check prerequisites
 check_prerequisites() {
