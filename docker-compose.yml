@@ -1,4 +1,4 @@
-name: 'cmg-api-${ENV}'
+name: 'cmg-api-${DOCKER_ENV}'
 
 services:
   app:
@@ -8,7 +8,7 @@ services:
       args:
         - 'DOCKER_BUILDKIT=1'
     image: ${DOCKER_IMAGE}:${DOCKER_VERSION} # Usa variable de imagen y versión
-    container_name: cmg-api-${ENV}
+    container_name: cmg-api-${DOCKER_ENV}
     env_file:
       - .env.${DOCKER_ENV}
     ports:
@@ -26,7 +26,7 @@ services:
     container_name: cmg-db-${DOCKER_ENV}
     image: 'postgres:latest'
     env_file:
-      - .env.${ENV}
+      - .env.${DOCKER_ENV}
     volumes:
       - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
       - ./data/db/${DOCKER_ENV}_log:/var/log/postgresql
