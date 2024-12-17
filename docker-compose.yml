@@ -11,6 +11,8 @@ services:
     container_name: cmg-api-${DOCKER_ENV}
     env_file:
       - .env.${DOCKER_ENV}
+    environment:
+      - APP_DATABASE_URL: 'postgresql://${DB_POSTGRES_USER}:${DB_POSTGRES_PASSWORD}@${DB_POSTGRES_HOST}:${DB_POSTGRES_PORT}/${DB_POSTGRES_DB}?schema=public'
     ports:
       - '${DOCKER_APP_PORT}:6060'
     volumes:
@@ -31,7 +33,11 @@ services:
       - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
       - ./data/db/${DOCKER_ENV}_log:/var/log/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U $${DB_POSTGRES_USER} -d $${DB_POSTGRES_DB}']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U $${DB_POSTGRES_USER} -d $${DB_POSTGRES_DB}',
+        ]
       interval: 10s
       timeout: 10s
       retries: 5
