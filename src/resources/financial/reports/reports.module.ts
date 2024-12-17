@@ -18,6 +18,7 @@ import { UsersModule } from 'src/resources/users/users.module';
 import { UserFinancialReportsController } from './controllers/user-financial-reports.controller';
 import { AdminImportedReportsService } from './services/admin-imported-reports.service';
 import { AdminFinancialReportsService } from './services/admin-financial-reports.service';
+import { ReportsGateway } from './gateways/reports.gateway';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { AdminFinancialReportsService } from './services/admin-financial-reports
     // Processors
     ImportReportsProcessor,
     UserReportsProcessor,
+    ReportsGateway,
   ],
   controllers: [
     AdminBaseReportsController,
