@@ -31,7 +31,7 @@ services:
       - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
       - ./data/db/${DOCKER_ENV}_log:/var/log/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -U $${DB_POSTGRES_USER} -d $${DB_POSTGRES_DB}']
       interval: 10s
       timeout: 10s
       retries: 5

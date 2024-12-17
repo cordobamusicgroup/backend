@@ -1,9 +1,3 @@
-import { config } from 'dotenv';
-import { join } from 'path';
-
-// Load environment variables from .env.production
-config({ path: join(__dirname, '../../.env.production') });
-
 export const {
   APP_DATABASE_URL,
   APP_JWT_SECRET,
