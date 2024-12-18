@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("APP_DATABASE_URL")
 }
 
 model InitializationStatus {
@@ -29,6 +29,21 @@ model S3File {
   UserRoyaltyReport UserRoyaltyReport[]
 
   @@map("s3_files")
+}
+
+model Workflow {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  formKey    String
+  stepKey    String
+  stepStatus String
+  stepData   Json?
+  entryData  Json
+  statusForm String
+
+  @@map("workflows")
 }
 
 model User {
@@ -120,9 +135,9 @@ model Client {
 
   dmb ClientDMB? @relation("ClientDMB")
 
-  balances          Balance[]           @relation("ClientBalances")
-  paymentData       ClientPaymentData?
-  labels            Label[]             @relation("ClientLabel")
+  balances          Balance[]                 @relation("ClientBalances")
+  paymentData       ClientPaymentInformation?
+  labels            Label[]                   @relation("ClientLabel")
   users             User[]
   contract          Contract?
   userRoyaltyReport UserRoyaltyReport[]
@@ -146,7 +161,7 @@ model ClientDMB {
   @@map("clients_dmb")
 }
 
-model ClientPaymentData {
+model ClientPaymentInformation {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -154,26 +169,10 @@ model ClientPaymentData {
   clientId Int    @unique
   client   Client @relation(fields: [clientId], references: [id])
 
-  paymentMethod PaymentMethod
-  clientBankId  Int?
-  clientBank    ClientPaymentBank? @relation(fields: [clientBankId], references: [id])
+  paymentMethod PaymentMethod?
   data          Json?
 
-  @@map("clients_payment_data")
-}
-
-model ClientPaymentBank {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  accountType       ClientType          @default(PERSON)
-  accountHolder     String
-  accountNumber     String
-  swiftCode         String?
-  ClientPaymentData ClientPaymentData[]
-
-  @@map("clients_payment_banks")
+  @@map("clients_payment_information")
 }
 
 model Contract {

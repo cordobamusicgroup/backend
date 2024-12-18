@@ -9,14 +9,14 @@ import { mapCsvToRecord } from '../utils/csv-mapper.util';
 import { parse } from 'fast-csv';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
-import { UploadCsvDto } from '../dto/upload-csv.dto';
+import { UploadCsvDto } from '../dto/admin-upload-csv.dto';
 import { decode } from 'html-entities';
 import Decimal from 'decimal.js';
-import { LinkUnlinkedReportDto } from '../dto/link-unlinked-report.dto';
+import { LinkUnlinkedReportDto } from '../dto/admin-link-unlinked-report.dto';
 
 @Injectable()
-export class ReportsService {
-  private readonly logger = new Logger(ReportsService.name);
+export class AdminReportsHelperService {
+  private readonly logger = new Logger(AdminReportsHelperService.name);
 
   constructor(
     @InjectQueue('import-reports') private importReportsQueue: Queue,

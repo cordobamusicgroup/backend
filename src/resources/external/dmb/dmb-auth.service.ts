@@ -73,8 +73,8 @@ export class DmbAuthService {
 
   async ensureAuthenticated(): Promise<void> {
     if (!this.getXsrfToken() || !this.getDmbSid()) {
-      const user = this.configService.get<string>('DMB_USER');
-      const pass = this.configService.get<string>('DMB_PASS');
+      const user = this.configService.get<string>('APP_DMB_USER');
+      const pass = this.configService.get<string>('APP_DMB_PASS');
 
       if (!user || !pass) {
         this.logger.error(

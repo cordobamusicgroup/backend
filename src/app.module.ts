@@ -23,6 +23,8 @@ import { S3Module } from './providers/s3.module';
 import { BullModule } from '@nestjs/bullmq';
 import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
+import { FeedbackModule } from './resources/feedback/feedback.module';
+import env from './config/env.config';
 
 @Global()
 @Module({
@@ -50,12 +52,12 @@ import { ImportsModule } from './resources/imports/imports.module';
           port: 465, // Puerto de AWS SES para SMTP (465 para SSL, 587 para TLS)
           secure: true, // true para usar SSL
           auth: {
-            user: config.get<string>('SMTP_USER'), // Tu access key de SES
-            pass: config.get<string>('SMTP_PASSWORD'), // Tu secret key de SES
+            user: config.get<string>('AWS_SMTP_USER'), // Tu access key de SES
+            pass: config.get<string>('AWS_SMTP_PASSWORD'), // Tu secret key de SES
           },
         },
         defaults: {
-          from: `Córdoba Music Group <${process.env.FROM_EMAIL}>`,
+          from: `Córdoba Music Group <${env.APP_FROM_EMAIL}>`,
         },
         template: {
           dir: join(__dirname, 'templates'),
@@ -78,6 +80,7 @@ import { ImportsModule } from './resources/imports/imports.module';
     CountriesModule,
     FinancialModule,
     ImportsModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [

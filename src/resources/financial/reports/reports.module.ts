@@ -1,27 +1,29 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { ReportsService } from './services/reports.service';
-import { UnlinkedReportsAdminController } from './controllers/admin/unlinked-reports.admin.controller';
-import { BaseReportService } from './services/base-report.service';
-import { UserReportsService } from './services/user-reports.service';
+import { AdminReportsHelperService } from './services/admin-reports-helper.service';
+import { AdminUnlinkedReportsController } from './controllers/admin/admin-unlinked-reports.controller';
+import { AdminBaseReportService } from './services/admin-base-report.service';
+import { UserFinancialReportsService } from './services/user-financial-reports.service';
 import { ProgressService } from 'src/common/services/progress.service';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { BaseReportsAdminController } from './controllers/admin/base-reports.admin.controller';
-import { ImportReportsAdminController } from './controllers/admin/import-reports.admin.controller';
+import { AdminBaseReportsController } from './controllers/admin/admin-base-reports.controller';
+import { AdminImportReportsController } from './controllers/admin/admin-import-reports.controller';
 import { ImportReportsProcessor } from './processors/import-reports.processor';
 import { UserReportsProcessor } from './processors/user-reports.processor';
 import { EmailService } from 'src/resources/email/email.service';
-import { UserReportsAdminController } from './controllers/admin/user-reports.admin.controller';
+import { AdminFinancialReportsController } from './controllers/admin/admin-financial-reports.controller';
 import { UsersModule } from 'src/resources/users/users.module';
-import { UserReportsUserController } from './controllers/user-reports.user.controller';
-import { ImportedReportsService } from './services/imported-reports.service';
-import { PrismaService } from 'src/resources/prisma/prisma.service';
+import { UserFinancialReportsController } from './controllers/user-financial-reports.controller';
+import { AdminImportedReportsService } from './services/admin-imported-reports.service';
+import { AdminFinancialReportsService } from './services/admin-financial-reports.service';
+import { ReportsGateway } from './gateways/reports.gateway';
 
 @Module({
   imports: [
     PrismaModule,
+    UsersModule,
     BullModule.registerQueue(
       {
         name: 'user-reports',
@@ -34,28 +36,31 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
         name: 'import-reports',
       },
     ),
-    UsersModule,
   ],
   providers: [
-    ReportsService,
-    ImportedReportsService,
+    // Services from Module
+    AdminBaseReportService,
+    AdminImportedReportsService,
+    AdminReportsHelperService,
+    AdminFinancialReportsService,
+    UserFinancialReportsService,
+    // Global Services
+    LoggerTxtService,
+    ProgressService,
+    S3Service,
+    EmailService,
+    // Processors
     ImportReportsProcessor,
     UserReportsProcessor,
-    BaseReportService,
-    UserReportsService,
-    PrismaService,
-    ProgressService,
-    EmailService,
-    LoggerTxtService,
-    S3Service,
+    ReportsGateway,
   ],
   controllers: [
-    UnlinkedReportsAdminController,
-    BaseReportsAdminController,
-    ImportReportsAdminController,
-    UserReportsAdminController,
-    UserReportsUserController,
+    AdminBaseReportsController,
+    AdminImportReportsController,
+    AdminUnlinkedReportsController,
+    AdminFinancialReportsController,
+    UserFinancialReportsController,
   ],
-  exports: [ReportsService, ImportedReportsService],
+  exports: [AdminReportsHelperService, AdminImportedReportsService],
 })
 export class ReportsModule {}

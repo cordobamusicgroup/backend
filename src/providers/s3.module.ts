@@ -1,6 +1,7 @@
 // src/providers/s3.module.ts
 import { Global, Module } from '@nestjs/common';
 import { S3Client } from '@aws-sdk/client-s3';
+import env from 'src/config/env.config';
 
 @Global() // Make S3Module globally available
 @Module({
@@ -9,10 +10,10 @@ import { S3Client } from '@aws-sdk/client-s3';
       provide: S3Client,
       useFactory: () => {
         return new S3Client({
-          region: process.env.S3_AWS_REGION,
+          region: env.AWS_S3_REGION,
           credentials: {
-            accessKeyId: process.env.S3_AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.S3_AWS_SECRET_ACCESS_KEY,
+            accessKeyId: env.AWS_S3_ACCESS_KEY_ID,
+            secretAccessKey: env.AWS_S3_SECRET_ACCESS_KEY,
           },
         });
       },

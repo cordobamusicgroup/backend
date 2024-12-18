@@ -1,15 +1,15 @@
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
-import { ReportsService } from './reports.service';
+import { AdminReportsHelperService } from './admin-reports-helper.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { LinkUnlinkedReportDto } from '../dto/link-unlinked-report.dto';
+import { LinkUnlinkedReportDto } from '../dto/admin-link-unlinked-report.dto';
 
 @Injectable()
-export class UnlinkedReportService {
-  private readonly logger = new Logger(UnlinkedReportService.name);
+export class AdminUnlinkedReportService {
+  private readonly logger = new Logger(AdminUnlinkedReportService.name);
 
   constructor(
-    @Inject(forwardRef(() => ReportsService))
-    private readonly processReportsService: ReportsService,
+    @Inject(forwardRef(() => AdminReportsHelperService))
+    private readonly processReportsService: AdminReportsHelperService,
     private readonly prisma: PrismaService,
   ) {}
 

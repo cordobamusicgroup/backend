@@ -3,12 +3,16 @@ import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name); // Logger de NestJS
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async seedCountries() {
     const countriesData = JSON.parse(
@@ -40,6 +44,12 @@ export class SeedService {
 
   async runSeed() {
     try {
+      const databaseUrl = this.configService.get<string>('APP_DATABASE_URL');
+      if (!databaseUrl) {
+        this.logger.error('Database URL is not properly configured.');
+        return;
+      }
+
       // Check if the seed has already been initialized
       let status = await this.prisma.initializationStatus.findFirst();
 

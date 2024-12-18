@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Distributor } from '@prisma/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { ReportsService } from './reports.service';
+import { AdminReportsHelperService } from './admin-reports-helper.service';
 
 @Injectable()
-export class ImportedReportsService {
-  private readonly logger = new Logger(ImportedReportsService.name);
+export class AdminImportedReportsService {
+  private readonly logger = new Logger(AdminImportedReportsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly processRecordsService: ReportsService,
+    private readonly processRecordsService: AdminReportsHelperService,
   ) {}
 
   async deleteImportedReports(

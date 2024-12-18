@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
+import env from 'src/config/env.config';
 
 @Injectable()
 export class EmailService {
@@ -11,7 +12,7 @@ export class EmailService {
     email: string,
     token: string,
   ): Promise<void> {
-    const reset_link = `${process.env.FRONTEND_URL}/auth/reset?token=${token}`;
+    const reset_link = `${env.APP_FRONTEND_URL}/auth/reset?token=${token}`;
 
     // Enviar el correo usando el servicio de MailerModule
     await this.mailerService.sendMail({
@@ -46,6 +47,19 @@ export class EmailService {
           path: logFilePath,
         },
       ],
+    });
+  }
+
+  async sendFeedbackEmail(content: {
+    username: string;
+    email: string;
+    description: string;
+  }): Promise<void> {
+    await this.mailerService.sendMail({
+      to: 'feedback@cordobamusicgroup.co.uk',
+      subject: 'New Feedback Received',
+      template: './feedback-template',
+      context: content,
     });
   }
 }

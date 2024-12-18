@@ -12,6 +12,7 @@ import { S3Service } from 'src/common/services/s3.service';
 import * as fs from 'fs';
 import { convertUserReportsToCsv } from '../utils/convert-user-reports-csv';
 import Decimal from 'decimal.js';
+import env from 'src/config/env.config';
 
 @Processor('user-reports')
 export class UserReportsProcessor extends WorkerHost {
@@ -304,7 +305,7 @@ export class UserReportsProcessor extends WorkerHost {
 
         const s3Key = `user-reports/${baseReportId}/${userReport.clientId}/${fileName}`;
         const s3File = await this.s3UploadService.uploadFile(
-          process.env.S3_BUCKET_NAME_ROYALTIES,
+          env.AWS_S3_BUCKET_NAME_ROYALTIES,
           s3Key,
           filePath,
         );

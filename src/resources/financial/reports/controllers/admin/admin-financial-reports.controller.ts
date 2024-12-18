@@ -7,15 +7,17 @@ import {
   Request,
   Get,
 } from '@nestjs/common';
-import { UserReportsService } from '../../services/user-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { AdminFinancialReportsService } from '../../services/admin-financial-reports.service';
 
 @Controller('admin/user-reports')
 @Roles(Role.ADMIN)
-export class UserReportsAdminController {
-  constructor(private readonly userReports: UserReportsService) {}
+export class AdminFinancialReportsController {
+  constructor(
+    private readonly adminFinancialReports: AdminFinancialReportsService,
+  ) {}
 
   @Post('generate/:baseReportId')
   @UseGuards(JwtAuthGuard)
@@ -23,7 +25,7 @@ export class UserReportsAdminController {
     @Param('baseReportId') baseReportId: number,
     @Request() req,
   ) {
-    return this.userReports.createUserReportsJob(
+    return this.adminFinancialReports.createUserReportsJob(
       Number(baseReportId),
       'generate',
       req.user,
@@ -36,7 +38,7 @@ export class UserReportsAdminController {
     @Param('baseReportId') baseReportId: number,
     @Request() req,
   ) {
-    return this.userReports.createUserReportsJob(
+    return this.adminFinancialReports.createUserReportsJob(
       Number(baseReportId),
       'delete',
       req.user,
@@ -46,7 +48,7 @@ export class UserReportsAdminController {
   @Get('all')
   @UseGuards(JwtAuthGuard)
   async getAllUserReports() {
-    return this.userReports.getAllUserReports();
+    return this.adminFinancialReports.getAllUserReports();
   }
 
   @Post('export/:baseReportId')
@@ -55,7 +57,7 @@ export class UserReportsAdminController {
     @Param('baseReportId') baseReportId: number,
     @Request() req,
   ) {
-    return this.userReports.createUserReportsJob(
+    return this.adminFinancialReports.createUserReportsJob(
       Number(baseReportId),
       'export',
       req.user,
@@ -65,6 +67,8 @@ export class UserReportsAdminController {
   @Delete('delete-export/:baseReportId')
   @UseGuards(JwtAuthGuard)
   async deleteExportedFilesFromS3(@Param('baseReportId') baseReportId: number) {
-    return this.userReports.deleteExportedFilesFromS3(Number(baseReportId));
+    return this.adminFinancialReports.deleteExportedFilesFromS3(
+      Number(baseReportId),
+    );
   }
 }
