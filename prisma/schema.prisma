@@ -26,12 +26,14 @@ model S3File {
   bucket    String
   key       String
 
-  UserRoyaltyReport UserRoyaltyReport[]
+  UserRoyaltyReport     UserRoyaltyReport[]
+  BaseRoyaltyReport     BaseRoyaltyReport[]
+  ImportedRoyaltyReport ImportedRoyaltyReport[]
 
   @@map("s3_files")
 }
 
-model Workflow {
+model WorkflowEntry {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -42,8 +44,24 @@ model Workflow {
   stepData   Json?
   entryData  Json
   statusForm String
+  clientId   Int?
+  client     Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
 
   @@map("workflows")
+}
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  object    String
+  objectId  Int?
+  message   String
+  script    String?
+  ip        String?
+
+  @@map("logs")
 }
 
 model User {
@@ -63,13 +81,14 @@ model User {
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
+  logs     Log[]
 
   @@map("users")
 }
 
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
-  token     String // Aquí guardamos el hash del token
+  token     String // Aqu�� guardamos el hash del token
   expiresAt DateTime // Fecha de expiración del token
   userId    Int      @unique // Relación uno a uno con el usuario
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, name: "PasswordResetToken")
@@ -122,7 +141,7 @@ model Client {
   lastName      String
   type          ClientType @default(PERSON)
   addressId     Int
-  address       Address    @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  address       Address    @relation(fields: [addressId], references: [id], onDelete: Cascade, name: "ClientAddress")
   taxIdType     TaxIdType
   taxId         String
   vatRegistered Boolean    @default(false)
@@ -141,6 +160,7 @@ model Client {
   users             User[]
   contract          Contract?
   userRoyaltyReport UserRoyaltyReport[]
+  workflowEntries   WorkflowEntry[]           @relation("ClientWorkflowEntries")
 
   @@map("clients")
 }
@@ -172,7 +192,7 @@ model ClientPaymentInformation {
   paymentMethod PaymentMethod?
   data          Json?
 
-  @@map("clients_payment_information")
+  @@map("clients_payments_information")
 }
 
 model Contract {
@@ -243,7 +263,7 @@ model Address {
   countryId Int
   zip       String
   country   Country  @relation(fields: [countryId], references: [id])
-  client    Client[]
+  client    Client[] @relation("ClientAddress")
 
   @@map("clients_addresses")
 }
@@ -288,6 +308,23 @@ model Label {
 
 //*** Royalties Reports ***//
 
+model ImportedRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  distributor    Distributor
+  reportingMonth String
+  importStatus   String
+
+  s3FileId             Int?
+  s3File               S3File?                @relation(fields: [s3FileId], references: [id])
+  KontorRoyaltyReport  KontorRoyaltyReport[]  @relation("KontorImportedReports")
+  BelieveRoyaltyReport BelieveRoyaltyReport[] @relation("BelieveImportedReports")
+
+  @@map("imported_royalties_reports")
+}
+
 model BaseRoyaltyReport {
   id             Int         @id @default(autoincrement())
   createdAt      DateTime    @default(now())
@@ -300,6 +337,9 @@ model BaseRoyaltyReport {
 
   debitState DebitState @default(UNPAID)
   paidOn     DateTime?
+
+  s3FileId Int? // Add this line for the S3 file ID
+  s3File   S3File? @relation(fields: [s3FileId], references: [id])
 
   kontorReports  KontorRoyaltyReport[]  @relation("BaseKontorReports")
   believeReports BelieveRoyaltyReport[] @relation("BaseBelieveReports")
@@ -366,10 +406,12 @@ model KontorRoyaltyReport {
   cmg_clientRate Decimal?
   cmg_netRevenue Decimal?
 
-  baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseKontorReports")
-  userReportId Int?
-  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserKontorReports")
+  baseReportId     Int?
+  baseReport       BaseRoyaltyReport?     @relation(fields: [baseReportId], references: [id], name: "BaseKontorReports")
+  userReportId     Int?
+  userReport       UserRoyaltyReport?     @relation(fields: [userReportId], references: [id], name: "UserKontorReports")
+  importedReportId Int?
+  importedReport   ImportedRoyaltyReport? @relation(fields: [importedReportId], references: [id], name: "KontorImportedReports")
 
   @@map("kontor_royalties_reports")
 }
@@ -408,10 +450,12 @@ model BelieveRoyaltyReport {
   cmg_clientRate Decimal?
   cmg_netRevenue Decimal?
 
-  baseReportId Int?
-  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseBelieveReports")
-  userReportId Int?
-  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "UserBelieveReports")
+  baseReportId     Int?
+  baseReport       BaseRoyaltyReport?     @relation(fields: [baseReportId], references: [id], name: "BaseBelieveReports")
+  userReportId     Int?
+  userReport       UserRoyaltyReport?     @relation(fields: [userReportId], references: [id], name: "UserBelieveReports")
+  importedReportId Int?
+  importedReport   ImportedRoyaltyReport? @relation(fields: [importedReportId], references: [id], name: "BelieveImportedReports")
 
   @@map("believe_reports")
 }
