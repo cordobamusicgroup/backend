@@ -23,10 +23,9 @@ export class AdminImportedReportsService {
     };
 
     try {
-      if (distributor === Distributor.BELIEVE) {
-        const reports = await this.prisma.believeRoyaltyReport.findMany({
-          where: { reportingMonth, baseReportId: null, userReportId: null },
-        });
+      const importedReport = await this.prisma.importedRoyaltyReport.findFirst({
+        where: { distributor, reportingMonth },
+      });
 
         for (const report of reports) {
           await this.prisma.believeRoyaltyReport.delete({
