@@ -13,6 +13,9 @@ import { UploadCsvDto } from '../dto/admin-upload-csv.dto';
 import { decode } from 'html-entities';
 import Decimal from 'decimal.js';
 import { LinkUnlinkedReportDto } from '../dto/admin-link-unlinked-report.dto';
+import { Buffer } from 'buffer';
+import dayjs from 'dayjs';
+import { S3Service } from 'src/common/services/s3.service';
 
 @Injectable()
 export class AdminReportsHelperService {
@@ -22,6 +25,7 @@ export class AdminReportsHelperService {
     @InjectQueue('import-reports') private importReportsQueue: Queue,
     private readonly prisma: PrismaService,
     private readonly loggerTxt: LoggerTxtService,
+    private readonly s3Service: S3Service,
   ) {}
 
   /**
@@ -34,6 +38,9 @@ export class AdminReportsHelperService {
     const tempFilePath = path.resolve(file.path);
 
     try {
+      // Check if there are existing jobs in progress for the given distributor and reporting month
+      await this.validateNoJobInProgress(reportingMonth, distributor);
+
       // Check if there are existing reports for the given distributor and reporting month
       if (await this.checkForExistingReports(distributor, reportingMonth)) {
         throw new BadRequestException(
@@ -41,11 +48,21 @@ export class AdminReportsHelperService {
         );
       }
 
+      // Create an ImportedRoyaltyReport record
+      const importedReport = await this.prisma.importedRoyaltyReport.create({
+        data: {
+          distributor,
+          reportingMonth,
+          importStatus: 'PENDING',
+        },
+      });
+
       // Add the CSV file to the processing queue
       await this.importReportsQueue.add('parse-csv', {
         filePath: tempFilePath,
         reportingMonth,
         distributor,
+        importReportId: importedReport.id,
       });
 
       return {
@@ -56,6 +73,27 @@ export class AdminReportsHelperService {
     } catch (error) {
       this.logger.error(`Failed to queue CSV for processing: ${error.message}`);
       throw error;
+    }
+  }
+
+  async validateNoJobInProgress(
+    reportingMonth: string,
+    distributor: Distributor,
+  ) {
+    const existingJobs = await this.importReportsQueue.getJobs([
+      'waiting',
+      'active',
+    ]);
+    const isJobInProgress = existingJobs.some(
+      (job) =>
+        job.data.reportingMonth === reportingMonth &&
+        job.data.distributor === distributor,
+    );
+
+    if (isJobInProgress) {
+      throw new BadRequestException(
+        'There is already a job in progress for the same reporting month and distributor.',
+      );
     }
   }
 
@@ -96,7 +134,7 @@ export class AdminReportsHelperService {
     return new Promise<any[]>((resolve, reject) => {
       try {
         const records = [];
-        fs.createReadStream(filePath)
+        fs.createReadStream(filePath, { encoding: 'utf8' }) // Ensure UTF-8 encoding
           .pipe(parse({ headers: true, delimiter: ';', ignoreEmpty: true }))
           .on('data', (row) => {
             // Decode HTML entities in each field
@@ -124,6 +162,7 @@ export class AdminReportsHelperService {
    * @param rowIndex The index of the row in the CSV file.
    * @param labelId The ID of the label to be linked (optional).
    * @param jobId The ID of the job (optional).
+   * @param importReportId The ID of the import report (optional).
    */
   async processRecord(
     record: any,
@@ -132,6 +171,7 @@ export class AdminReportsHelperService {
     rowIndex: number,
     labelId?: number,
     jobId?: string,
+    importReportId?: number,
   ) {
     try {
       let label;
@@ -141,10 +181,11 @@ export class AdminReportsHelperService {
         if (!label) {
           throw new Error(`Label with ID ${labelId} not found.`);
         }
-        record.labelId = label.id;
       } else {
+        // Normalize and convert the label name from the CSV to UTF-8
+        const utf8LabelName = Buffer.from(record.labelName, 'utf8').toString();
         // Find label by name if ID is not provided
-        label = await this.findLabelByName(record.labelName);
+        label = await this.findLabelByName(utf8LabelName, distributor);
         if (!label) {
           this.loggerTxt.logError(
             `Row ${rowIndex}: Label not found for label "${record.labelName}"`,
@@ -154,7 +195,6 @@ export class AdminReportsHelperService {
           await this.saveUnlinkedRecord(record, distributor, reportingMonth);
           return;
         }
-        record.labelId = label.id;
       }
 
       // Find contract associated with the label's client
@@ -167,6 +207,11 @@ export class AdminReportsHelperService {
         );
         await this.saveUnlinkedRecord(record, distributor, reportingMonth);
         return;
+      }
+
+      // Format reportingMonth for BELIEVE
+      if (distributor === Distributor.BELIEVE) {
+        record.reportingMonth = dayjs(record.reportingMonth).format('YYYYMM');
       }
 
       // Calculate revenue based on the contract's PPD and distributor
@@ -183,6 +228,8 @@ export class AdminReportsHelperService {
         distributor,
         cmg_clientRate,
         cmg_netRevenue,
+        label.id,
+        importReportId, // Link to importReportId
       );
     } catch (error) {
       this.loggerTxt.logError(
@@ -201,11 +248,27 @@ export class AdminReportsHelperService {
    * @param labelName The name of the label to be found.
    * @returns The label with its associated client.
    */
-  private async findLabelByName(labelName: string) {
-    return this.prisma.label.findUnique({
-      where: { name: labelName },
-      include: { client: true },
-    });
+  private async findLabelByName(labelName: string, distributor: Distributor) {
+    if (distributor === Distributor.BELIEVE) {
+      return this.prisma.label.findFirst({
+        where: {
+          name: {
+            contains: labelName,
+            mode: 'insensitive',
+          },
+        },
+        include: { client: true },
+      });
+    } else {
+      return this.prisma.label.findFirst({
+        where: {
+          name: {
+            contains: labelName,
+          },
+        },
+        include: { client: true },
+      });
+    }
   }
 
   /**
@@ -280,6 +343,7 @@ export class AdminReportsHelperService {
    * @param distributor The distributor associated with the record.
    * @param cmg_clientRate The client rate for the record.
    * @param cmg_netRevenue The net revenue for the record.
+   * @param importReportId The ID of the import report (optional).
    */
   private async saveReport(
     record: any,
@@ -287,6 +351,8 @@ export class AdminReportsHelperService {
     distributor: Distributor,
     cmg_clientRate: number,
     cmg_netRevenue: number,
+    labelId: number,
+    importReportId?: number,
   ) {
     if (distributor === Distributor.BELIEVE) {
       await this.prisma.believeRoyaltyReport.create({
@@ -301,6 +367,8 @@ export class AdminReportsHelperService {
           grossRevenue: new Decimal(record.grossRevenue),
           clientShareRate: new Decimal(record.clientShareRate),
           netRevenue: new Decimal(record.netRevenue),
+          label: { connect: { id: labelId } },
+          importReport: { connect: { id: importReportId } },
         },
       });
     } else if (distributor === Distributor.KONTOR) {
@@ -312,6 +380,8 @@ export class AdminReportsHelperService {
           cmg_clientRate: new Decimal(cmg_clientRate),
           cmg_netRevenue: new Decimal(cmg_netRevenue),
           royalties: new Decimal(record.royalties),
+          label: { connect: { id: labelId } },
+          importedReport: { connect: { id: importReportId } },
         },
       });
     }

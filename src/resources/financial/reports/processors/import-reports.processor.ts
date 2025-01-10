@@ -28,11 +28,11 @@ export class ImportReportsProcessor extends WorkerHost {
   }
 
   async process(job: Job<ImportReportDto>): Promise<void> {
-    const { filePath, reportingMonth, distributor } = job.data;
+    const { filePath, reportingMonth, distributor, importReportId } = job.data;
     console.log(job.name);
     const errorLogPath = this.loggerTxt.getLogPath(job.id, 'error');
     const bucket = env.AWS_S3_BUCKET_NAME_ROYALTIES;
-    const s3Key = `ImportReport_${distributor}_${reportingMonth}.csv`;
+    const s3Key = `import-reports/ImportReport_${distributor}_${reportingMonth}.csv`;
 
     await this.doubleLog(
       'log',
@@ -42,10 +42,27 @@ export class ImportReportsProcessor extends WorkerHost {
     );
 
     try {
+      // Update import status to ACTIVE
+      await this.prisma.importedRoyaltyReport.update({
+        where: { id: importReportId },
+        data: { importStatus: 'ACTIVE' },
+      });
+
       const records = await this.reportsService.readCsvFile(
         filePath,
         distributor,
       );
+
+      if (records.length === 0) {
+        await this.doubleLog(
+          'warn',
+          `[JOB ${job.id}] No records found in the CSV file.`,
+          job.id,
+          'baseReport',
+        );
+        return;
+      }
+
       const lastProcessedIndex =
         await this.progressService.getLastProcessedIndex(this.redisKey, job.id);
 
@@ -59,6 +76,7 @@ export class ImportReportsProcessor extends WorkerHost {
             i,
             undefined,
             job.id,
+            importReportId, // Pass importReportId
           );
         } catch (error) {
           await this.doubleLog(
@@ -82,7 +100,20 @@ export class ImportReportsProcessor extends WorkerHost {
         job.id,
         'baseReport',
       );
-      await this.s3UploadService.uploadFile(bucket, s3Key, filePath);
+
+      // Upload the file to S3
+      const s3File = await this.s3UploadService.uploadFile(
+        bucket,
+        s3Key,
+        filePath,
+      );
+
+      // Update the ImportedRoyaltyReport record with the S3 file ID
+      await this.prisma.importedRoyaltyReport.update({
+        where: { id: importReportId },
+        data: { importStatus: 'COMPLETED', s3FileId: s3File.id },
+      });
+
       await cleanUp(filePath, errorLogPath, this.logger);
 
       const errorLogExists = await this.errorLogExists(errorLogPath);
@@ -101,6 +132,12 @@ export class ImportReportsProcessor extends WorkerHost {
         job.id,
         'baseReport',
       );
+
+      // Update import status to FAILED
+      await this.prisma.importedRoyaltyReport.update({
+        where: { id: importReportId },
+        data: { importStatus: 'FAILED' },
+      });
     }
   }
 

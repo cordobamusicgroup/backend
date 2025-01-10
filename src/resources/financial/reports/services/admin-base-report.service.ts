@@ -12,6 +12,11 @@ import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import Decimal from 'decimal.js';
 import * as dayjs from 'dayjs';
+import { S3Service } from 'src/common/services/s3.service';
+import { convertReportsToCsv } from '../utils/convert-reports-csv';
+import * as fs from 'fs';
+import env from 'src/config/env.config';
+import { BaseReportDto } from '../dto/admin-base-reports.dto';
 
 @Injectable()
 export class AdminBaseReportService {
@@ -20,6 +25,7 @@ export class AdminBaseReportService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
+    private readonly s3Service: S3Service,
   ) {}
 
   /**
@@ -79,17 +85,23 @@ export class AdminBaseReportService {
         distributor,
       );
 
+      const currency = distributor === Distributor.KONTOR ? 'EUR' : 'USD';
+
       this.logger.log(
         `Creating base report for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
       );
+
       const baseReport = await this.prisma.baseRoyaltyReport.create({
         data: {
           distributor,
           reportingMonth,
           totalRoyalties: totalRoyalties.toNumber(),
           totalEarnings: totalEarnings.toNumber(),
+          currency,
         },
       });
+
+      await this.uploadAndLinkBaseReportCsv(baseReport, reports);
 
       await this.updateReportsWithBaseReportId(
         distributor,
@@ -114,6 +126,7 @@ export class AdminBaseReportService {
    * Deletes a base report by distributor and reporting month.
    * @param distributor The distributor for which to delete the base report.
    * @param reportingMonth The reporting month for which to delete the base report.
+   * @param deleteImported Whether to delete imported reports.
    * @returns A promise that resolves to an object containing a message.
    */
   async deleteBaseReport(distributor: Distributor, reportingMonth: string) {
@@ -141,16 +154,6 @@ export class AdminBaseReportService {
       throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
     }
 
-    if (baseReport.distributor === Distributor.KONTOR) {
-      await this.prisma.kontorRoyaltyReport.deleteMany({
-        where: { reportingMonth: baseReport.reportingMonth },
-      });
-    } else if (baseReport.distributor === Distributor.BELIEVE) {
-      await this.prisma.believeRoyaltyReport.deleteMany({
-        where: { reportingMonth: baseReport.reportingMonth },
-      });
-    }
-
     // Delete unlinked reports for the given period and distributor
     await this.prisma.unlinkedReport.deleteMany({
       where: {
@@ -175,8 +178,14 @@ export class AdminBaseReportService {
    * Retrieves all base reports.
    * @returns A promise that resolves to an array of base reports.
    */
-  async getAllBaseReports() {
-    return this.prisma.baseRoyaltyReport.findMany({});
+  async getAllBaseReports(): Promise<BaseReportDto[]> {
+    const baseReports = await this.prisma.baseRoyaltyReport.findMany({
+      include: { s3File: true },
+    });
+
+    return await Promise.all(
+      baseReports.map((report) => this.convertToDto(report)),
+    );
   }
 
   /**
@@ -401,6 +410,48 @@ export class AdminBaseReportService {
     };
   }
 
+  /**
+   * Generates a base report CSV file for the given distributor and reporting month.
+   * @param distributor The distributor for which to generate the base report CSV.
+   * @param reportingMonth The reporting month for which to generate the base report CSV.
+   * @returns A promise that resolves to the uploaded S3 file.
+   */
+  async generateBaseReportCsv(
+    distributor: Distributor,
+    reportingMonth: string,
+  ): Promise<BaseReportDto> {
+    const reports = await this.getReports(distributor, reportingMonth);
+    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+      where: { distributor_reportingMonth: { distributor, reportingMonth } },
+    });
+
+    if (!baseReport) {
+      throw new BaseReportNotFoundException();
+    }
+
+    await this.uploadAndLinkBaseReportCsv(baseReport, reports);
+
+    return this.convertToDto(baseReport);
+  }
+
+  /**
+   * Retrieves a base report with a signed URL for the given ID.
+   * @param id The ID of the base report to retrieve.
+   * @returns A promise that resolves to the base report with a signed URL.
+   */
+  async getBaseReportWithSignedUrl(id: number): Promise<BaseReportDto> {
+    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+      where: { id },
+      include: { s3File: true },
+    });
+
+    if (!baseReport) {
+      throw new BaseReportNotFoundException();
+    }
+
+    return this.convertToDto(baseReport);
+  }
+
   // Private methods section
 
   /**
@@ -456,22 +507,22 @@ export class AdminBaseReportService {
 
     if (distributor === Distributor.KONTOR) {
       totalRoyalties = reports.reduce(
-        (sum, report) => sum.plus(report.royalties),
+        (sum, report) => sum.plus(new Decimal(report.royalties || 0)),
         new Decimal(0),
       );
       totalEarnings = reports.reduce((sum, report) => {
-        const report_royalties = new Decimal(report.royalties);
-        const cmg_netRevenue = new Decimal(report.cmg_netRevenue);
+        const report_royalties = new Decimal(report.royalties || 0);
+        const cmg_netRevenue = new Decimal(report.cmg_netRevenue || 0);
         return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje restante)
       }, new Decimal(0));
     } else if (distributor === Distributor.BELIEVE) {
       totalRoyalties = reports.reduce(
-        (sum, report) => sum.plus(report.netRevenue),
+        (sum, report) => sum.plus(new Decimal(report.netRevenue || 0)),
         new Decimal(0),
       );
       totalEarnings = reports.reduce((sum, report) => {
-        const report_royalties = new Decimal(report.royalties);
-        const cmg_netRevenue = new Decimal(report.cmg_netRevenue);
+        const report_royalties = new Decimal(report.netRevenue || 0);
+        const cmg_netRevenue = new Decimal(report.cmg_netRevenue || 0);
         return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje)
       }, new Decimal(0));
     }
@@ -501,5 +552,66 @@ export class AdminBaseReportService {
         data: { baseReportId },
       });
     }
+  }
+
+  private async uploadAndLinkBaseReportCsv(baseReport: any, reports: any[]) {
+    try {
+      this.logger.log(`Generating CSV for base report ID: ${baseReport.id}`);
+      const csvData = await convertReportsToCsv(
+        reports,
+        baseReport.distributor,
+      );
+      const fileName = `${baseReport.distributor}_${baseReport.reportingMonth}_base_report.csv`;
+      const filePath = `/tmp/${fileName}`;
+      fs.writeFileSync(filePath, csvData);
+
+      const s3Key = `base-reports/${baseReport.distributor}/${baseReport.reportingMonth}/${fileName}`;
+      const s3File = await this.s3Service.uploadFile(
+        env.AWS_S3_BUCKET_NAME_ROYALTIES,
+        s3Key,
+        filePath,
+      );
+
+      await this.prisma.baseRoyaltyReport.update({
+        where: { id: baseReport.id },
+        data: { s3FileId: s3File.id },
+      });
+
+      this.logger.log(
+        `CSV generated and uploaded for base report ID: ${baseReport.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate and upload CSV for base report ID: ${baseReport.id}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  private async convertToDto(baseReport: any): Promise<BaseReportDto> {
+    let signedUrl;
+    if (baseReport.s3FileId) {
+      try {
+        const s3File = await this.s3Service.getFile({
+          id: baseReport.s3FileId,
+        });
+        signedUrl = s3File.url;
+      } catch (error) {
+        this.logger.error(
+          `Failed to retrieve signed URL for S3 file ID: ${baseReport.s3FileId}: ${error.message}`,
+        );
+        signedUrl = undefined;
+      }
+    }
+
+    return {
+      id: baseReport.id,
+      distributor: baseReport.distributor,
+      reportingMonth: baseReport.reportingMonth,
+      currency: baseReport.currency,
+      totalRoyalties: baseReport.totalRoyalties,
+      totalEarnings: baseReport.totalEarnings,
+      url: signedUrl,
+    };
   }
 }

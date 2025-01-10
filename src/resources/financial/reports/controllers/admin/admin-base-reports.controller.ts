@@ -1,10 +1,11 @@
-import { Controller, Post, Get, Delete, Body } from '@nestjs/common';
+import { Get, Post, Delete, Body, Param, Controller } from '@nestjs/common';
 import { AdminBaseReportService } from '../../services/admin-base-report.service';
 import { AdminReportsHelperService } from '../../services/admin-reports-helper.service';
 import { CreateBaseReportDto } from '../../dto/admin-create-base-report.dto';
 import { UserFinancialReportsService } from '../../services/user-financial-reports.service';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { BaseReportDto } from '../../dto/admin-base-reports.dto';
 
 @Controller('admin/base-reports')
 @Roles(Role.ADMIN)
@@ -16,7 +17,7 @@ export class AdminBaseReportsController {
   ) {}
 
   @Get()
-  async getAllBaseReports() {
+  async getAllBaseReports(): Promise<BaseReportDto[]> {
     return this.baseReportService.getAllBaseReports();
   }
 
@@ -51,5 +52,23 @@ export class AdminBaseReportsController {
       distributor,
       reportingMonth,
     );
+  }
+
+  @Post('generate-csv')
+  async generateBaseReportCsv(
+    @Body() createBaseReportDto: CreateBaseReportDto,
+  ) {
+    const { distributor, reportingMonth } = createBaseReportDto;
+    return this.baseReportService.generateBaseReportCsv(
+      distributor,
+      reportingMonth,
+    );
+  }
+
+  @Get(':id')
+  async getBaseReportWithSignedUrl(
+    @Param('id') id: number,
+  ): Promise<BaseReportDto> {
+    return this.baseReportService.getBaseReportWithSignedUrl(Number(id));
   }
 }

@@ -10,7 +10,7 @@ import { EmailService } from 'src/resources/email/email.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { S3Service } from 'src/common/services/s3.service';
 import * as fs from 'fs';
-import { convertUserReportsToCsv } from '../utils/convert-user-reports-csv';
+import { convertReportsToCsv } from '../utils/convert-reports-csv';
 import Decimal from 'decimal.js';
 import env from 'src/config/env.config';
 
@@ -179,6 +179,7 @@ export class UserReportsProcessor extends WorkerHost {
         const userReport = await this.prisma.userRoyaltyReport.create({
           data: {
             distributor: baseReport.distributor,
+            currency: baseReport.currency,
             reportingMonth: baseReport.reportingMonth,
             totalRoyalties: totalRoyalties.toNumber(),
             baseReportId: baseReport.id,
@@ -298,7 +299,10 @@ export class UserReportsProcessor extends WorkerHost {
           throw new Error(errorMessage);
         }
 
-        const csvData = await convertUserReportsToCsv(records);
+        const csvData = await convertReportsToCsv(
+          records,
+          userReport.distributor,
+        );
         const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${baseReportId}_${userReport.id}.csv`;
         const filePath = `/tmp/${fileName}`;
         fs.writeFileSync(filePath, csvData);

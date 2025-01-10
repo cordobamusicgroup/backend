@@ -3,7 +3,7 @@ import { ClientType, TaxIdType } from '@prisma/client';
 import { ContractDto } from './contract/contract.dto';
 import { AddressDto } from './address/address.dto';
 import { DmbDto } from './dmb/dmb.dto';
-import { BalanceDto } from '../../financial/dto/balance.dto';
+import { BalanceDto } from '../../financial/balances/dto/balance.dto';
 
 export class ClientExtendedDto {
   @Expose()

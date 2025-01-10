@@ -9,7 +9,7 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientExtendedDto } from './dto/client-extended.dto';
 import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
-import { BalanceDto } from '../financial/dto/balance.dto';
+import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
 import { Currency } from '@prisma/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
