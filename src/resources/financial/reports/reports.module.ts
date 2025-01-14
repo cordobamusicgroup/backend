@@ -19,6 +19,8 @@ import { UserFinancialReportsController } from './controllers/user-financial-rep
 import { AdminImportedReportsService } from './services/admin-imported-reports.service';
 import { AdminFinancialReportsService } from './services/admin-financial-reports.service';
 import { ReportsGateway } from './gateways/reports.gateway';
+import { AdminUnlinkedReportService } from './services/admin-unlinked-report.service';
+import { PrismaService } from 'src/resources/prisma/prisma.service';
 
 @Module({
   imports: [
@@ -44,6 +46,7 @@ import { ReportsGateway } from './gateways/reports.gateway';
     AdminReportsHelperService,
     AdminFinancialReportsService,
     UserFinancialReportsService,
+    AdminUnlinkedReportService,
     // Global Services
     LoggerTxtService,
     ProgressService,
@@ -61,6 +64,10 @@ import { ReportsGateway } from './gateways/reports.gateway';
     AdminUserReportsController,
     UserFinancialReportsController,
   ],
-  exports: [AdminReportsHelperService, AdminImportedReportsService],
+  exports: [
+    AdminReportsHelperService,
+    AdminImportedReportsService,
+    AdminUnlinkedReportService,
+  ],
 })
 export class ReportsModule {}

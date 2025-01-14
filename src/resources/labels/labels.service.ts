@@ -5,6 +5,7 @@ import { UpdateLabelDto } from './dto/update-label.dto';
 import { LabelDto } from './dto/label.dto';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
 
 @Injectable()
 export class LabelsService {
@@ -78,9 +79,17 @@ export class LabelsService {
       );
     }
 
-    await this.prisma.label.deleteMany({
-      where: { id: { in: ids } },
-    });
+    try {
+      await this.prisma.label.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      if (error.code === 'P2003') {
+        // Prisma foreign key constraint violation code
+        throw new ConflictRecordsException();
+      }
+      throw error;
+    }
   }
 
   /**

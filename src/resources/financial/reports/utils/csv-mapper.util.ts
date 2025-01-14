@@ -20,7 +20,9 @@ export function mapCsvToRecord(row: any, distributor: Distributor) {
       isrc: String(row['ISRC']),
       grid: String(row['GRID']),
       articleNo: String(row['Article No']),
-      royalties: new Decimal(row['Royalties']).toDP(10).toFixed(),
+      royalties: new Decimal(row['Royalties'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
       units: parseInt(row['Units'], 10),
     };
   } else if (distributor === Distributor.BELIEVE) {
@@ -40,11 +42,21 @@ export function mapCsvToRecord(row: any, distributor: Distributor) {
       salesType: String(row['Sales Type']),
       quantity: String(row['Quantity']),
       clientPaymentCurrency: String(row['Client Payment Currency']),
-      unitPrice: new Decimal(row['Unit Price']).toDP(10).toFixed(),
-      mechanicalFee: new Decimal(row['Mechanical Fee']).toDP(10).toFixed(),
-      grossRevenue: new Decimal(row['Gross Revenue']).toDP(10).toFixed(),
-      clientShareRate: new Decimal(row['Client share rate']).toDP(10).toFixed(),
-      netRevenue: new Decimal(row['Net Revenue']).toDP(10).toFixed(),
+      unitPrice: new Decimal(row['Unit Price'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
+      mechanicalFee: new Decimal(row['Mechanical Fee'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
+      grossRevenue: new Decimal(row['Gross Revenue'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
+      clientShareRate: new Decimal(row['Client share rate'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
+      netRevenue: new Decimal(row['Net Revenue'].replace(',', '.'))
+        .toDP(10)
+        .toFixed(),
     };
   }
   throw new Error(`Unknown distributor: ${distributor}`);

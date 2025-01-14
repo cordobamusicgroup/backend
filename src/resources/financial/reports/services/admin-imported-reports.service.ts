@@ -125,8 +125,15 @@ export class AdminImportedReportsService {
 
     for (const job of jobsToCancel) {
       try {
-        await job.moveToFailed({ message: 'Job cancelled' }, true);
+        // Intenta eliminar el trabajo si no se puede cancelar
         await job.remove();
+
+        // Si el trabajo está activo, moverlo a estado fallido
+        if (job.isActive) {
+          await job.moveToFailed({ message: 'Job cancelled' }, true);
+        }
+
+        this.logger.log(`Job ${job.id} cancelled successfully.`);
       } catch (error) {
         this.logger.error(`Failed to cancel job ${job.id}: ${error.message}`);
       }
@@ -235,7 +242,11 @@ export class AdminImportedReportsService {
     });
   }
 
-  async getAllImportedReports() {
-    return this.prisma.importedRoyaltyReport.findMany();
+  async getAllImportedReports(distributor?: Distributor) {
+    const filter = distributor ? { distributor } : {};
+    return this.prisma.importedRoyaltyReport.findMany({
+      where: filter,
+      orderBy: { reportingMonth: 'desc' },
+    });
   }
 }

@@ -174,7 +174,7 @@ export class AdminImportReportsController {
   }
 
   @Get('imported-reports')
-  async getImportedReports() {
-    return this.importedReportsService.getAllImportedReports();
+  async getImportedReports(@Query('distributor') distributor?: Distributor) {
+    return this.importedReportsService.getAllImportedReports(distributor);
   }
 }

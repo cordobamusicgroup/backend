@@ -8,9 +8,10 @@ import { ProgressService } from 'src/common/services/progress.service';
 import { S3Service } from 'src/common/services/s3.service';
 import { AdminReportsHelperService } from '../services/admin-reports-helper.service';
 import cleanUp from '../utils/cleanup.util';
-import * as fs from 'fs';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import env from 'src/config/env.config';
+import { ProcessingType } from '../enums/processing-type.enum';
+import { doubleLog } from '../utils/logger.util';
 
 @Processor('import-reports')
 export class ImportReportsProcessor extends WorkerHost {
@@ -34,11 +35,13 @@ export class ImportReportsProcessor extends WorkerHost {
     const bucket = env.AWS_S3_BUCKET_NAME_ROYALTIES;
     const s3Key = `import-reports/ImportReport_${distributor}_${reportingMonth}.csv`;
 
-    await this.doubleLog(
+    await doubleLog(
       'log',
       `[JOB ${job.id}] Starting processing for file: ${filePath}`,
       job.id,
-      'baseReport',
+      'ProcessReportRecord',
+      this.logger,
+      this.loggerTxt,
     );
 
     try {
@@ -54,51 +57,48 @@ export class ImportReportsProcessor extends WorkerHost {
       );
 
       if (records.length === 0) {
-        await this.doubleLog(
-          'warn',
-          `[JOB ${job.id}] No records found in the CSV file.`,
-          job.id,
-          'baseReport',
-        );
-        return;
+        throw new Error(`[JOB ${job.id}] No records found in the CSV file.`);
       }
 
       const lastProcessedIndex =
         await this.progressService.getLastProcessedIndex(this.redisKey, job.id);
 
-      for (let i = lastProcessedIndex; i < records.length; i++) {
-        const record = records[i];
-        try {
-          await this.reportsService.processRecord(
-            record,
-            distributor,
-            reportingMonth,
-            i,
-            undefined,
-            job.id,
-            importReportId, // Pass importReportId
-          );
-        } catch (error) {
-          await this.doubleLog(
-            'error',
-            `Error processing record at row ${i}: ${error.message}`,
-            job.id,
-            'baseReport',
-          );
-        }
-        await this.progressService.saveProgress(this.redisKey, job.id, i + 1);
+      for (
+        let rowIndex = lastProcessedIndex;
+        rowIndex < records.length;
+        rowIndex++
+      ) {
+        const record = records[rowIndex];
+
+        await this.reportsService.processRecord(
+          record,
+          distributor,
+          reportingMonth,
+          ProcessingType.IMPORT,
+          rowIndex,
+          undefined, // Label ID is not needed for import
+          job.id,
+          importReportId,
+        );
+        await this.progressService.saveProgress(
+          this.redisKey,
+          job.id,
+          rowIndex + 1,
+        );
         this.progressService.calculateAndUpdateProgress(
           job,
           records.length,
-          i + 1,
+          rowIndex + 1,
         );
       }
 
-      await this.doubleLog(
+      await doubleLog(
         'log',
         `[JOB ${job.id}] Processing complete`,
         job.id,
-        'baseReport',
+        'ProcessReportRecord',
+        this.logger,
+        this.loggerTxt,
       );
 
       // Upload the file to S3
@@ -111,58 +111,27 @@ export class ImportReportsProcessor extends WorkerHost {
       // Update the ImportedRoyaltyReport record with the S3 file ID
       await this.prisma.importedRoyaltyReport.update({
         where: { id: importReportId },
-        data: { importStatus: 'COMPLETED', s3FileId: s3File.id },
+        data: {
+          importStatus: 'COMPLETED',
+          s3File: { connect: { id: s3File.id } },
+        },
       });
 
       await cleanUp(filePath, errorLogPath, this.logger);
-
-      const errorLogExists = await this.errorLogExists(errorLogPath);
-      if (errorLogExists) {
-        await this.doubleLog(
-          'log',
-          `Error log saved at ${errorLogPath}`,
-          job.id,
-          'baseReport',
-        );
-      }
     } catch (error) {
-      await this.doubleLog(
+      await doubleLog(
         'error',
         `Failed to process base report: ${error.message}`,
         job.id,
-        'baseReport',
+        'ProcessReportRecord',
+        this.logger,
+        this.loggerTxt,
       );
 
-      // Update import status to FAILED
-      await this.prisma.importedRoyaltyReport.update({
+      // Delete Imported Register from DB on fail
+      await this.prisma.importedRoyaltyReport.delete({
         where: { id: importReportId },
-        data: { importStatus: 'FAILED' },
       });
-    }
-  }
-
-  private async errorLogExists(filePath: string): Promise<boolean> {
-    const exists = fs.existsSync(filePath);
-    return exists;
-  }
-
-  private async doubleLog(
-    level: 'log' | 'error' | 'warn',
-    message: string,
-    jobId: string,
-    context: string,
-  ): Promise<void> {
-    this.logger[level](message);
-    switch (level) {
-      case 'log':
-        await this.loggerTxt.logInfo(message, jobId, context);
-        break;
-      case 'warn':
-        await this.loggerTxt.logWarn(message, jobId, context);
-        break;
-      case 'error':
-        await this.loggerTxt.logError(message, jobId, context);
-        break;
     }
   }
 }
