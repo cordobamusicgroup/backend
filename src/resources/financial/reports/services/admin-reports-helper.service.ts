@@ -14,7 +14,7 @@ import { decode } from 'html-entities';
 import Decimal from 'decimal.js';
 import { LinkUnlinkedReportDto } from '../dto/admin-link-unlinked-report.dto';
 import { Buffer } from 'buffer';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { S3Service } from 'src/common/services/s3.service';
 
 @Injectable()
@@ -368,7 +368,7 @@ export class AdminReportsHelperService {
           clientShareRate: new Decimal(record.clientShareRate),
           netRevenue: new Decimal(record.netRevenue),
           label: { connect: { id: labelId } },
-          importReport: { connect: { id: importReportId } },
+          importedReport: { connect: { id: importReportId } },
         },
       });
     } else if (distributor === Distributor.KONTOR) {
