@@ -262,8 +262,8 @@ export class AdminReportsHelperService {
       return this.prisma.label.findFirst({
         where: {
           name: {
-            contains: labelName,
-            mode: 'insensitive',
+            equals: labelName, // Cambiar contains por equals
+            mode: 'insensitive', // Esto hace que ignore mayúsculas/minúsculas (opcional si quieres exactitud case-insensitive)
           },
         },
         include: { client: true },
@@ -272,7 +272,7 @@ export class AdminReportsHelperService {
       return this.prisma.label.findFirst({
         where: {
           name: {
-            contains: labelName,
+            equals: labelName, // Cambiar contains por equals
           },
         },
         include: { client: true },

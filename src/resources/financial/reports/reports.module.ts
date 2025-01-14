@@ -20,8 +20,6 @@ import { AdminImportedReportsService } from './services/admin-imported-reports.s
 import { AdminFinancialReportsService } from './services/admin-financial-reports.service';
 import { ReportsGateway } from './gateways/reports.gateway';
 import { AdminUnlinkedReportService } from './services/admin-unlinked-report.service';
-import { PrismaService } from 'src/resources/prisma/prisma.service';
-
 @Module({
   imports: [
     PrismaModule,
