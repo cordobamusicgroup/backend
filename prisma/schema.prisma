@@ -384,7 +384,7 @@ model KontorRoyaltyReport {
   currency  Currency @default(EUR)
 
   labelId Int?
-  label   Label? @relation(fields: [labelId], references: [id])
+  label   Label? @relation(fields: [labelId], references: [id], onDelete: Restrict)
 
   reportingMonth String
   salesMonth     String
@@ -423,7 +423,7 @@ model BelieveRoyaltyReport {
   currency  Currency @default(USD)
 
   labelId Int?
-  label   Label? @relation(fields: [labelId], references: [id])
+  label   Label? @relation(fields: [labelId], references: [id], onDelete: Restrict)
 
   reportingMonth            String
   salesMonth                String
@@ -482,6 +482,18 @@ model UnlinkedReportDetail {
   data             Json
 
   @@map("unlinked_details_reports")
+}
+
+model FailedReportDetail {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  distributor    Distributor
+  reportingMonth String
+  failedReason   String
+  data           Json
+
+  @@map("failed_details_reports")
 }
 
 //*** Enums  ***//
