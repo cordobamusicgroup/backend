@@ -354,36 +354,28 @@ export class AdminReportsHelperService {
     labelId: number,
     importReportId?: number,
   ) {
+    const data = {
+      ...record,
+      reportingMonth,
+      cmg_clientRate: new Decimal(cmg_clientRate),
+      cmg_netRevenue: new Decimal(cmg_netRevenue),
+      label: { connect: { id: labelId } },
+    };
+
     if (distributor === Distributor.BELIEVE) {
-      await this.prisma.believeRoyaltyReport.create({
-        data: {
-          ...record,
-          reportingMonth,
-          currency: 'USD',
-          cmg_clientRate: new Decimal(cmg_clientRate),
-          cmg_netRevenue: new Decimal(cmg_netRevenue),
-          unitPrice: new Decimal(record.unitPrice),
-          mechanicalFee: new Decimal(record.mechanicalFee),
-          grossRevenue: new Decimal(record.grossRevenue),
-          clientShareRate: new Decimal(record.clientShareRate),
-          netRevenue: new Decimal(record.netRevenue),
-          label: { connect: { id: labelId } },
-          importedReport: { connect: { id: importReportId } },
-        },
-      });
+      data.currency = 'USD';
     } else if (distributor === Distributor.KONTOR) {
-      await this.prisma.kontorRoyaltyReport.create({
-        data: {
-          ...record,
-          reportingMonth,
-          currency: 'EUR',
-          cmg_clientRate: new Decimal(cmg_clientRate),
-          cmg_netRevenue: new Decimal(cmg_netRevenue),
-          royalties: new Decimal(record.royalties),
-          label: { connect: { id: labelId } },
-          importedReport: { connect: { id: importReportId } },
-        },
-      });
+      data.currency = 'EUR';
+    }
+
+    if (importReportId) {
+      data.importedReport = { connect: { id: importReportId } };
+    }
+
+    if (distributor === Distributor.BELIEVE) {
+      await this.prisma.believeRoyaltyReport.create({ data });
+    } else if (distributor === Distributor.KONTOR) {
+      await this.prisma.kontorRoyaltyReport.create({ data });
     }
   }
 

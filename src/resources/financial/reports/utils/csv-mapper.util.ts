@@ -1,6 +1,7 @@
 // src/resources/financial/utils/csv-mapper.util.ts
 
 import { Distributor } from '@prisma/client';
+import * as dayjs from 'dayjs';
 import Decimal from 'decimal.js';
 
 export function mapCsvToRecord(row: any, distributor: Distributor) {
@@ -24,7 +25,7 @@ export function mapCsvToRecord(row: any, distributor: Distributor) {
     };
   } else if (distributor === Distributor.BELIEVE) {
     return {
-      salesMonth: String(row['Sales Month']),
+      salesMonth: dayjs(String(row['Sales Month'])).format('YYYYMM'),
       platform: String(row['Platform']),
       countryRegion: String(row['Country / Region']),
       labelName: String(row['Label Name']),
