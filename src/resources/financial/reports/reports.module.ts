@@ -13,7 +13,7 @@ import { AdminImportReportsController } from './controllers/admin/admin-import-r
 import { ImportReportsProcessor } from './processors/import-reports.processor';
 import { UserReportsProcessor } from './processors/user-reports.processor';
 import { EmailService } from 'src/resources/email/email.service';
-import { AdminFinancialReportsController } from './controllers/admin/admin-financial-reports.controller';
+import { AdminUserReportsController } from './controllers/admin/admin-user-reports.controller';
 import { UsersModule } from 'src/resources/users/users.module';
 import { UserFinancialReportsController } from './controllers/user-financial-reports.controller';
 import { AdminImportedReportsService } from './services/admin-imported-reports.service';
@@ -58,7 +58,7 @@ import { ReportsGateway } from './gateways/reports.gateway';
     AdminBaseReportsController,
     AdminImportReportsController,
     AdminUnlinkedReportsController,
-    AdminFinancialReportsController,
+    AdminUserReportsController,
     UserFinancialReportsController,
   ],
   exports: [AdminReportsHelperService, AdminImportedReportsService],

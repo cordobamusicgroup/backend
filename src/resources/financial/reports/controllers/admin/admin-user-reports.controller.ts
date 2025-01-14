@@ -14,7 +14,7 @@ import { AdminFinancialReportsService } from '../../services/admin-financial-rep
 
 @Controller('admin/user-reports')
 @Roles(Role.ADMIN)
-export class AdminFinancialReportsController {
+export class AdminUserReportsController {
   constructor(
     private readonly adminFinancialReports: AdminFinancialReportsService,
   ) {}
