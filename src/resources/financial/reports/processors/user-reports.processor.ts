@@ -10,7 +10,7 @@ import { EmailService } from 'src/resources/email/email.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { S3Service } from 'src/common/services/s3.service';
 import * as fs from 'fs';
-import { convertReportsToCsv } from '../utils/convert-reports-csv';
+import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
 import Decimal from 'decimal.js';
 import env from 'src/config/env.config';
 
@@ -302,6 +302,7 @@ export class UserReportsProcessor extends WorkerHost {
         const csvData = await convertReportsToCsv(
           records,
           userReport.distributor,
+          ReportType.USER, // Specify report type as USER
         );
         const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${baseReportId}_${userReport.id}.csv`;
         const filePath = `/tmp/${fileName}`;

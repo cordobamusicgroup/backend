@@ -13,7 +13,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import Decimal from 'decimal.js';
 import * as dayjs from 'dayjs';
 import { S3Service } from 'src/common/services/s3.service';
-import { convertReportsToCsv } from '../utils/convert-reports-csv';
+import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
 import * as fs from 'fs';
 import env from 'src/config/env.config';
 import { BaseReportDto } from '../dto/admin-base-reports.dto';
@@ -560,6 +560,7 @@ export class AdminBaseReportService {
       const csvData = await convertReportsToCsv(
         reports,
         baseReport.distributor,
+        ReportType.BASE, // Specify report type as BASE
       );
       const fileName = `${baseReport.distributor}_${baseReport.reportingMonth}_base_report.csv`;
       const filePath = `/tmp/${fileName}`;
