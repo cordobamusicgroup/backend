@@ -6,7 +6,7 @@ import { AdminReportsHelperService } from './admin-reports-helper.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { S3Service } from 'src/common/services/s3.service';
-import { UploadCsvDto } from '../dto/admin-upload-csv.dto';
+import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import env from 'src/config/env.config';

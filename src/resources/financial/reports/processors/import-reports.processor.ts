@@ -6,7 +6,7 @@ import { ImportReportDto } from '../dto/admin-import-report.dto';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { ProgressService } from 'src/common/services/progress.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { AdminReportsHelperService } from '../services/admin-reports-helper.service';
+import { AdminReportsHelperService } from '../services/admin/admin-reports-helper.service';
 import cleanUp from '../utils/cleanup.util';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import env from 'src/config/env.config';

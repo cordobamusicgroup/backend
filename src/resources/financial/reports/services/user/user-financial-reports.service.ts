@@ -9,9 +9,9 @@ import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { UsersService } from 'src/resources/users/users.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { AdminFinancialReportDto } from '../dto/admin-financial-report.dto';
+import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
-import { UserFinancialReportDto } from '../dto/user-financial-report.dto';
+import { UserFinancialReportDto } from '../../dto/user-financial-report.dto';
 import { Distributor } from '@prisma/client';
 
 @Injectable()

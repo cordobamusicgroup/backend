@@ -5,16 +5,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bull';
-import { mapCsvToRecord } from '../utils/csv-mapper.util';
+import { mapCsvToRecord } from '../../utils/csv-mapper.util';
 import { parse } from 'fast-csv';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
-import { UploadCsvDto } from '../dto/admin-upload-csv.dto';
+import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { decode } from 'html-entities';
 import Decimal from 'decimal.js';
 import { Buffer } from 'buffer';
 import { S3Service } from 'src/common/services/s3.service';
-import { ProcessingType } from '../enums/processing-type.enum';
+import { ProcessingType } from '../../enums/processing-type.enum';
 
 @Injectable()
 export class AdminReportsHelperService {

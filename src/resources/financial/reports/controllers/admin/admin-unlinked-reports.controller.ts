@@ -10,7 +10,7 @@ import {
 
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { AdminUnlinkedReportService } from '../../services/admin-unlinked-report.service';
+import { AdminUnlinkedReportService } from '../../services/admin/admin-unlinked-report.service';
 import { LinkUnlinkedReportDto } from '../../dto/admin-link-unlinked-report.dto';
 
 @Controller('admin')

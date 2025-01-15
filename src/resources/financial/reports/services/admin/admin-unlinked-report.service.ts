@@ -1,8 +1,8 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { AdminReportsHelperService } from './admin-reports-helper.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { LinkUnlinkedReportDto } from '../dto/admin-link-unlinked-report.dto';
-import { ProcessingType } from '../enums/processing-type.enum';
+import { LinkUnlinkedReportDto } from '../../dto/admin-link-unlinked-report.dto';
+import { ProcessingType } from '../../enums/processing-type.enum';
 
 @Injectable()
 export class AdminUnlinkedReportService {

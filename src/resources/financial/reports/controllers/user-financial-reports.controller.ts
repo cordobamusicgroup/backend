@@ -8,7 +8,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { UserFinancialReportsService } from '../services/user-financial-reports.service';
+import { UserFinancialReportsService } from '../services/user/user-financial-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Distributor } from '@prisma/client';
 

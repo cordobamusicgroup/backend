@@ -1,7 +1,7 @@
 import {
   Controller,
   Post,
-  Param,
+  Body,
   Delete,
   UseGuards,
   Request,
@@ -10,38 +10,36 @@ import {
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { AdminFinancialReportsService } from '../../services/admin-financial-reports.service';
+import { AdminUserReportsService } from '../../services/admin/admin-user-reports.service';
+import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';
 
 @Controller('admin/user-reports')
 @Roles(Role.ADMIN)
 export class AdminUserReportsController {
   constructor(
-    private readonly adminFinancialReports: AdminFinancialReportsService,
+    private readonly adminFinancialReports: AdminUserReportsService,
   ) {}
 
-  @Post('generate/:baseReportId')
+  @Post('generate')
   @UseGuards(JwtAuthGuard)
   async generateUserRoyaltyReports(
-    @Param('baseReportId') baseReportId: number,
+    @Body() distributorReportDto: DistributorReportDto,
     @Request() req,
   ) {
     return this.adminFinancialReports.createUserReportsJob(
-      Number(baseReportId),
+      distributorReportDto,
       'generate',
       req.user,
     );
   }
 
-  @Delete('delete/:baseReportId')
+  @Delete('delete')
   @UseGuards(JwtAuthGuard)
   async deleteUserRoyaltyReports(
-    @Param('baseReportId') baseReportId: number,
-    @Request() req,
+    @Body() distributorReportDto: DistributorReportDto,
   ) {
-    return this.adminFinancialReports.createUserReportsJob(
-      Number(baseReportId),
-      'delete',
-      req.user,
+    return this.adminFinancialReports.deleteUserRoyaltyReports(
+      distributorReportDto,
     );
   }
 
@@ -51,24 +49,26 @@ export class AdminUserReportsController {
     return this.adminFinancialReports.getAllUserReports();
   }
 
-  @Post('export/:baseReportId')
+  @Post('export')
   @UseGuards(JwtAuthGuard)
   async exportUserRoyaltyReports(
-    @Param('baseReportId') baseReportId: number,
+    @Body() distributorReportDto: DistributorReportDto,
     @Request() req,
   ) {
     return this.adminFinancialReports.createUserReportsJob(
-      Number(baseReportId),
+      distributorReportDto,
       'export',
       req.user,
     );
   }
 
-  @Delete('delete-export/:baseReportId')
+  @Delete('delete-export')
   @UseGuards(JwtAuthGuard)
-  async deleteExportedFilesFromS3(@Param('baseReportId') baseReportId: number) {
+  async deleteExportedFilesFromS3(
+    @Body() distributorReportDto: DistributorReportDto,
+  ) {
     return this.adminFinancialReports.deleteExportedFilesFromS3(
-      Number(baseReportId),
+      distributorReportDto,
     );
   }
 }

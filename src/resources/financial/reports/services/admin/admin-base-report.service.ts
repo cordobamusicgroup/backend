@@ -13,10 +13,13 @@ import { InjectQueue } from '@nestjs/bullmq';
 import Decimal from 'decimal.js';
 import * as dayjs from 'dayjs';
 import { S3Service } from 'src/common/services/s3.service';
-import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
+import {
+  convertReportsToCsv,
+  ReportType,
+} from '../../utils/convert-reports-csv';
 import * as fs from 'fs';
 import env from 'src/config/env.config';
-import { BaseReportDto } from '../dto/admin-base-reports.dto';
+import { BaseReportDto } from '../../dto/admin-base-reports.dto';
 
 @Injectable()
 export class AdminBaseReportService {

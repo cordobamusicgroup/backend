@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { AdminReportsHelperService } from './services/admin-reports-helper.service';
+import { AdminReportsHelperService } from './services/admin/admin-reports-helper.service';
 import { AdminUnlinkedReportsController } from './controllers/admin/admin-unlinked-reports.controller';
-import { AdminBaseReportService } from './services/admin-base-report.service';
-import { UserFinancialReportsService } from './services/user-financial-reports.service';
+import { AdminBaseReportService } from './services/admin/admin-base-report.service';
+import { UserFinancialReportsService } from './services/user/user-financial-reports.service';
 import { ProgressService } from 'src/common/services/progress.service';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { S3Service } from 'src/common/services/s3.service';
@@ -16,10 +16,10 @@ import { EmailService } from 'src/resources/email/email.service';
 import { AdminUserReportsController } from './controllers/admin/admin-user-reports.controller';
 import { UsersModule } from 'src/resources/users/users.module';
 import { UserFinancialReportsController } from './controllers/user-financial-reports.controller';
-import { AdminImportedReportsService } from './services/admin-imported-reports.service';
-import { AdminFinancialReportsService } from './services/admin-financial-reports.service';
+import { AdminImportedReportsService } from './services/admin/admin-imported-reports.service';
+import { AdminUserReportsService } from './services/admin/admin-user-reports.service';
 import { ReportsGateway } from './gateways/reports.gateway';
-import { AdminUnlinkedReportService } from './services/admin-unlinked-report.service';
+import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-report.service';
 @Module({
   imports: [
     PrismaModule,
@@ -42,7 +42,7 @@ import { AdminUnlinkedReportService } from './services/admin-unlinked-report.ser
     AdminBaseReportService,
     AdminImportedReportsService,
     AdminReportsHelperService,
-    AdminFinancialReportsService,
+    AdminUserReportsService,
     UserFinancialReportsService,
     AdminUnlinkedReportService,
     // Global Services

@@ -12,10 +12,10 @@ import {
 import { diskStorage } from 'multer';
 import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AdminReportsHelperService } from '../../services/admin-reports-helper.service';
+import { AdminReportsHelperService } from '../../services/admin/admin-reports-helper.service';
 import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { AdminImportedReportsService } from '../../services/admin-imported-reports.service';
+import { AdminImportedReportsService } from '../../services/admin/admin-imported-reports.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 
