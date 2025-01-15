@@ -168,7 +168,7 @@ model Client {
 model ClientDMB {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int    @unique
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientDMB")
@@ -184,7 +184,7 @@ model ClientDMB {
 model ClientPaymentInformation {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int    @unique
   client   Client @relation(fields: [clientId], references: [id])
@@ -198,7 +198,7 @@ model ClientPaymentInformation {
 model Contract {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
@@ -435,14 +435,14 @@ model BelieveRoyaltyReport {
   trackTitle                String
   upc                       String
   isrc                      String
-  catalogNb                 String
-  streamingSubscriptionType String
-  releaseType               String
-  salesType                 String
+  catalogNb                 String?
+  streamingSubscriptionType String?
+  releaseType               String?
+  salesType                 String?
   quantity                  String
-  clientPaymentCurrency     String
+  clientPaymentCurrency     String?
   unitPrice                 Decimal
-  mechanicalFee             Decimal
+  mechanicalFee             Decimal?
   grossRevenue              Decimal
   clientShareRate           Decimal
   netRevenue                Decimal
