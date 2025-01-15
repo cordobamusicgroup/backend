@@ -1,6 +1,16 @@
-import { Controller, Get, UseGuards, Request, Param } from '@nestjs/common';
-import { UserFinancialReportsService } from '../services/user-financial-reports.service';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Request,
+  Param,
+  Query,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { UserFinancialReportsService } from '../services/user/user-financial-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Distributor } from '@prisma/client';
 
 @Controller('user-reports')
 export class UserFinancialReportsController {
@@ -10,8 +20,20 @@ export class UserFinancialReportsController {
 
   @Get('current')
   @UseGuards(JwtAuthGuard)
-  async getCurrentUserReports(@Request() req) {
-    return this.userFinancialReports.getCurrentUserReports(req.user);
+  async getCurrentUserReports(
+    @Request() req,
+    @Query('distributor') distributor: Distributor,
+  ) {
+    if (!distributor) {
+      throw new HttpException(
+        'Distributor name is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return this.userFinancialReports.getCurrentUserReports(
+      req.user,
+      distributor,
+    );
   }
 
   @Get('download/:id')

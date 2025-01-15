@@ -5,6 +5,7 @@ import {
   S3Client,
   GetObjectCommand,
   DeleteObjectCommand,
+  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
@@ -139,6 +140,38 @@ export class S3Service {
     } catch (error) {
       this.logger.error(`Failed to delete file from S3: ${error.message}`);
       throw new Error('Failed to delete file from S3.');
+    }
+  }
+
+  /**
+   * Moves a file within S3.
+   * @param bucket - S3 bucket name
+   * @param oldKey - S3 object key for the current file location
+   * @param newKey - S3 object key for the new file location
+   */
+  async moveFile(
+    bucket: string,
+    oldKey: string,
+    newKey: string,
+  ): Promise<void> {
+    try {
+      await this.s3.send(
+        new CopyObjectCommand({
+          Bucket: bucket,
+          CopySource: `${bucket}/${oldKey}`,
+          Key: newKey,
+        }),
+      );
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: oldKey,
+        }),
+      );
+      this.logger.log(`File moved in S3 from ${oldKey} to ${newKey}`);
+    } catch (error) {
+      this.logger.error(`Failed to move file in S3: ${error.message}`);
+      throw new Error('Failed to move file in S3.');
     }
   }
 

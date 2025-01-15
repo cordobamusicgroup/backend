@@ -5,12 +5,13 @@ import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { UsersService } from 'src/resources/users/users.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { AdminFinancialReportDto } from '../dto/admin-financial-report.dto';
+import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
+import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';
 
 @Injectable()
-export class AdminFinancialReportsService {
-  private readonly logger = new Logger(AdminFinancialReportsService.name);
+export class AdminUserReportsService {
+  private readonly logger = new Logger(AdminUserReportsService.name);
 
   constructor(
     private usersService: UsersService,
@@ -20,25 +21,35 @@ export class AdminFinancialReportsService {
   ) {}
 
   async createUserReportsJob(
-    baseReportId: number,
+    distributorReportDto: DistributorReportDto,
     action: 'generate' | 'delete' | 'export',
     user: JwtPayloadDto,
   ) {
     const { email } = await this.usersService.findByUsername(user.username);
+    const { distributor, reportingMonth } = distributorReportDto;
 
     try {
       let result;
       if (action === 'generate') {
         await this.userReportsQueue.add('generate', {
-          baseReportId,
+          distributor,
+          reportingMonth,
           email,
         });
         result = { message: 'User royalty reports queued for generation.' };
       } else if (action === 'delete') {
-        await this.userReportsQueue.add('delete', { baseReportId, email });
+        await this.userReportsQueue.add('delete', {
+          distributor,
+          reportingMonth,
+          email,
+        });
         result = { message: 'User royalty reports queued for deletion.' };
       } else if (action === 'export') {
-        await this.userReportsQueue.add('export', { baseReportId, email });
+        await this.userReportsQueue.add('export', {
+          distributor,
+          reportingMonth,
+          email,
+        });
         result = { message: 'User royalty reports queued for export.' };
       }
 
@@ -77,11 +88,12 @@ export class AdminFinancialReportsService {
   }
 
   async deleteExportedFilesFromS3(
-    baseReportId: number,
+    distributorReportDto: DistributorReportDto,
   ): Promise<{ message: string }> {
+    const { distributor, reportingMonth } = distributorReportDto;
     try {
       const reports = await this.prisma.userRoyaltyReport.findMany({
-        where: { baseReportId },
+        where: { distributor, reportingMonth },
       });
 
       for (const report of reports) {
@@ -101,6 +113,36 @@ export class AdminFinancialReportsService {
       );
       throw new HttpException(
         `Failed to delete exported files from S3: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteUserRoyaltyReports(distributorReportDto: DistributorReportDto) {
+    const { distributor, reportingMonth } = distributorReportDto;
+    try {
+      this.logger.log(
+        `Starting deletion of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+      await this.deleteExportedFilesFromS3(distributorReportDto);
+
+      await this.prisma.userRoyaltyReport.deleteMany({
+        where: { distributor, reportingMonth },
+      });
+
+      this.logger.log(
+        `User royalty reports deleted successfully for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+
+      return {
+        message: 'User royalty reports deleted successfully.',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error deleting user royalty reports: ${error.message}`,
+      );
+      throw new HttpException(
+        `Error deleting user royalty reports: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

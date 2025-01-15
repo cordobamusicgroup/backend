@@ -9,9 +9,10 @@ import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { UsersService } from 'src/resources/users/users.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { AdminFinancialReportDto } from '../dto/admin-financial-report.dto';
+import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
-import { UserFinancialReportDto } from '../dto/user-financial-report.dto';
+import { UserFinancialReportDto } from '../../dto/user-financial-report.dto';
+import { Distributor } from '@prisma/client';
 
 @Injectable()
 export class UserFinancialReportsService {
@@ -24,12 +25,16 @@ export class UserFinancialReportsService {
   ) {}
   async getCurrentUserReports(
     user: JwtPayloadDto,
+    distributor: Distributor,
   ): Promise<UserFinancialReportDto[]> {
     try {
       const userData = await this.usersService.findByUsername(user.username);
 
       const reports = await this.prisma.userRoyaltyReport.findMany({
-        where: { clientId: userData.clientId },
+        where: {
+          clientId: userData.clientId,
+          distributor: distributor, // Filter by distributor name
+        },
       });
 
       return plainToInstance(AdminFinancialReportDto, reports, {

@@ -78,7 +78,9 @@ export class LoggerTxtService {
    */
   public getLogPath(jobId?: string, action?: string): string {
     const date = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-    const fileName = `[JOB ${jobId ? jobId : 'UNKNOWN'} - ${action ? action : 'UNKNOWN'}] LOG ${date}.txt`;
+    const fileName = jobId
+      ? `[JOB ${jobId} - ${action ? action : 'UNKNOWN'}] LOG ${date}.txt`
+      : `LOG ${date}.txt`;
     return path.join(this.logDir, fileName);
   }
 }

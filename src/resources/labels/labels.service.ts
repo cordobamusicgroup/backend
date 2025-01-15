@@ -5,17 +5,12 @@ import { UpdateLabelDto } from './dto/update-label.dto';
 import { LabelDto } from './dto/label.dto';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
 
 @Injectable()
 export class LabelsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Creates a new label.
-   *
-   * @param userObject - DTO containing the label creation data
-   * @returns A Promise resolving to the created LabelDto
-   */
   async create(userObject: CreateLabelDto): Promise<LabelDto> {
     const label = await this.prisma.label.create({
       data: {
@@ -33,18 +28,7 @@ export class LabelsService {
     return this.convertToLabelDto(label);
   }
 
-  /**
-   * Updates an existing label by ID.
-   *
-   * Before updating, it checks if the label exists.
-   *
-   * @param id - The ID of the label to update
-   * @param updateLabelDto - DTO containing the label update data
-   * @returns A Promise resolving to the updated LabelDto
-   * @throws NotFoundException if the label is not found
-   */
   async update(id: number, updateLabelDto: UpdateLabelDto): Promise<LabelDto> {
-    // Ensure the label exists before updating
     await this.getLabelById(id);
 
     const label = await this.prisma.label.update({
@@ -78,9 +62,17 @@ export class LabelsService {
       );
     }
 
-    await this.prisma.label.deleteMany({
-      where: { id: { in: ids } },
-    });
+    try {
+      await this.prisma.label.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      if (error.code === 'P2003') {
+        // Prisma foreign key constraint violation code
+        throw new ConflictRecordsException();
+      }
+      throw error;
+    }
   }
 
   /**

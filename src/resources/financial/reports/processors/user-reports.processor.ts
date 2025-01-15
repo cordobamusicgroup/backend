@@ -10,7 +10,7 @@ import { EmailService } from 'src/resources/email/email.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { S3Service } from 'src/common/services/s3.service';
 import * as fs from 'fs';
-import { convertUserReportsToCsv } from '../utils/convert-user-reports-csv';
+import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
 import Decimal from 'decimal.js';
 import env from 'src/config/env.config';
 
@@ -55,19 +55,15 @@ export class UserReportsProcessor extends WorkerHost {
       switch (job.name) {
         case 'generate':
           return await this.generateUserRoyaltyReports(
-            job.data.baseReportId,
-            job.data.email,
-            job.id,
-          );
-        case 'delete':
-          return await this.deleteUserRoyaltyReports(
-            job.data.baseReportId,
+            job.data.distributor,
+            job.data.reportingMonth,
             job.data.email,
             job.id,
           );
         case 'export':
           return await this.exportUserReports(
-            job.data.baseReportId,
+            job.data.distributor,
+            job.data.reportingMonth,
             job.data.email,
             job.id,
           );
@@ -82,7 +78,8 @@ export class UserReportsProcessor extends WorkerHost {
   }
 
   async generateUserRoyaltyReports(
-    baseReportId: number,
+    distributor: Distributor,
+    reportingMonth: string,
     email: string,
     jobId?: string,
   ) {
@@ -90,22 +87,12 @@ export class UserReportsProcessor extends WorkerHost {
       this.logMessage(
         'info',
         'GenerateUserReports',
-        `Starting generation of user royalty reports for baseReportId: ${baseReportId}`,
+        `Starting generation of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
         jobId,
       );
 
-      const existingReports = await this.prisma.userRoyaltyReport.findMany({
-        where: { baseReportId },
-      });
-
-      if (existingReports.length > 0) {
-        const errorMessage = `User royalty reports already exist for baseReportId: ${baseReportId}`;
-        this.logMessage('error', 'GenerateUserReports', errorMessage, jobId);
-        throw new UserRoyaltyReportsAlreadyExistException(baseReportId);
-      }
-
-      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-        where: { id: baseReportId },
+      const baseReport = await this.prisma.baseRoyaltyReport.findFirst({
+        where: { distributor, reportingMonth },
         include: {
           kontorReports: { include: { label: { include: { client: true } } } },
           believeReports: { include: { label: { include: { client: true } } } },
@@ -113,9 +100,19 @@ export class UserReportsProcessor extends WorkerHost {
       });
 
       if (!baseReport) {
-        const errorMessage = `Base report not found for baseReportId: ${baseReportId}`;
+        const errorMessage = `Base report not found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`;
         this.logMessage('error', 'GenerateUserReports', errorMessage, jobId);
         throw new Error('Base report not found');
+      }
+
+      const existingReports = await this.prisma.userRoyaltyReport.findMany({
+        where: { baseReportId: baseReport.id },
+      });
+
+      if (existingReports.length > 0) {
+        const errorMessage = `User royalty reports already exist for baseReportId: ${baseReport.id}`;
+        this.logMessage('error', 'GenerateUserReports', errorMessage, jobId);
+        throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
       }
 
       const clientIds = new Set<number>();
@@ -179,6 +176,7 @@ export class UserReportsProcessor extends WorkerHost {
         const userReport = await this.prisma.userRoyaltyReport.create({
           data: {
             distributor: baseReport.distributor,
+            currency: baseReport.currency,
             reportingMonth: baseReport.reportingMonth,
             totalRoyalties: totalRoyalties.toNumber(),
             baseReportId: baseReport.id,
@@ -212,7 +210,7 @@ export class UserReportsProcessor extends WorkerHost {
       this.logMessage(
         'info',
         'GenerateUserReports',
-        `User royalty reports generated successfully for baseReportId: ${baseReportId}`,
+        `User royalty reports generated successfully for baseReportId: ${baseReport.id}`,
         jobId,
       );
 
@@ -224,60 +222,42 @@ export class UserReportsProcessor extends WorkerHost {
     }
   }
 
-  async deleteUserRoyaltyReports(
-    baseReportId: number,
+  async exportUserReports(
+    distributor: Distributor,
+    reportingMonth: string,
     email: string,
     jobId?: string,
   ) {
     try {
       this.logMessage(
         'info',
-        'DeleteUserReports',
-        `Starting deletion of user royalty reports for baseReportId: ${baseReportId}`,
+        'ExportUserReports',
+        `Starting export of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
         jobId,
       );
 
-      await this.prisma.userRoyaltyReport.deleteMany({
-        where: { baseReportId },
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: {
+          distributor_reportingMonth: {
+            distributor,
+            reportingMonth,
+          },
+        },
       });
 
-      this.logMessage(
-        'info',
-        'DeleteUserReports',
-        `User royalty reports deleted successfully for baseReportId: ${baseReportId}`,
-        jobId,
-      );
-
-      return {
-        message: 'User royalty reports deleted successfully.',
-      };
-    } catch (error) {
-      this.logMessage(
-        'error',
-        'DeleteUserReports',
-        `Error deleting user royalty reports: ${error.message}`,
-        jobId,
-      );
-      throw error;
-    }
-  }
-
-  async exportUserReports(baseReportId: number, email: string, jobId?: string) {
-    try {
-      this.logMessage(
-        'info',
-        'ExportUserReports',
-        `Starting export of user royalty reports for baseReportId: ${baseReportId}`,
-        jobId,
-      );
+      if (!baseReport) {
+        const errorMessage = `Base report not found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`;
+        this.logMessage('error', 'ExportUserReports', errorMessage, jobId);
+        throw new Error(errorMessage);
+      }
 
       const userReports = await this.prisma.userRoyaltyReport.findMany({
-        where: { baseReportId },
+        where: { baseReportId: baseReport.id },
         include: { client: true },
       });
 
       if (userReports.length === 0) {
-        const errorMessage = `No user reports found for baseReportId: ${baseReportId}`;
+        const errorMessage = `No user reports found for baseReportId: ${baseReport.id}`;
         this.logMessage('error', 'ExportUserReports', errorMessage, jobId);
         throw new Error(errorMessage);
       }
@@ -298,12 +278,16 @@ export class UserReportsProcessor extends WorkerHost {
           throw new Error(errorMessage);
         }
 
-        const csvData = await convertUserReportsToCsv(records);
-        const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${baseReportId}_${userReport.id}.csv`;
+        const csvData = await convertReportsToCsv(
+          records,
+          userReport.distributor,
+          ReportType.USER, // Specify report type as USER
+        );
+        const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${baseReport.id}_${userReport.id}.csv`;
         const filePath = `/tmp/${fileName}`;
         fs.writeFileSync(filePath, csvData);
 
-        const s3Key = `user-reports/${baseReportId}/${userReport.clientId}/${fileName}`;
+        const s3Key = `user-reports/${baseReport.id}/${userReport.clientId}/${fileName}`;
         const s3File = await this.s3UploadService.uploadFile(
           env.AWS_S3_BUCKET_NAME_ROYALTIES,
           s3Key,
@@ -319,7 +303,7 @@ export class UserReportsProcessor extends WorkerHost {
       this.logMessage(
         'info',
         'ExportUserReports',
-        `User royalty reports exported successfully for baseReportId: ${baseReportId}`,
+        `User royalty reports exported successfully for baseReportId: ${baseReport.id}`,
         jobId,
       );
 
