@@ -1,4 +1,12 @@
-import { Get, Post, Delete, Body, Param, Controller } from '@nestjs/common';
+import {
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Controller,
+  Query,
+} from '@nestjs/common';
 import { AdminBaseReportService } from '../../services/admin/admin-base-report.service';
 import { AdminReportsHelperService } from '../../services/admin/admin-reports-helper.service';
 import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';
@@ -34,15 +42,31 @@ export class AdminBaseReportsController {
   }
 
   @Post('generate-payments')
-  async generatePayments(@Body() createBaseReportDto: DistributorReportDto) {
+  async generatePayments(
+    @Body() createBaseReportDto: DistributorReportDto,
+    @Query('manual') manual: boolean,
+    @Query('paidOn') paidOn?: string,
+  ) {
     const { distributor, reportingMonth } = createBaseReportDto;
-    return this.baseReportService.generatePayments(distributor, reportingMonth);
+    return this.baseReportService.generatePayments(
+      distributor,
+      reportingMonth,
+      manual,
+      paidOn,
+    );
   }
 
   @Delete('delete-payments')
-  async deletePayments(@Body() createBaseReportDto: DistributorReportDto) {
+  async deletePayments(
+    @Body() createBaseReportDto: DistributorReportDto,
+    @Query('manual') manual: boolean,
+  ) {
     const { distributor, reportingMonth } = createBaseReportDto;
-    return this.baseReportService.deletePayments(distributor, reportingMonth);
+    return this.baseReportService.deletePayments(
+      distributor,
+      reportingMonth,
+      manual,
+    );
   }
 
   @Post('recalculate-totals')
