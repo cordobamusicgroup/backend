@@ -197,9 +197,14 @@ export class AdminBaseReportService {
    * @param reportingMonth The reporting month for which to generate payments.
    * @returns A promise that resolves to an object containing a message.
    */
-  async generatePayments(distributor: Distributor, reportingMonth: string) {
+  async generatePayments(
+    distributor: Distributor,
+    reportingMonth: string,
+    manual: boolean = false,
+    paidOn?: string,
+  ) {
     this.logger.log(
-      `Generating payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      `Generating payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}, paidOn: ${paidOn}`,
     );
 
     const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
@@ -223,73 +228,79 @@ export class AdminBaseReportService {
       );
     }
 
-    for (const userReport of baseReport.userReports) {
-      const client = await this.prisma.client.findUnique({
-        where: { id: userReport.clientId },
-      });
+    const paidOnDate = manual ? (paidOn ? new Date(paidOn) : null) : new Date();
 
-      if (!client) {
-        this.logger.warn(
-          `Client not found for user report ID: ${userReport.id}`,
-        );
-        continue;
-      }
+    await Promise.all(
+      baseReport.userReports.map(async (userReport) => {
+        const client = await this.prisma.client.findUnique({
+          where: { id: userReport.clientId },
+        });
 
-      let balance = await this.prisma.balance.findFirst({
-        where: { clientId: client.id, currency: userReport.currency },
-      });
+        if (!client) {
+          this.logger.warn(
+            `Client not found for user report ID: ${userReport.id}`,
+          );
+          return;
+        }
 
-      if (!balance) {
-        this.logger.log(
-          `Creating balance for client ID: ${client.id} and currency: ${userReport.currency}`,
-        );
-        balance = await this.prisma.balance.create({
+        if (!manual) {
+          let balance = await this.prisma.balance.findFirst({
+            where: { clientId: client.id, currency: userReport.currency },
+          });
+
+          if (!balance) {
+            this.logger.log(
+              `Creating balance for client ID: ${client.id} and currency: ${userReport.currency}`,
+            );
+            balance = await this.prisma.balance.create({
+              data: {
+                clientId: client.id,
+                currency: userReport.currency,
+                amount: 0,
+              },
+            });
+          }
+
+          const newBalanceAmount = new Decimal(balance.amount).plus(
+            userReport.totalRoyalties,
+          );
+
+          await this.prisma.transaction.create({
+            data: {
+              type: TransactionType.ROYALTIES,
+              description: `Royalties for ${dayjs(userReport.reportingMonth).format('YYYY.MM')}`,
+              amount: userReport.totalRoyalties,
+              balanceAmount: newBalanceAmount.toNumber(),
+              balanceId: balance.id,
+              baseReportId: baseReport.id,
+              userReportId: userReport.id,
+              distributor: baseReport.distributor,
+            },
+          });
+
+          await this.prisma.balance.update({
+            where: { id: balance.id },
+            data: { amount: newBalanceAmount.toNumber() },
+          });
+        }
+
+        // Update user report debitState to PAID
+        await this.prisma.userRoyaltyReport.update({
+          where: { id: userReport.id },
           data: {
-            clientId: client.id,
-            currency: userReport.currency,
-            amount: 0,
+            debitState: 'PAID',
+            paidOn: paidOnDate,
           },
         });
-      }
-
-      const newBalanceAmount = new Decimal(balance.amount).plus(
-        userReport.totalRoyalties,
-      );
-
-      await this.prisma.transaction.create({
-        data: {
-          type: TransactionType.ROYALTIES,
-          description: `Royalties for ${dayjs(userReport.reportingMonth).format('YYYY.MM')}`,
-          amount: userReport.totalRoyalties,
-          balanceAmount: newBalanceAmount.toNumber(),
-          balanceId: balance.id,
-          baseReportId: baseReport.id,
-          userReportId: userReport.id,
-          distributor: baseReport.distributor,
-        },
-      });
-
-      await this.prisma.balance.update({
-        where: { id: balance.id },
-        data: { amount: newBalanceAmount.toNumber() },
-      });
-
-      // Update user report debitState to PAID
-      await this.prisma.userRoyaltyReport.update({
-        where: { id: userReport.id },
-        data: {
-          debitState: 'PAID',
-          paidOn: new Date(), // Add this line to set the paidOn field
-        },
-      });
-    }
+      }),
+    );
 
     // Update base report debitState to PAID
     await this.prisma.baseRoyaltyReport.update({
       where: { id: baseReport.id },
       data: {
         debitState: 'PAID',
-        paidOn: new Date(),
+        paidOn: paidOnDate,
       },
     });
 
@@ -305,9 +316,13 @@ export class AdminBaseReportService {
    * @param reportingMonth The reporting month for which to delete payments.
    * @returns A promise that resolves to an object containing a message.
    */
-  async deletePayments(distributor: Distributor, reportingMonth: string) {
+  async deletePayments(
+    distributor: Distributor,
+    reportingMonth: string,
+    manual: boolean = false,
+  ) {
     this.logger.log(
-      `Deleting payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      `Deleting payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}`,
     );
 
     const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
@@ -321,46 +336,48 @@ export class AdminBaseReportService {
       throw new BaseReportNotFoundException();
     }
 
-    const transactions = await this.prisma.transaction.findMany({
-      where: { baseReportId: baseReport.id },
-    });
-
-    for (const transaction of transactions) {
-      const balance = await this.prisma.balance.findUnique({
-        where: { id: transaction.balanceId },
+    if (!manual) {
+      const transactions = await this.prisma.transaction.findMany({
+        where: { baseReportId: baseReport.id },
       });
 
-      if (!balance) {
-        this.logger.warn(
-          `Balance not found for transaction ID: ${transaction.id}`,
-        );
-        continue;
+      for (const transaction of transactions) {
+        const balance = await this.prisma.balance.findUnique({
+          where: { id: transaction.balanceId },
+        });
+
+        if (!balance) {
+          this.logger.warn(
+            `Balance not found for transaction ID: ${transaction.id}`,
+          );
+          continue;
+        }
+
+        const newBalanceAmount = new Decimal(balance.amount)
+          .minus(new Decimal(transaction.amount))
+          .toNumber();
+
+        await this.prisma.balance.update({
+          where: { id: balance.id },
+          data: { amount: newBalanceAmount },
+        });
+
+        await this.prisma.transaction.delete({
+          where: { id: transaction.id },
+        });
       }
-
-      const newBalanceAmount = new Decimal(balance.amount)
-        .minus(new Decimal(transaction.amount))
-        .toNumber();
-
-      await this.prisma.balance.update({
-        where: { id: balance.id },
-        data: { amount: newBalanceAmount },
-      });
-
-      await this.prisma.transaction.delete({
-        where: { id: transaction.id },
-      });
     }
 
-    // Revert user reports debitState to UNPAID
+    // Revert user reports debitState to UNPAID and clear paidOn
     await this.prisma.userRoyaltyReport.updateMany({
       where: { baseReportId: baseReport.id },
-      data: { debitState: 'UNPAID' },
+      data: { debitState: 'UNPAID', paidOn: null },
     });
 
-    // Revert base report debitState to UNPAID
+    // Revert base report debitState to UNPAID and clear paidOn
     await this.prisma.baseRoyaltyReport.update({
       where: { id: baseReport.id },
-      data: { debitState: 'UNPAID' },
+      data: { debitState: 'UNPAID', paidOn: null },
     });
 
     this.logger.log(
