@@ -9,7 +9,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest # Use Github Runners
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment:
+      ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    # Configuración de concurrencia
+    concurrency:
+      group: deploy-${{ github.ref_name }} # Agrupar por rama (main o staging)
+      cancel-in-progress: true # Cancela cualquier job en progreso para esta rama
 
     steps:
       - name: Checkout repository
