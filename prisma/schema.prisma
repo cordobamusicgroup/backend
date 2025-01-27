@@ -41,11 +41,13 @@ model WorkflowEntry {
   formKey    String
   stepKey    String
   stepStatus String
+  stepType   StepTypeWorkflow @default(APPROVAL)
   stepData   Json?
   entryData  Json
   statusForm String
-  clientId   Int?
-  client     Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
 
   @@map("workflows")
 }
@@ -380,7 +382,7 @@ model UserRoyaltyReport {
 model KontorRoyaltyReport {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   currency  Currency @default(EUR)
 
   labelId Int?
@@ -419,7 +421,7 @@ model KontorRoyaltyReport {
 model BelieveRoyaltyReport {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   currency  Currency @default(USD)
 
   labelId Int?
@@ -497,6 +499,14 @@ model FailedReportDetail {
 }
 
 //*** Enums  ***//
+
+enum StepTypeWorkflow {
+  APPROVAL
+  NOTIFICATION
+  USER_INPUT
+  USER_REGISTRATION
+  USER_UPDATE
+}
 
 enum Currency {
   USD
