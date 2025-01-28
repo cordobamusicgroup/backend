@@ -7,7 +7,10 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { UsersService } from 'src/resources/users/users.service';
 import { MailerService } from '@nestjs-modules/mailer';
-import { StepFormKeys } from 'src/constants/step-form-keys';
+import { WorkflowStatus } from 'src/resources/workflow/enums/workflow-status.enum';
+import { WorkflowKeys } from 'src/resources/workflow/enums/workflow-keys.enum';
+import { updatePaymentInfoSchema } from './validation-schemas';
+import { ZodError } from 'zod';
 
 @Injectable()
 export class PaymentsUserService {
@@ -37,18 +40,15 @@ export class PaymentsUserService {
     return client;
   }
 
-  async requestUpdatePaymentInfo(
-    user: JwtPayloadDto,
-    paymentData: Record<string, any>,
-  ) {
+  async requestUpdatePaymentInfo(user: JwtPayloadDto, paymentData: any) {
     const userData = await this.usersService.findByUsername(user.username);
     const clientId = userData.clientId;
 
     const existingRequest = await this.prisma.workflowEntry.findFirst({
       where: {
         clientId: clientId,
-        formKey: StepFormKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
-        stepStatus: 'pending',
+        formKey: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
+        stepStatus: WorkflowStatus.PENDING,
       },
     });
 
@@ -58,15 +58,31 @@ export class PaymentsUserService {
       );
     }
 
-    const paymentDataObject = { ...paymentData };
+    // Validate payment data
+    try {
+      updatePaymentInfoSchema.parse(paymentData);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const formattedErrors = err.errors.map((e) => ({
+          path: e.path.join('.'),
+          message: e.message,
+        }));
+        throw new BadRequestException(formattedErrors);
+      }
+      throw new BadRequestException('Invalid data');
+    }
+
+    // Reorder properties to ensure 'method' appears first
+    const { method, ...rest } = paymentData;
+    const paymentDataObject = { method, ...rest };
 
     await this.prisma.workflowEntry.create({
       data: {
-        formKey: StepFormKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
-        stepKey: StepFormKeys.UPDATE_PAYMENT_INFO.STEPS.REVIEW_INFO_ADMIN,
-        stepStatus: 'pending',
-        entryData: paymentDataObject,
-        statusForm: 'pending',
+        formKey: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
+        stepKey: WorkflowKeys.UPDATE_PAYMENT_INFO.STEPS.REVIEW_INFO_ADMIN,
+        stepStatus: WorkflowStatus.PENDING,
+        entryData: JSON.parse(JSON.stringify(paymentDataObject)),
+        statusForm: WorkflowStatus.PENDING,
         clientId: clientId,
       },
     });
@@ -76,7 +92,7 @@ export class PaymentsUserService {
     await this.prisma.log.create({
       data: {
         userId: userData.id,
-        object: StepFormKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
+        object: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
         message: 'Payment information update request submitted successfully',
       },
     });
@@ -84,21 +100,5 @@ export class PaymentsUserService {
     return {
       message: 'Payment information update request submitted successfully',
     };
-  }
-
-  async getPaymentInformationHistory(user: JwtPayloadDto) {
-    const userData = await this.usersService.findByUsername(user.username);
-    const clientId = userData.clientId;
-
-    return this.prisma.workflowEntry.findMany({
-      where: { clientId },
-      select: {
-        id: true,
-        createdAt: true,
-        entryData: true,
-        statusForm: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 }

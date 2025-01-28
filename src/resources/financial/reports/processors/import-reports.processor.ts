@@ -121,7 +121,7 @@ export class ImportReportsProcessor extends WorkerHost {
     } catch (error) {
       await doubleLog(
         'error',
-        `Failed to process base report: ${error.message}`,
+        `Failed to process base report for job ${job.id}: ${error.message}\nStack: ${error.stack}`,
         job.id,
         'ProcessReportRecord',
         this.logger,

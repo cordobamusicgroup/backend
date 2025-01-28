@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { Currency, TransactionType } from '@prisma/client';
+import { Currency, Prisma, TransactionType } from '@prisma/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { UsersService } from 'src/resources/users/users.service';
 import { ModifyBalanceDto } from './dto/modify-balance.dto';
+import { BalanceTransactionDto } from './dto/balance-transaction.dto';
+import { convertToDto } from 'src/common/utils/convert-dto.util';
 
 @Injectable()
 export class BalancesService {
@@ -31,7 +33,7 @@ export class BalancesService {
       });
     }
 
-    const newBalanceAmount = balance.amount + amount;
+    const newBalanceAmount = balance.amount.plus(new Prisma.Decimal(amount));
 
     const transaction = await this.prisma.transaction.create({
       data: {
@@ -82,7 +84,10 @@ export class BalancesService {
    * @param currency - The currency of the balance.
    * @returns An array of transactions.
    */
-  async getBalanceTransactions(user: JwtPayloadDto, currency: Currency) {
+  async getBalanceTransactions(
+    user: JwtPayloadDto,
+    currency: Currency,
+  ): Promise<BalanceTransactionDto[]> {
     const userData = await this.usersService.findByUsername(user.username);
     const clientId = userData.clientId;
 
@@ -93,16 +98,29 @@ export class BalancesService {
           clientId,
         },
       },
-      include: { transactions: true },
+      include: { transactions: { orderBy: { createdAt: 'desc' } } },
     });
 
     if (!balance) {
       balance = await this.prisma.balance.create({
         data: { clientId, currency, amount: 0 },
-        include: { transactions: true },
+        include: { transactions: { orderBy: { createdAt: 'desc' } } },
       });
     }
 
-    return balance.transactions;
+    return await Promise.all(
+      balance.transactions.map(
+        async (transaction) =>
+          await convertToDto(
+            {
+              ...transaction,
+              amount: transaction.amount.toNumber(),
+              balanceAmount: transaction.balanceAmount.toNumber(),
+              currency,
+            },
+            BalanceTransactionDto,
+          ),
+      ),
+    );
   }
 }

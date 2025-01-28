@@ -71,6 +71,7 @@ export class UsersService {
       });
       return this.convertToDto(user);
     } catch (error) {
+      this.logger.error(error);
       throw new InternalServerErrorException('Error creating user.');
     }
   }
@@ -117,6 +118,7 @@ export class UsersService {
 
       return this.convertToDto(user);
     } catch (error) {
+      this.logger.error(error);
       throw new InternalServerErrorException('Error registering user.');
     }
   }
@@ -142,6 +144,7 @@ export class UsersService {
         },
       });
     } catch (error) {
+      this.logger.error(error);
       throw new InternalServerErrorException(
         'Error sending account information email.',
       );
@@ -175,6 +178,7 @@ export class UsersService {
       await this.sendAccountInfoEmail(email, user.username, newPassword);
       return { message: 'Account information email sent successfully' };
     } catch (error) {
+      this.logger.error(error);
       throw new InternalServerErrorException(
         'Error resending account information email.',
       );

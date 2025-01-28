@@ -14,6 +14,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:6060',
       'https://app.cordobamusicgroup.uk',
+      'https://app.cordobamusicgroup.co.uk',
       'https://app.cmgdistro.dev',
       /\.cmg-app\.pages\.dev$/,
     ],

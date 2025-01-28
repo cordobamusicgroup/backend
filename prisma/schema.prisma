@@ -41,11 +41,13 @@ model WorkflowEntry {
   formKey    String
   stepKey    String
   stepStatus String
+  stepType   StepTypeWorkflow @default(APPROVAL)
   stepData   Json?
   entryData  Json
   statusForm String
-  clientId   Int?
-  client     Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
 
   @@map("workflows")
 }
@@ -168,7 +170,7 @@ model Client {
 model ClientDMB {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int    @unique
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientDMB")
@@ -184,7 +186,7 @@ model ClientDMB {
 model ClientPaymentInformation {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int    @unique
   client   Client @relation(fields: [clientId], references: [id])
@@ -198,7 +200,7 @@ model ClientPaymentInformation {
 model Contract {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
@@ -223,7 +225,8 @@ model Balance {
   clientId     Int
   client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
   currency     Currency      @default(EUR)
-  amount       Float         @default(0.00)
+  amount       Decimal       @default(0.00)
+  amountRetain Decimal       @default(0.00)
   transactions Transaction[] @relation("BalanceTransactions")
 
   @@unique([currency, clientId])
@@ -258,6 +261,7 @@ model Address {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   street    String
+  street2   String?
   city      String
   state     String
   countryId Int
@@ -380,7 +384,7 @@ model UserRoyaltyReport {
 model KontorRoyaltyReport {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   currency  Currency @default(EUR)
 
   labelId Int?
@@ -419,7 +423,7 @@ model KontorRoyaltyReport {
 model BelieveRoyaltyReport {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
   currency  Currency @default(USD)
 
   labelId Int?
@@ -435,14 +439,14 @@ model BelieveRoyaltyReport {
   trackTitle                String
   upc                       String
   isrc                      String
-  catalogNb                 String
-  streamingSubscriptionType String
-  releaseType               String
-  salesType                 String
+  catalogNb                 String?
+  streamingSubscriptionType String?
+  releaseType               String?
+  salesType                 String?
   quantity                  String
-  clientPaymentCurrency     String
+  clientPaymentCurrency     String?
   unitPrice                 Decimal
-  mechanicalFee             Decimal
+  mechanicalFee             Decimal?
   grossRevenue              Decimal
   clientShareRate           Decimal
   netRevenue                Decimal
@@ -497,6 +501,14 @@ model FailedReportDetail {
 }
 
 //*** Enums  ***//
+
+enum StepTypeWorkflow {
+  APPROVAL
+  NOTIFICATION
+  USER_INPUT
+  USER_REGISTRATION
+  USER_UPDATE
+}
 
 enum Currency {
   USD

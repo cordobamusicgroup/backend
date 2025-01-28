@@ -15,7 +15,10 @@ import { Currency } from '@prisma/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import {
+  PrismaClientKnownRequestError,
+  Decimal,
+} from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ClientsService {
@@ -46,8 +49,8 @@ export class ClientsService {
         balances: {
           createMany: {
             data: [
-              { amount: 0, currency: Currency.EUR },
-              { amount: 0, currency: Currency.USD },
+              { amount: new Decimal(0), currency: Currency.EUR },
+              { amount: new Decimal(0), currency: Currency.USD },
             ],
           },
         },
@@ -74,19 +77,18 @@ export class ClientsService {
   ): Promise<ClientExtendedDto> {
     const { address, contract, dmb, ...clientData } = updateClientDto;
 
-    // Actualiza los datos del cliente y las relaciones obligatorias
     const updatedClient = await this.prisma.client.update({
       where: { id },
       data: {
-        ...clientData, // Actualiza los campos del cliente
+        ...clientData,
         address: {
-          update: { ...address }, // Actualiza la relación 'address'
+          update: { ...address },
         },
         contract: {
-          update: { ...contract }, // Actualiza la relación 'contract'
+          update: { ...contract },
         },
         dmb: {
-          update: { ...dmb }, // Actualiza la relación 'dmb'
+          update: { ...dmb },
         },
       },
       include: { address: true, contract: true, balances: true, dmb: true },
@@ -260,11 +262,20 @@ export class ClientsService {
     const addressDto = await convertToDto(client.address, AddressDto);
     const contractDto = await convertToDto(client.contract, ContractDto);
     const dmbDto = await convertToDto(client.dmb, DmbDto);
+
     const balanceDtos = await Promise.all(
-      client.balances.map((balance) => convertToDto(balance, BalanceDto)),
+      client.balances.map((balance) =>
+        convertToDto(
+          {
+            ...balance,
+            amount: balance.amount.toNumber(),
+            amountRetain: balance.amountRetain.toNumber(),
+          },
+          BalanceDto,
+        ),
+      ),
     );
 
-    // Add country name to the address DTO
     addressDto.countryName = await getCountryName(
       this.prisma,
       addressDto.countryId,

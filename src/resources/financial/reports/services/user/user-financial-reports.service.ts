@@ -35,6 +35,9 @@ export class UserFinancialReportsService {
           clientId: userData.clientId,
           distributor: distributor, // Filter by distributor name
         },
+        orderBy: {
+          reportingMonth: 'desc', // Order by reporting month from newest to oldest
+        },
       });
 
       return plainToInstance(AdminFinancialReportDto, reports, {
