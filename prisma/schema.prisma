@@ -225,7 +225,8 @@ model Balance {
   clientId     Int
   client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
   currency     Currency      @default(EUR)
-  amount       Float         @default(0.00)
+  amount       Decimal       @default(0.00)
+  amountRetain Decimal       @default(0.00)
   transactions Transaction[] @relation("BalanceTransactions")
 
   @@unique([currency, clientId])
@@ -260,6 +261,7 @@ model Address {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   street    String
+  street2   String?
   city      String
   state     String
   countryId Int
