@@ -1,20 +1,24 @@
-import { Body, Controller, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { BalancesService } from '../../balances.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { ModifyBalanceDto } from '../../dto/modify-balance.dto';
+import { ModifyBalanceDto } from './dto/modify-balance.dto';
+import { BalancesAdminService } from './balances-admin.service';
 
 @Controller('admin')
 @UseGuards(RolesGuard)
+@Roles(Role.ADMIN)
 export class BalancesAdminController {
-  constructor(private readonly balancesService: BalancesService) {}
+  constructor(private readonly balancesService: BalancesAdminService) {}
 
   @Patch('modify')
-  @Roles(Role.ADMIN)
   async modifyBalance(
     @Body() modifyBalanceDto: ModifyBalanceDto,
   ): Promise<any> {
     return this.balancesService.modifyBalance(modifyBalanceDto);
+  }
+  @Get('total-balances')
+  async getTotalBalances() {
+    return this.balancesService.getTotalBalances();
   }
 }
