@@ -22,7 +22,7 @@ export class PaymentsUserController {
 
   @Get('withdrawal-authorized')
   async getClientPaymentStatus(@Request() req) {
-    return this.paymentsUserService.getClientPaymentStatus(req.jwtPayload);
+    return this.paymentsUserService.getClientPaymentStatus(req.jwt);
   }
 
   @Patch('update-payment-information')
@@ -43,10 +43,5 @@ export class PaymentsUserController {
       req.jwt,
       paymentData,
     );
-  }
-
-  @Get('payment-information-history')
-  async getPaymentInformationHistory(@Request() req) {
-    return this.paymentsUserService.getPaymentInformationHistory(req.jwt);
   }
 }

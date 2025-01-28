@@ -3,6 +3,7 @@ import { BalancesService } from './balances.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Currency } from '@prisma/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
+import { BalanceTransactionDto } from './dto/balance-transaction.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -19,7 +20,7 @@ export class BalancesUserController {
   async getBalanceTransactions(
     @Query('currency') currency: string,
     @Request() req,
-  ) {
+  ): Promise<BalanceTransactionDto[]> {
     const user: JwtPayloadDto = req.user;
     return this.balancesService.getBalanceTransactions(
       user,

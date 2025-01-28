@@ -5,6 +5,9 @@ export class AddressDto {
   street: string;
 
   @Expose()
+  street2: string;
+
+  @Expose()
   city: string;
 
   @Expose()

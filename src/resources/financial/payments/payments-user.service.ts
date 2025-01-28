@@ -101,20 +101,4 @@ export class PaymentsUserService {
       message: 'Payment information update request submitted successfully',
     };
   }
-
-  async getPaymentInformationHistory(user: JwtPayloadDto) {
-    const userData = await this.usersService.findByUsername(user.username);
-    const clientId = userData.clientId;
-
-    return this.prisma.workflowEntry.findMany({
-      where: { clientId },
-      select: {
-        id: true,
-        createdAt: true,
-        entryData: true,
-        statusForm: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
 }
