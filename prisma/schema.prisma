@@ -85,6 +85,8 @@ model User {
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[]
 
+  generalContactClient Client[] @relation("GeneralContact")
+
   @@map("users")
 }
 
@@ -148,6 +150,9 @@ model Client {
   taxId         String
   vatRegistered Boolean    @default(false)
   vatId         String?
+
+  generalContact   User? @relation("GeneralContact", fields: [generalContactId], references: [id])
+  generalContactId Int?
 
   isBlocked                 Boolean @default(false)
   isPaymentsBlocked         Boolean @default(false)
