@@ -33,4 +33,16 @@ export class ClientBasicDto {
   @Expose()
   @Type(() => AddressDto)
   address: AddressDto;
+
+  @Expose()
+  isBlocked: boolean;
+
+  @Expose()
+  isPaymentsBlocked: boolean;
+
+  @Expose()
+  isPaymentInProgress: boolean;
+
+  @Expose()
+  isPaymentDataInValidation: boolean;
 }

@@ -48,4 +48,16 @@ export class ClientExtendedDto {
   @Expose()
   @Type(() => BalanceDto)
   balances: BalanceDto[];
+
+  @Expose()
+  isBlocked: boolean;
+
+  @Expose()
+  isPaymentsBlocked: boolean;
+
+  @Expose()
+  isPaymentInProgress: boolean;
+
+  @Expose()
+  isPaymentDataInValidation: boolean;
 }
