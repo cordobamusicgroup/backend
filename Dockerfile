@@ -7,6 +7,8 @@ RUN apt-get update -y && apt-get install -y openssl curl unzip && rm -rf /var/li
 # Instalar bun
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
+# Añadir variable para cache separado de bun
+ENV BUN_CACHE_DIR="/root/.bun_cache"
 
 # Enable pnpm via Corepack
 RUN corepack enable
@@ -17,8 +19,8 @@ WORKDIR /app
 # Copy configuration files
 COPY package.json bun.lockb* ./
 
-# Install dependencies and use cache for bun
-RUN --mount=type=cache,id=bun-cache,target=/root/.bun bun install
+# Instalar dependencias usando cache para bun en un directorio separado
+RUN --mount=type=cache,id=bun-cache,target=/root/.bun_cache bun install
 
 # Copy the rest of the application files
 COPY . .
