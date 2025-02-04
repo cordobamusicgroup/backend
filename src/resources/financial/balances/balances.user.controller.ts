@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards, Request, Query } from '@nestjs/common';
-import { BalancesService } from './balances.service';
+import { BalancesService } from './balances-user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Currency } from '@prisma/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
