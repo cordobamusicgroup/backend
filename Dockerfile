@@ -1,8 +1,8 @@
 # Base image
 FROM node:20-slim AS base
 
-# Install necessary system packages for Prisma and other dependencies (including OpenSSL)
-RUN apt-get update -y && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
+# Install necessary system packages for Prisma and other dependencies (including OpenSSL and unzip)
+RUN apt-get update -y && apt-get install -y openssl curl unzip && rm -rf /var/lib/apt/lists/*
 
 # Instalar bun
 RUN curl -fsSL https://bun.sh/install | bash
