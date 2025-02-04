@@ -18,7 +18,8 @@ export class BalancesAdminService {
    * @returns The created transaction.
    */
   async modifyBalance(modifyBalanceDto: ModifyBalanceDto): Promise<any> {
-    const { clientId, currency, amount, description } = modifyBalanceDto;
+    const { clientId, currency, amount, description, transactionType } =
+      modifyBalanceDto;
 
     let balance = await this.prisma.balance.findFirst({
       where: { clientId, currency },
@@ -34,7 +35,7 @@ export class BalancesAdminService {
 
     const transaction = await this.prisma.transaction.create({
       data: {
-        type: TransactionType.OTHER,
+        type: transactionType ?? TransactionType.OTHER,
         description,
         amount,
         balanceAmount: newBalanceAmount,
