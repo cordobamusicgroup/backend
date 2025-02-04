@@ -1,5 +1,5 @@
-import { IsNumber, IsString, IsEnum } from 'class-validator';
-import { Currency } from '@prisma/client';
+import { IsNumber, IsString, IsEnum, IsOptional } from 'class-validator';
+import { Currency, TransactionType } from '@prisma/client';
 
 export class ModifyBalanceDto {
   @IsNumber()
@@ -7,6 +7,10 @@ export class ModifyBalanceDto {
 
   @IsEnum(Currency)
   currency: Currency;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  transactionType?: TransactionType;
 
   @IsNumber()
   amount: number;
