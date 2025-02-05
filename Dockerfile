@@ -12,6 +12,8 @@ ENV BUN_CACHE_DIR="/root/.bun_cache"
 
 # Enable pnpm via Corepack
 RUN corepack enable
+# Install pnpm v10 using corepack sin errores
+RUN SHA_SUM=$(npm view pnpm@10.1.0 dist.shasum) && corepack install -g pnpm@10.1.0+sha1.$SHA_SUM
 
 # Set working directory
 WORKDIR /app
@@ -19,17 +21,17 @@ WORKDIR /app
 # Copy configuration files
 COPY package.json bun.lockb* ./
 
-# Instalar dependencias usando cache para bun en un directorio separado
-RUN --mount=type=cache,id=bun-cache,target=/root/.bun_cache bun install
+# Instalar dependencias usando pnpm con cache
+RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install
 
 # Copy the rest of the application files
 COPY . .
 
-# Generate Prisma client
-RUN bun prisma generate
+# Generate Prisma client using pnpm
+RUN pnpm prisma generate
 
-# Build the application
-RUN bun run build
+# Build the application using pnpm
+RUN pnpm run build
 
 # Set environment variable for production
 ENV NODE_ENV=production
@@ -37,5 +39,5 @@ ENV NODE_ENV=production
 # Expose the port on which the application runs
 EXPOSE 3000
 
-# Run Prisma migrations and start the application
-CMD ["sh", "-c", "bun prisma migrate deploy && bun run start:prod"]
+# Run Prisma migrations and start the application using pnpm
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
