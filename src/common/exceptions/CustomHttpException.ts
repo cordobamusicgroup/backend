@@ -123,3 +123,9 @@ export class ValidationException extends CustomHttpException {
     super(1016, message, HttpStatus.BAD_REQUEST);
   }
 }
+
+export class ClientBlockedException extends CustomHttpException {
+  constructor() {
+    super(1017, 'Client is blocked', HttpStatus.UNAUTHORIZED);
+  }
+}

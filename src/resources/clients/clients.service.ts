@@ -14,7 +14,10 @@ import { DmbDto } from './dto/dmb/dmb.dto';
 import { Currency } from '@prisma/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
-import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
+import {
+  ConflictRecordsException,
+  UserNotFoundException,
+} from 'src/common/exceptions/CustomHttpException';
 import {
   PrismaClientKnownRequestError,
   Decimal,
@@ -33,10 +36,26 @@ export class ClientsService {
    */
   async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
     await this.validateClientData(userObject);
-    const { address, contract, dmb, ...clientData } = userObject;
+    const { address, contract, dmb, generalContactId, ...clientData } =
+      userObject;
+
+    let generalContact = null;
+    if (generalContactId) {
+      generalContact = await this.prisma.user.findUnique({
+        where: { id: generalContactId },
+      });
+    }
+
+    if (generalContactId && !generalContact) {
+      throw new UserNotFoundException();
+    }
+
     const client = await this.prisma.client.create({
       data: {
         ...clientData,
+        generalContact: generalContact
+          ? { connect: { id: generalContact.id } }
+          : undefined,
         address: {
           create: address,
         },
@@ -75,12 +94,27 @@ export class ClientsService {
     id: number,
     updateClientDto: UpdateClientDto,
   ): Promise<ClientExtendedDto> {
-    const { address, contract, dmb, ...clientData } = updateClientDto;
+    const { address, contract, dmb, generalContactId, ...clientData } =
+      updateClientDto;
+
+    let generalContact = null;
+    if (generalContactId) {
+      generalContact = await this.prisma.user.findUnique({
+        where: { id: generalContactId },
+      });
+    }
+
+    if (generalContactId && !generalContact) {
+      throw new UserNotFoundException();
+    }
 
     const updatedClient = await this.prisma.client.update({
       where: { id },
       data: {
         ...clientData,
+        generalContact: generalContact
+          ? { connect: { id: generalContact.id } }
+          : undefined,
         address: {
           update: { ...address },
         },

@@ -41,8 +41,10 @@ export class WorkflowService {
     });
     if (!entry) throw new NotFoundException('Workflow entry not found');
     const handler = this.handlers[entry.formKey];
-    if (!handler)
-      throw new BadRequestException(`No handler for formKey ${entry.formKey}`);
+    if (!handler || !handler.handleApproval)
+      throw new BadRequestException(
+        `No handler for formKey ${entry.formKey} or handleApproval method not implemented`,
+      );
     return handler.handleApproval(jwt, entry, notes);
   }
 
@@ -63,8 +65,10 @@ export class WorkflowService {
     });
     if (!entry) throw new NotFoundException('Workflow entry not found');
     const handler = this.handlers[entry.formKey];
-    if (!handler)
-      throw new BadRequestException(`No handler for formKey ${entry.formKey}`);
+    if (!handler || !handler.handleRejection)
+      throw new BadRequestException(
+        `No handler for formKey ${entry.formKey} or handleRejection method not implemented`,
+      );
     return handler.handleRejection(jwt, entry, notes);
   }
 

@@ -6,6 +6,7 @@ import {
   IsOptional,
   ValidateNested,
   IsNotEmptyObject,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ClientType, TaxIdType } from '@prisma/client';
@@ -38,6 +39,10 @@ export class CreateClientDto {
   @IsString()
   @IsOptional()
   vatId?: string;
+
+  @IsInt()
+  @IsOptional()
+  generalContactId?: number;
 
   @ValidateNested()
   @Type(() => CreateAddressDto)

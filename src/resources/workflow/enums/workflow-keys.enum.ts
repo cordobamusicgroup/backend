@@ -7,4 +7,12 @@ export const WorkflowKeys = {
       UPDATE_PAYMENT_INFO_REJECTED: 'UpdatePaymentInformationRejected',
     },
   },
+  REQUEST_PAYMENT: {
+    FORM_KEY: 'RequestPayment',
+    STEPS: {
+      REVIEW_PAYMENT_REQUEST: 'ReviewPaymentRequest',
+      PAYMENT_SENT: 'PaymentSent',
+      PAYMENT_PROCESSED: 'PaymentProcessed',
+    },
+  },
 };

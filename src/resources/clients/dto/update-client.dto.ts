@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   ValidateNested,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UpdateAddressDto } from './address/update-address.dto';
@@ -43,6 +44,10 @@ export class UpdateClientDto {
   @IsString()
   @IsOptional()
   vatId?: string;
+
+  @IsInt()
+  @IsOptional()
+  generalContactId?: number;
 
   @ValidateNested()
   @Type(() => UpdateAddressDto)

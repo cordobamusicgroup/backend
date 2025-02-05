@@ -16,6 +16,7 @@ import {
   InvalidOrExpiredTokenException,
   RecordNotFoundException,
   UnauthorizedException,
+  ClientBlockedException,
 } from 'src/common/exceptions/CustomHttpException';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
@@ -40,16 +41,30 @@ export class AuthService {
   async validateUser(login: string, password: string): Promise<User | null> {
     try {
       const user = login.includes('@')
-        ? await this.prisma.user.findUnique({ where: { email: login } })
-        : await this.prisma.user.findUnique({ where: { username: login } });
+        ? await this.prisma.user.findUnique({
+            where: { email: login },
+            include: { client: true },
+          })
+        : await this.prisma.user.findUnique({
+            where: { username: login },
+            include: { client: true },
+          });
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new InvalidCredentialsException();
       }
 
+      // Check if the client associated with the user is blocked
+      if (user.client && user.client.isBlocked) {
+        throw new ClientBlockedException();
+      }
+
       return user;
     } catch (error) {
-      if (error instanceof InvalidCredentialsException) {
+      if (
+        error instanceof InvalidCredentialsException ||
+        error instanceof ClientBlockedException
+      ) {
         throw error;
       }
 
