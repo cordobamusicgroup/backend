@@ -52,6 +52,7 @@
     "dayjs": "^1.11.13",
     "decimal.js": "^10.5.0",
     "depcheck": "^1.4.7",
+    "ethers": "^6.13.5",
     "express": "^4.21.2",
     "fast-csv": "^5.0.2",
     "handlebars": "^4.7.8",
@@ -71,6 +72,8 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "tough-cookie": "^5.1.0",
+    "tronweb": "^6.0.1",
+    "wallet-address-validator": "^0.2.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {

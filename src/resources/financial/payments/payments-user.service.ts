@@ -11,6 +11,9 @@ import { WorkflowStatus } from 'src/resources/workflow/enums/workflow-status.enu
 import { WorkflowKeys } from 'src/resources/workflow/enums/workflow-keys.enum';
 import { updatePaymentInfoSchema } from './validation-schemas';
 import { ZodError } from 'zod';
+import axios from 'axios';
+
+import { PaymentMethod } from '@prisma/client';
 
 @Injectable()
 export class PaymentsUserService {
@@ -58,7 +61,7 @@ export class PaymentsUserService {
       );
     }
 
-    // Validate payment data
+    // Validar datos de pago con Zod
     try {
       updatePaymentInfoSchema.parse(paymentData);
     } catch (err) {
@@ -72,10 +75,43 @@ export class PaymentsUserService {
       throw new BadRequestException('Invalid data');
     }
 
-    // Reorder properties to ensure 'method' appears first
+    // Reordenar propiedades para que 'method' sea el primer campo
     const { method, ...rest } = paymentData;
     const paymentDataObject = { method, ...rest };
 
+    if (paymentDataObject.method === PaymentMethod.CRYPTO) {
+      const { walletAddress } = paymentDataObject.crypto;
+      // Call wallet validation via API and regex.
+      const isValid = await this.validateTrc20Wallet(walletAddress);
+      if (!isValid) {
+        throw new BadRequestException('The provided wallet is not valid.');
+      }
+
+      await this.prisma.workflowEntry.create({
+        data: {
+          formKey: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
+          stepKey: WorkflowKeys.UPDATE_PAYMENT_INFO.STEPS.REVIEW_INFO_ADMIN,
+          stepStatus: WorkflowStatus.APPROVED,
+          entryData: JSON.parse(JSON.stringify(paymentDataObject)),
+          statusForm: WorkflowStatus.APPROVED,
+          clientId: userData.clientId,
+        },
+      });
+
+      await this.prisma.log.create({
+        data: {
+          userId: userData.id,
+          object: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
+          message: 'Crypto payment update request auto-approved',
+        },
+      });
+
+      return {
+        message: 'Crypto payment information auto-approved',
+      };
+    }
+
+    // Para otros métodos de pago o si la wallet no es válida
     await this.prisma.workflowEntry.create({
       data: {
         formKey: WorkflowKeys.UPDATE_PAYMENT_INFO.FORM_KEY,
@@ -86,8 +122,6 @@ export class PaymentsUserService {
         clientId: clientId,
       },
     });
-
-    // TODO: Add email notification logic here
 
     await this.prisma.log.create({
       data: {
@@ -100,5 +134,29 @@ export class PaymentsUserService {
     return {
       message: 'Payment information update request submitted successfully',
     };
+  }
+
+  /**
+   * Valida una dirección TRC20 de USDT usando lógica similar a la validación en PHP.
+   * @param address Dirección de wallet
+   * @returns boolean - True si es válida, false en otro caso.
+   */
+  private async validateTrc20Wallet(address: string): Promise<boolean> {
+    // Validate format: must start with "T" and be 34 characters long.
+    const regex = /^T[0-9A-Za-z]{33}$/;
+    if (!regex.test(address)) {
+      return false;
+    }
+    try {
+      const apiUrl = `https://apilist.tronscan.org/api/account?address=${address}`;
+      const response = await axios.get(apiUrl);
+      const data = response.data;
+      if (!data || !data.address) {
+        return false;
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 }

@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -17,8 +24,16 @@ export class BalancesAdminController {
   ): Promise<any> {
     return this.balancesService.modifyBalance(modifyBalanceDto);
   }
+
   @Get('total-balances')
   async getTotalBalances() {
     return this.balancesService.getTotalBalances();
+  }
+
+  @Delete('reverse-transaction')
+  async reverseTransaction(
+    @Body('transactionId') transactionId: number,
+  ): Promise<any> {
+    return this.balancesService.reverseTransaction(transactionId);
   }
 }

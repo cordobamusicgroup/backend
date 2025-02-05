@@ -4,10 +4,17 @@ export const paypalSchema = z.object({
   paypalEmail: z.string().email(),
 });
 
+// Actualización del esquema crypto para permitir solo USDT y la red TRC20.
+// Se añade validación de walletAddress con regex: debe iniciar con "T" y tener 34 caracteres.
 export const cryptoSchema = z.object({
-  cryptoCurrency: z.string(),
-  cryptoNetwork: z.string(),
-  walletAddress: z.string(),
+  cryptoCurrency: z.literal('USDT'),
+  cryptoNetwork: z.literal('TRC20'),
+  walletAddress: z
+    .string()
+    .regex(
+      /^T[0-9A-Za-z]{33}$/,
+      'Please enter a valid USDT wallet address on the TRC20 network.',
+    ),
 });
 
 export const bankTransferEURSchema = z
