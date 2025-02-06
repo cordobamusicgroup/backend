@@ -75,61 +75,94 @@ export class BalancesAdminService {
     );
   }
 
-  // Método actualizado para revertir una transacción optimizando la actualización de transacciones posteriores
-  async reverseTransaction(transactionId: number): Promise<any> {
-    // Recupera la transacción a revertir
-    const transactionToReverse = await this.prisma.transaction.findUnique({
-      where: { id: transactionId },
-    });
-    if (!transactionToReverse) {
-      throw new BadRequestException('Transaction not found'); // Considera lanzar una excepción HTTP
-    }
-    const balanceId = transactionToReverse.balanceId;
-
-    // Obtén la transacción inmediatamente anterior a la transacción a revertir
-    const previousTransaction = await this.prisma.transaction.findFirst({
-      where: {
-        balanceId,
-        createdAt: { lt: transactionToReverse.createdAt },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    let baseBalance = previousTransaction
-      ? new Prisma.Decimal(previousTransaction.balanceAmount)
-      : new Prisma.Decimal(0);
-
-    // Busca solo las transacciones posteriores a la transacción a revertir, en orden ascendente
-    const subsequentTransactions = await this.prisma.transaction.findMany({
-      where: {
-        balanceId,
-        createdAt: { gt: transactionToReverse.createdAt },
-      },
+  // Función auxiliar para recalcular la cadena de transacciones en un balance
+  private async recalcBalance(
+    prisma: any,
+    balanceId: number,
+  ): Promise<Prisma.Decimal> {
+    const allTransactions = await prisma.transaction.findMany({
+      where: { balanceId },
       orderBy: { createdAt: 'asc' },
     });
-
-    // Elimina la transacción a revertir primero
-    await this.prisma.transaction.delete({
-      where: { id: transactionId },
-    });
-
-    // Actualiza únicamente las transacciones posteriores recalculando el balance
-    for (const t of subsequentTransactions) {
-      baseBalance = baseBalance.plus(new Prisma.Decimal(t.amount));
-      await this.prisma.transaction.update({
-        where: { id: t.id },
-        data: { balanceAmount: baseBalance },
-      });
+    let cumulative = new Prisma.Decimal(0);
+    for (const tx of allTransactions) {
+      if (!tx.reversed) {
+        cumulative = cumulative.plus(new Prisma.Decimal(tx.amount));
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: { balanceAmount: cumulative },
+        });
+      } else {
+        // Opcional: podemos dejar el balanceAmount de transacciones revertidas inalterado
+      }
     }
+    return cumulative;
+  }
 
-    // Actualiza el saldo principal con el balance final
-    await this.prisma.balance.update({
-      where: { id: balanceId },
-      data: { amount: baseBalance },
+  async reverseTransaction(transactionId: number): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+      // 1️⃣ Buscar la transacción a revertir
+      const transactionToReverse = await prisma.transaction.findUnique({
+        where: { id: transactionId },
+      });
+      if (!transactionToReverse) {
+        throw new BadRequestException('Transaction not found');
+      }
+      const { balanceId } = transactionToReverse;
+
+      // 2️⃣ Marcar la transacción como revertida
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { reversed: true },
+      });
+
+      // 3️⃣ Recalcular el balance acumulado para todas las transacciones del balance
+      const newBalance = await this.recalcBalance(prisma, balanceId);
+
+      // 4️⃣ Actualizar el balance final
+      await prisma.balance.update({
+        where: { id: balanceId },
+        data: { amount: newBalance },
+      });
+
+      return {
+        message: 'Transaction reversed and balances updated successfully',
+      };
     });
+  }
 
-    return {
-      message:
-        'Transaction reversed and subsequent balances updated successfully',
-    };
+  async restoreTransaction(transactionId: number): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+      // 1️⃣ Buscar la transacción a restaurar
+      const transactionToRestore = await prisma.transaction.findUnique({
+        where: { id: transactionId },
+      });
+      if (!transactionToRestore) {
+        throw new BadRequestException('Transaction not found');
+      }
+      if (!transactionToRestore.reversed) {
+        throw new BadRequestException('Transaction is not reversed');
+      }
+      const { balanceId } = transactionToRestore;
+
+      // 2️⃣ Restaurar la transacción
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { reversed: false },
+      });
+
+      // 3️⃣ Recalcular el balance acumulado para todas las transacciones del balance
+      const newBalance = await this.recalcBalance(prisma, balanceId);
+
+      // 4️⃣ Actualizar el balance final
+      await prisma.balance.update({
+        where: { id: balanceId },
+        data: { amount: newBalance },
+      });
+
+      return {
+        message: 'Transaction restored and balances updated successfully',
+      };
+    });
   }
 }

@@ -36,4 +36,12 @@ export class BalancesAdminController {
   ): Promise<any> {
     return this.balancesService.reverseTransaction(transactionId);
   }
+
+  // Nuevo endpoint para restaurar una transacción
+  @Patch('restore-transaction')
+  async restoreTransaction(
+    @Body('transactionId') transactionId: number,
+  ): Promise<any> {
+    return this.balancesService.restoreTransaction(transactionId);
+  }
 }

@@ -58,13 +58,23 @@ export class BalancesService {
           clientId,
         },
       },
-      include: { transactions: { orderBy: { createdAt: 'desc' } } },
+      include: {
+        transactions: {
+          where: { reversed: false }, // filter transactions directly in the query
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
 
     if (!balance) {
       balance = await this.prisma.balance.create({
         data: { clientId, currency, amount: 0 },
-        include: { transactions: { orderBy: { createdAt: 'desc' } } },
+        include: {
+          transactions: {
+            where: { reversed: false }, // apply filter here as well
+            orderBy: { createdAt: 'desc' },
+          },
+        },
       });
     }
 
