@@ -59,4 +59,28 @@ export class ImportsController {
       filename: file.originalname,
     };
   }
+
+  @Post('upload/client-balance')
+  @Roles('ADMIN')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './temp',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${uniqueSuffix}-${file.originalname}`);
+        },
+      }),
+    }),
+  )
+  async uploadClientBalanceCsv(@UploadedFile() file: Express.Multer.File) {
+    const tempFilePath = path.resolve(file.path);
+    const result =
+      await this.importsService.importClientBalanceFromCsv(tempFilePath);
+    return {
+      message: result.message,
+      filename: file.originalname,
+    };
+  }
 }

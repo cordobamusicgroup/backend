@@ -6,6 +6,9 @@ import { parse } from 'fast-csv';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapClientCsvToIntermediate } from './utils/client-csv-mapper.util';
 import { mapLabelCsvToIntermediate } from './utils/label-csv-mapper.util';
+import { mapClientBalanceCsvToTransaction } from './utils/client-balance-csv-mapper.util';
+import { TransactionType } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class ImportsService {
@@ -101,6 +104,59 @@ export class ImportsService {
     }
     this.cleanUp(filePath, errorLogPath);
     return { message: 'Label CSV processed successfully.' };
+  }
+
+  async importClientBalanceFromCsv(tempFilePath: string) {
+    return new Promise<{ message: string }>((resolve, reject) => {
+      const results: any[] = [];
+      fs.createReadStream(tempFilePath)
+        .pipe(parse({ headers: true, ignoreEmpty: true, delimiter: ',' }))
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          for (const row of results) {
+            const { wp_id, transactionData } =
+              mapClientBalanceCsvToTransaction(row);
+            // Buscar cliente por wp_id
+            const client = await this.prisma.client.findUnique({
+              where: { wp_id },
+            });
+            if (!client) continue; // O bien registrar error
+            // Buscar balance USD existente
+            let balance = await this.prisma.balance.findFirst({
+              where: { clientId: client.id, currency: 'USD' },
+            });
+            if (!balance) {
+              balance = await this.prisma.balance.create({
+                data: {
+                  clientId: client.id,
+                  currency: 'USD',
+                  amount: new Decimal(0),
+                  amountRetain: new Decimal(0),
+                },
+              });
+            }
+            // Calcular nuevo monto usando Decimal
+            const newAmount = balance.amount.add(transactionData.amount);
+            // Crear la transacción
+            await this.prisma.transaction.create({
+              data: {
+                type: TransactionType.OTHER,
+                description: transactionData.description,
+                amount: transactionData.amount,
+                balanceAmount: newAmount,
+                balance: { connect: { id: balance.id } },
+              },
+            });
+            // Actualizar el balance
+            await this.prisma.balance.update({
+              where: { id: balance.id },
+              data: { amount: newAmount },
+            });
+          }
+          resolve({ message: 'Client balances imported successfully.' });
+        })
+        .on('error', (err) => reject(err));
+    });
   }
 
   private async readCsvFile<T>(
