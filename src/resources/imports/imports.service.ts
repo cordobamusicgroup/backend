@@ -8,7 +8,7 @@ import { mapClientCsvToIntermediate } from './utils/client-csv-mapper.util';
 import { mapLabelCsvToIntermediate } from './utils/label-csv-mapper.util';
 import { mapClientBalanceCsvToTransaction } from './utils/client-balance-csv-mapper.util';
 import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class ImportsService {
@@ -56,7 +56,7 @@ export class ImportsService {
           },
         });
       } catch (error) {
-        this.logError(errorLogPath, `Row ${i + 1}: ${error.message}`);
+        this.logger.error(`Row ${i + 1}: ${error.message}`);
       }
     }
     this.cleanUp(filePath, errorLogPath);
@@ -99,7 +99,7 @@ export class ImportsService {
           throw new Error(`Label "${labelData.name}" already exists`);
         }
       } catch (error) {
-        this.logError(errorLogPath, `Row ${i + 1}: ${error.message}`);
+        this.logger.error(`Row ${i + 1}: ${error.message}`);
       }
     }
     this.cleanUp(filePath, errorLogPath);
@@ -114,7 +114,6 @@ export class ImportsService {
         .on('data', (data) => results.push(data))
         .on('end', async () => {
           for (const row of results) {
-            // Wrap CSV mapping to catch validation errors
             let mapped;
             try {
               mapped = mapClientBalanceCsvToTransaction(row);
@@ -122,11 +121,19 @@ export class ImportsService {
               this.logger.error(`Error mapping row: ${error.message}`);
               continue;
             }
-            const { wp_id, transactionData } = mapped;
+            const { wp_id, transactionData, isDisabled } = mapped;
             const client = await this.prisma.client.findUnique({
               where: { wp_id },
             });
             if (!client) continue;
+            if (isDisabled) {
+              await this.prisma.client.update({
+                where: { id: client.id },
+                data: { isBlocked: true },
+              });
+              this.logger.warn(`Client with wp_id ${wp_id} is now blocked.`);
+              continue;
+            }
             let balance = await this.prisma.balance.findFirst({
               where: { clientId: client.id, currency: 'USD' },
             });
@@ -173,10 +180,6 @@ export class ImportsService {
         .on('end', () => resolve(records))
         .on('error', (error) => reject(error));
     });
-  }
-
-  private logError(filePath: string, message: string) {
-    fs.appendFileSync(filePath, `${new Date().toISOString()} - ${message}\n`);
   }
 
   private cleanUp(filePath: string, errorLogPath: string) {
