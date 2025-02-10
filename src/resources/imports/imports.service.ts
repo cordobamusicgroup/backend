@@ -114,14 +114,19 @@ export class ImportsService {
         .on('data', (data) => results.push(data))
         .on('end', async () => {
           for (const row of results) {
-            const { wp_id, transactionData } =
-              mapClientBalanceCsvToTransaction(row);
-            // Buscar cliente por wp_id
+            // Wrap CSV mapping to catch validation errors
+            let mapped;
+            try {
+              mapped = mapClientBalanceCsvToTransaction(row);
+            } catch (error) {
+              this.logger.error(`Error mapping row: ${error.message}`);
+              continue;
+            }
+            const { wp_id, transactionData } = mapped;
             const client = await this.prisma.client.findUnique({
               where: { wp_id },
             });
-            if (!client) continue; // O bien registrar error
-            // Buscar balance USD existente
+            if (!client) continue;
             let balance = await this.prisma.balance.findFirst({
               where: { clientId: client.id, currency: 'USD' },
             });
@@ -135,9 +140,7 @@ export class ImportsService {
                 },
               });
             }
-            // Calcular nuevo monto usando Decimal
             const newAmount = balance.amount.add(transactionData.amount);
-            // Crear la transacción
             await this.prisma.transaction.create({
               data: {
                 type: TransactionType.OTHER,
@@ -147,7 +150,6 @@ export class ImportsService {
                 balance: { connect: { id: balance.id } },
               },
             });
-            // Actualizar el balance
             await this.prisma.balance.update({
               where: { id: balance.id },
               data: { amount: newAmount },
