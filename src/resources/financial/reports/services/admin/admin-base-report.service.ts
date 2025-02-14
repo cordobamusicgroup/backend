@@ -20,6 +20,7 @@ import {
 import * as fs from 'fs';
 import env from 'src/config/env.config';
 import { BaseReportDto } from '../../dto/admin-base-reports.dto';
+import * as path from 'path';
 
 @Injectable()
 export class AdminBaseReportService {
@@ -583,7 +584,13 @@ export class AdminBaseReportService {
         ReportType.BASE, // Specify report type as BASE
       );
       const fileName = `${baseReport.distributor}_${baseReport.reportingMonth}_base_report.csv`;
-      const filePath = `/tmp/${fileName}`;
+      // Use the "temp" folder (consistent with imports service/controller)
+      const filePath = path.resolve('temp', fileName);
+      // Ensure the "temp" directory exists
+      const directory = path.dirname(filePath);
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+      }
       fs.writeFileSync(filePath, csvData);
 
       const s3Key = `base-reports/${baseReport.distributor}/${baseReport.reportingMonth}/${fileName}`;
@@ -601,6 +608,12 @@ export class AdminBaseReportService {
       this.logger.log(
         `CSV generated and uploaded for base report ID: ${baseReport.id}`,
       );
+
+      // Delete the temporary file after successful upload
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        this.logger.log(`Temporary file ${filePath} deleted after S3 upload.`);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to generate and upload CSV for base report ID: ${baseReport.id}: ${error.message}`,
