@@ -1,7 +1,6 @@
 // src/common/services/s3-upload.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  PutObjectCommand,
   S3Client,
   GetObjectCommand,
   DeleteObjectCommand,
@@ -12,6 +11,7 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { S3File } from '@prisma/client';
+import { Upload } from '@aws-sdk/lib-storage';
 
 @Injectable()
 export class S3Service {
@@ -35,14 +35,17 @@ export class S3Service {
   ): Promise<S3File> {
     try {
       const fileStream = fs.createReadStream(filePath);
-      await this.s3.send(
-        new PutObjectCommand({
+      // Use Upload from @aws-sdk/lib-storage for streaming uploads
+      const upload = new Upload({
+        client: this.s3,
+        params: {
           Bucket: bucket,
           Key: key,
           Body: fileStream,
-        }),
-      );
-      this.logger.log(`File uploaded to S3: ${bucket}/${key}`);
+        },
+      });
+      await upload.done();
+      this.logger.log(`File uploaded to S3 using Upload: ${bucket}/${key}`);
 
       const fileName = path.basename(filePath);
       const type = path.extname(filePath).substring(1); // Get file extension without the dot
