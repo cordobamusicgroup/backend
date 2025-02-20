@@ -1,7 +1,6 @@
 // src/imports/imports.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
-import * as path from 'path';
 import { parse } from 'fast-csv';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapClientCsvToIntermediate } from './utils/client-csv-mapper.util';
@@ -20,10 +19,6 @@ export class ImportsService {
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }
-    const errorLogPath = path.join(
-      path.dirname(filePath),
-      `error_log_client_${Date.now()}.txt`,
-    );
     const records = await this.readCsvFile(
       filePath,
       mapClientCsvToIntermediate,
@@ -59,7 +54,7 @@ export class ImportsService {
         this.logger.error(`Row ${i + 1}: ${error.message}`);
       }
     }
-    this.cleanUp(filePath, errorLogPath);
+    this.cleanUp(filePath);
     return { message: 'Client CSV processed successfully.' };
   }
 
@@ -67,10 +62,6 @@ export class ImportsService {
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }
-    const errorLogPath = path.join(
-      path.dirname(filePath),
-      `error_log_label_${Date.now()}.txt`,
-    );
     const records = await this.readCsvFile(filePath, mapLabelCsvToIntermediate);
     if (records.length === 0) {
       throw new Error(`No records to process in CSV file.`);
@@ -102,7 +93,7 @@ export class ImportsService {
         this.logger.error(`Row ${i + 1}: ${error.message}`);
       }
     }
-    this.cleanUp(filePath, errorLogPath);
+    this.cleanUp(filePath);
     return { message: 'Label CSV processed successfully.' };
   }
 
@@ -132,6 +123,13 @@ export class ImportsService {
                 data: { isBlocked: true },
               });
               this.logger.warn(`Client with wp_id ${wp_id} is now blocked.`);
+              continue;
+            }
+            // Skip processing if transaction amount is 0.00
+            if (new Decimal(transactionData.amount).equals(0)) {
+              this.logger.warn(
+                `Skipping transaction for client with wp_id ${wp_id}: transaction amount is 0.00`,
+              );
               continue;
             }
             let balance = await this.prisma.balance.findFirst({
@@ -168,6 +166,80 @@ export class ImportsService {
     });
   }
 
+  // Se agrega el método para revertir lo importado de balances con logs adicionales
+  async revertClientBalanceFromCsv(
+    filePath: string,
+  ): Promise<{ message: string }> {
+    this.logger.log('Starting to revert client balances from CSV.');
+    return new Promise<{ message: string }>((resolve, reject) => {
+      const results: any[] = [];
+      fs.createReadStream(filePath)
+        .pipe(parse({ headers: true, ignoreEmpty: true, delimiter: ',' }))
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          for (const row of results) {
+            let mapped;
+            try {
+              mapped = mapClientBalanceCsvToTransaction(row);
+              this.logger.log(
+                `Processing revert for client with wp_id ${mapped.wp_id}.`,
+              );
+            } catch (error) {
+              this.logger.error(`Error mapping row: ${error.message}`);
+              continue;
+            }
+            const { wp_id, transactionData, isDisabled } = mapped;
+            const client = await this.prisma.client.findUnique({
+              where: { wp_id },
+            });
+            if (!client) continue;
+            if (isDisabled) {
+              await this.prisma.client.update({
+                where: { id: client.id },
+                data: { isBlocked: false },
+              });
+              this.logger.warn(
+                `Client with wp_id ${wp_id} has been unblocked.`,
+              );
+            }
+            if (new Decimal(transactionData.amount).equals(0)) {
+              this.logger.warn(
+                `Skipping revert for client with wp_id ${wp_id}: transaction amount is 0.00`,
+              );
+              continue;
+            }
+            const balance = await this.prisma.balance.findFirst({
+              where: { clientId: client.id, currency: 'USD' },
+            });
+            if (!balance) continue;
+            const deleteResult = await this.prisma.transaction.deleteMany({
+              where: {
+                type: TransactionType.OTHER,
+                description: transactionData.description,
+                amount: transactionData.amount,
+                balanceId: balance.id,
+              },
+            });
+            this.logger.log(
+              `Deleted ${deleteResult.count} transaction(s) for client with wp_id ${wp_id}.`,
+            );
+            const newAmount = balance.amount.sub(transactionData.amount);
+            await this.prisma.balance.update({
+              where: { id: balance.id },
+              data: { amount: newAmount },
+            });
+            this.logger.log(
+              `Updated balance for client with wp_id ${wp_id}. New amount: ${newAmount.toString()}.`,
+            );
+          }
+          this.cleanUp(filePath);
+          this.logger.log('Finished reverting client balance CSV import.');
+          resolve({ message: 'Client balances reverted successfully.' });
+        })
+        .on('error', (err) => reject(err));
+    });
+  }
+
   private async readCsvFile<T>(
     filePath: string,
     mapFn: (row: any) => T,
@@ -182,11 +254,10 @@ export class ImportsService {
     });
   }
 
-  private cleanUp(filePath: string, errorLogPath: string) {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    this.logger.log(`Temporary file ${filePath} deleted successfully.`);
-    if (fs.existsSync(errorLogPath)) {
-      this.logger.log(`Error log saved at ${errorLogPath}`);
+  private cleanUp(filePath: string) {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      this.logger.log(`Temporary file ${filePath} deleted successfully.`);
     }
   }
 }
