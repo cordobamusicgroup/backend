@@ -9,30 +9,27 @@ on:
 jobs:
   deploy:
     runs-on: kvm4
-    environment:
-      ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
-    # Configuración de concurrencia
     concurrency:
       group: deploy-${{ github.ref_name }} # Agrupar por rama (main o staging)
-      
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up SSH keys and known hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)" > /dev/null 2>&1
-          ssh-add ~/.ssh/id_rsa > /dev/null 2>&1
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Set deployment environment variables
+      - name: Validate deployment environment variables
         run: |
           if [ -z "${{ vars.DEPLOY_PATH }}" ] || [ -z "${{ vars.ENV }}" ]; then
-            echo "Error: Environment variables DEPLOY_PATH or ENV are not set."; exit 1
+            echo "❌ Error: DEPLOY_PATH o ENV no están configuradas en GitHub Actions."
+            exit 1
           fi
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
@@ -40,13 +37,13 @@ jobs:
 
       - name: Debug Environment Variables
         run: |
-          echo "DEPLOY_PATH is: $DEPLOY_PATH"
-          echo "ENV is: $ENV"
+          echo "📌 DEPLOY_PATH: $DEPLOY_PATH"
+          echo "📌 ENV: $ENV"
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
 
-      - name: Deploy and start containers on server
+      - name: Deploy and restart containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
@@ -54,46 +51,40 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
         run: |
-          echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
-          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
-
-            # Definir DEPLOY_PATH y asegurar que solo se use "production" con la rama "main"
-            DEPLOY_PATH="'${{ vars.DEPLOY_PATH }}'"
-            BRANCH="'${{ github.ref_name }}'"
-            ENV=$([ "$BRANCH" == "main" ] && echo "production" || echo "$BRANCH")
-
-            # Mostrar el nombre del servidor y la carpeta actual
-            echo "Logged into server: $(hostname)"
-            echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
-
-            # Verificar el valor de DEPLOY_PATH
-            echo "DEPLOY_PATH is: $DEPLOY_PATH"
-
-            # Intentar cambiar al directorio de despliegue
-            cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
-
-            # Verificar si el cambio de directorio fue exitoso
-            echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
-
-            if [ -d ".git" ]; then
-              echo "Git repository detected."
-              
-              # Resetear todos los cambios locales en archivos rastreados
-              echo "Resetting all local changes..."
-              git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
-
-              git remote -v  # Verificar el repositorio remoto
-              git status  # Verificar el estado del repositorio local
-
-              # Realizar el fetch y pull de la rama correspondiente
-              git fetch origin $BRANCH
-              git pull origin $BRANCH
-            else
-              echo "Error: Not a git repository or missing .git folder."
+          echo "🚀 Iniciando despliegue en $DEPLOY_PATH..."
+          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+            
+            set -e  # Detener ejecución si hay errores
+            
+            echo "🖥️ Conectado a: $(hostname)"
+            echo "📂 Cambiando a: $DEPLOY_PATH"
+            
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "❌ Error: DEPLOY_PATH no existe."
               exit 1
             fi
 
-            # Ejecutar el script de inicio de contenedores
-            chmod +x start_containers.sh &&
+            cd $DEPLOY_PATH
+            echo "✅ Ubicación actual: $(pwd)"
+
+            if [ ! -d ".git" ]; then
+              echo "❌ Error: No es un repositorio Git."
+              exit 1
+            fi
+            
+            echo "🔄 Restableciendo cambios locales y actualizando código..."
+            git reset --hard HEAD
+            git clean -fd  # Elimina archivos no rastreados
+            
+            BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            echo "📌 Usando rama: $BRANCH"
+            
+            git fetch origin $BRANCH
+            git pull origin $BRANCH --rebase
+
+            echo "🚀 Reiniciando contenedores..."
+            chmod +x start_containers.sh
             ./start_containers.sh $ENV
-          '
+
+            echo "✅ Despliegue completado."
+          EOF
