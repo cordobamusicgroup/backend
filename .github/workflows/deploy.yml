@@ -12,30 +12,30 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     concurrency:
-      group: deploy-${{ github.ref_name }} # Agrupar por rama (main o staging)
+      group: deploy-${{ github.ref_name }} # Group by branch (main or staging)
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up SSH keys and known hosts
+      - name: 🔑 Set up SSH keys and known hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Validate deployment environment variables
+      - name: 🛠️ Validate deployment environment variables
         run: |
           if [ -z "${{ vars.DEPLOY_PATH }}" ] || [ -z "${{ vars.ENV }}" ]; then
-            echo "❌ Error: DEPLOY_PATH o ENV no están configuradas en GitHub Actions."
+            echo "❌ Error: DEPLOY_PATH or ENV is not set in GitHub Actions."
             exit 1
           fi
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
 
-      - name: Debug Environment Variables
+      - name: 🕵️ Debug Environment Variables
         run: |
           echo "📌 DEPLOY_PATH: $DEPLOY_PATH"
           echo "📌 ENV: $ENV"
@@ -43,7 +43,7 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
 
-      - name: Deploy and restart containers on server
+      - name: 🚀 Deploy and restart containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
@@ -51,45 +51,45 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
         run: |
-          echo "🚀 Iniciando despliegue en $DEPLOY_PATH..."
+          echo "🚀 Starting deployment to $DEPLOY_PATH..."
           ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
             
-            set -e  # Detener ejecución si hay errores
+            set -e  # Stop execution on error
 
-            # Pasar variables de entorno manualmente dentro de la sesión SSH
+            # Pass environment variables manually inside SSH session
             export DEPLOY_PATH='${{ vars.DEPLOY_PATH }}'
             export ENV='${{ vars.ENV }}'
 
-            echo "🖥️ Conectado a: $(hostname)"
+            echo "🖥️ Connected to: $(hostname)"
             echo "📂 DEPLOY_PATH: $DEPLOY_PATH"
             echo "📌 ENV: $ENV"
 
             if [ ! -d "$DEPLOY_PATH" ]; then
-              echo "❌ Error: DEPLOY_PATH no existe."
+              echo "❌ Error: DEPLOY_PATH does not exist."
               exit 1
             fi
 
             cd "$DEPLOY_PATH"
-            echo "✅ Ubicación actual: $(pwd)"
+            echo "✅ Current directory: $(pwd)"
 
             if [ ! -d ".git" ]; then
-              echo "❌ Error: No es un repositorio Git."
+              echo "❌ Error: Not a Git repository."
               exit 1
             fi
 
-            echo "🔄 Restableciendo cambios locales y actualizando código..."
+            echo "🔄 Resetting local changes and updating code..."
             git reset --hard HEAD
-            git clean -fd  # Elimina archivos no rastreados
+            git clean -fd  # Remove untracked files
             
             BRANCH=$(git rev-parse --abbrev-ref HEAD)
-            echo "📌 Usando rama: $BRANCH"
+            echo "📌 Using branch: $BRANCH"
             
             git fetch origin $BRANCH
             git pull origin $BRANCH --rebase
 
-            echo "🚀 Reiniciando contenedores..."
+            echo "🚀 Restarting containers..."
             chmod +x start_containers.sh
             ./start_containers.sh "$ENV"
 
-            echo "✅ Despliegue completado."
+            echo "✅ Deployment completed successfully."
           EOF
