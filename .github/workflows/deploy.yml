@@ -55,23 +55,28 @@ jobs:
           ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
             
             set -e  # Detener ejecución si hay errores
-            
+
+            # Pasar variables de entorno manualmente dentro de la sesión SSH
+            export DEPLOY_PATH='${{ vars.DEPLOY_PATH }}'
+            export ENV='${{ vars.ENV }}'
+
             echo "🖥️ Conectado a: $(hostname)"
-            echo "📂 Cambiando a: $DEPLOY_PATH"
-            
+            echo "📂 DEPLOY_PATH: $DEPLOY_PATH"
+            echo "📌 ENV: $ENV"
+
             if [ ! -d "$DEPLOY_PATH" ]; then
               echo "❌ Error: DEPLOY_PATH no existe."
               exit 1
             fi
 
-            cd $DEPLOY_PATH
+            cd "$DEPLOY_PATH"
             echo "✅ Ubicación actual: $(pwd)"
 
             if [ ! -d ".git" ]; then
               echo "❌ Error: No es un repositorio Git."
               exit 1
             fi
-            
+
             echo "🔄 Restableciendo cambios locales y actualizando código..."
             git reset --hard HEAD
             git clean -fd  # Elimina archivos no rastreados
@@ -84,7 +89,7 @@ jobs:
 
             echo "🚀 Reiniciando contenedores..."
             chmod +x start_containers.sh
-            ./start_containers.sh $ENV
+            ./start_containers.sh "$ENV"
 
             echo "✅ Despliegue completado."
           EOF
