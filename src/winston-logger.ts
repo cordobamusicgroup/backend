@@ -14,8 +14,8 @@ const fileTransport = new winston.transports.DailyRotateFile({
 // Formato para los logs en archivo (sin colores)
 const fileFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.printf(({ timestamp, level, message }) => {
-    return `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+  winston.format.printf(({ timestamp, level, message, context }) => {
+    return `[${timestamp}] [${level.toUpperCase()}] ${context ? ` [${context}]` : ''} ${message}`;
   }),
 );
 
@@ -27,8 +27,8 @@ const consoleFormat = winston.format.combine(
   })(),
   winston.format.colorize(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.printf(({ timestamp, level, message }) => {
-    return `[${timestamp}] [${level}] ${message}`;
+  winston.format.printf(({ timestamp, level, message, context }) => {
+    return `[${timestamp}] [${level}] ${context ? ` [${context}]` : ''} ${message}`;
   }),
 );
 

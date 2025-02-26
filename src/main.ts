@@ -10,7 +10,7 @@ async function bootstrap() {
   // Initialize NestJS with Winston logger
   const app = await NestFactory.create(AppModule, {
     logger: {
-      log: (message) => logger.info(message),
+      log: (message, context) => logger.info(message, { context }),
       error: (message) => logger.error(message),
       warn: (message) => logger.warn(message),
       debug: (message) => logger.debug?.(message),

@@ -57,7 +57,7 @@ export class AdminReportsHelperService {
       });
 
       // Add the CSV file to the processing queue
-      await this.importReportsQueue.add('parse-csv', {
+      await this.importReportsQueue.add('ImportReportCSV', {
         filePath: tempFilePath,
         reportingMonth,
         distributor,
