@@ -4,12 +4,6 @@ FROM node:20-slim AS base
 # Install necessary system packages for Prisma and other dependencies (including OpenSSL and unzip)
 RUN apt-get update -y && apt-get install -y openssl curl unzip && rm -rf /var/lib/apt/lists/*
 
-# Instalar bun
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:${PATH}"
-# Añadir variable para cache separado de bun
-ENV BUN_CACHE_DIR="/root/.bun_cache"
-
 # Enable pnpm via Corepack
 RUN corepack enable
 # Install pnpm v10 using corepack sin errores
