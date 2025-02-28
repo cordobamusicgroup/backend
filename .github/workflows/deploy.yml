@@ -8,45 +8,42 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # Use Github Runners
-    environment:
-      ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    runs-on: kvm4
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
-    # Configuración de concurrencia
     concurrency:
-      group: deploy-${{ github.ref_name }} # Agrupar por rama (main o staging)
-      
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      group: deploy-${{ github.ref_name }} # Group by branch (main or staging)
 
-      - name: Set up SSH keys and known hosts
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔑 Set up SSH keys and known hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)" > /dev/null 2>&1
-          ssh-add ~/.ssh/id_rsa > /dev/null 2>&1
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Set deployment environment variables
+      - name: 🛠️ Validate deployment environment variables
         run: |
           if [ -z "${{ vars.DEPLOY_PATH }}" ] || [ -z "${{ vars.ENV }}" ]; then
-            echo "Error: Environment variables DEPLOY_PATH or ENV are not set."; exit 1
+            echo "❌ Error: DEPLOY_PATH or ENV is not set in GitHub Actions."
+            exit 1
           fi
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
 
-      - name: Debug Environment Variables
+      - name: 🕵️ Debug Environment Variables
         run: |
-          echo "DEPLOY_PATH is: $DEPLOY_PATH"
-          echo "ENV is: $ENV"
+          echo "📌 DEPLOY_PATH: $DEPLOY_PATH"
+          echo "📌 ENV: $ENV"
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
 
-      - name: Deploy and start containers on server
+      - name: 🚀 Deploy and restart containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
@@ -54,46 +51,45 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           ENV: ${{ vars.ENV }}
         run: |
-          echo "Using DEPLOY_PATH: $DEPLOY_PATH"  # Verificar el valor localmente
-          ssh -i /home/runner/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST '
+          echo "🚀 Starting deployment to $DEPLOY_PATH..."
+          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+            
+            set -e  # Stop execution on error
 
-            # Definir DEPLOY_PATH y asegurar que solo se use "production" con la rama "main"
-            DEPLOY_PATH="'${{ vars.DEPLOY_PATH }}'"
-            BRANCH="'${{ github.ref_name }}'"
-            ENV=$([ "$BRANCH" == "main" ] && echo "production" || echo "$BRANCH")
+            # Pass environment variables manually inside SSH session
+            export DEPLOY_PATH='${{ vars.DEPLOY_PATH }}'
+            export ENV='${{ vars.ENV }}'
 
-            # Mostrar el nombre del servidor y la carpeta actual
-            echo "Logged into server: $(hostname)"
-            echo "Current directory before cd: $(pwd)"  # Mostrar el directorio actual
+            echo "🖥️ Connected to: $(hostname)"
+            echo "📂 DEPLOY_PATH: $DEPLOY_PATH"
+            echo "📌 ENV: $ENV"
 
-            # Verificar el valor de DEPLOY_PATH
-            echo "DEPLOY_PATH is: $DEPLOY_PATH"
-
-            # Intentar cambiar al directorio de despliegue
-            cd $DEPLOY_PATH || { echo "Failed to change to DEPLOY_PATH"; exit 1; }
-
-            # Verificar si el cambio de directorio fue exitoso
-            echo "Changed to directory: $(pwd)"  # Mostrar la ruta del directorio de despliegue
-
-            if [ -d ".git" ]; then
-              echo "Git repository detected."
-              
-              # Resetear todos los cambios locales en archivos rastreados
-              echo "Resetting all local changes..."
-              git reset --hard HEAD  # Restablecer todos los cambios locales en archivos rastreados
-
-              git remote -v  # Verificar el repositorio remoto
-              git status  # Verificar el estado del repositorio local
-
-              # Realizar el fetch y pull de la rama correspondiente
-              git fetch origin $BRANCH
-              git pull origin $BRANCH
-            else
-              echo "Error: Not a git repository or missing .git folder."
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              echo "❌ Error: DEPLOY_PATH does not exist."
               exit 1
             fi
 
-            # Ejecutar el script de inicio de contenedores
-            chmod +x start_containers.sh &&
-            ./start_containers.sh $ENV
-          '
+            cd "$DEPLOY_PATH"
+            echo "✅ Current directory: $(pwd)"
+
+            if [ ! -d ".git" ]; then
+              echo "❌ Error: Not a Git repository."
+              exit 1
+            fi
+
+            echo "🔄 Resetting local changes and updating code..."
+            git reset --hard HEAD
+            git clean -fd  # Remove untracked files
+            
+            BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            echo "📌 Using branch: $BRANCH"
+            
+            git fetch origin $BRANCH
+            git pull origin $BRANCH --rebase
+
+            echo "🚀 Restarting containers..."
+            chmod +x start_containers.sh
+            ./start_containers.sh "$ENV"
+
+            echo "✅ Deployment completed successfully."
+          EOF

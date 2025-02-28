@@ -28,7 +28,7 @@ export class AdminUserReportsController {
   ) {
     return this.adminFinancialReports.createUserReportsJob(
       distributorReportDto,
-      'generate',
+      'GenerateUserReports',
       req.user,
     );
   }
@@ -57,7 +57,7 @@ export class AdminUserReportsController {
   ) {
     return this.adminFinancialReports.createUserReportsJob(
       distributorReportDto,
-      'export',
+      'ExportUserReports',
       req.user,
     );
   }

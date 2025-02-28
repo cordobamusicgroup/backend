@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { AdminReportsHelperService } from './services/admin/admin-reports-helper.service';
+import { AdminReportProcessCSVService } from './services/admin/admin-report-process-csv.service';
 import { AdminUnlinkedReportsController } from './controllers/admin/admin-unlinked-reports.controller';
 import { AdminBaseReportService } from './services/admin/admin-base-report.service';
 import { UserFinancialReportsService } from './services/user/user-financial-reports.service';
@@ -12,6 +12,7 @@ import { AdminBaseReportsController } from './controllers/admin/admin-base-repor
 import { AdminImportReportsController } from './controllers/admin/admin-import-reports.controller';
 import { ImportReportsProcessor } from './processors/import-reports.processor';
 import { UserReportsProcessor } from './processors/user-reports.processor';
+import { BaseReportProcessor } from './processors/base-report.processor';
 import { EmailService } from 'src/resources/email/email.service';
 import { AdminUserReportsController } from './controllers/admin/admin-user-reports.controller';
 import { UsersModule } from 'src/resources/users/users.module';
@@ -34,6 +35,17 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
       },
       {
         name: 'import-reports',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: 10000,
+        },
+      },
+      {
+        name: 'base-report',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: 10000,
+        },
       },
     ),
   ],
@@ -41,7 +53,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     // Services from Module
     AdminBaseReportService,
     AdminImportedReportsService,
-    AdminReportsHelperService,
+    AdminReportProcessCSVService,
     AdminUserReportsService,
     UserFinancialReportsService,
     AdminUnlinkedReportService,
@@ -53,6 +65,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     // Processors
     ImportReportsProcessor,
     UserReportsProcessor,
+    BaseReportProcessor,
     ReportsGateway,
   ],
   controllers: [
@@ -63,7 +76,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     UserFinancialReportsController,
   ],
   exports: [
-    AdminReportsHelperService,
+    AdminReportProcessCSVService,
     AdminImportedReportsService,
     AdminUnlinkedReportService,
   ],

@@ -22,7 +22,7 @@ export class AdminUserReportsService {
 
   async createUserReportsJob(
     distributorReportDto: DistributorReportDto,
-    action: 'generate' | 'delete' | 'export',
+    action: 'GenerateUserReports' | 'delete' | 'ExportUserReports',
     user: JwtPayloadDto,
   ) {
     const { email } = await this.usersService.findByUsername(user.username);
@@ -30,8 +30,8 @@ export class AdminUserReportsService {
 
     try {
       let result;
-      if (action === 'generate') {
-        await this.userReportsQueue.add('generate', {
+      if (action === 'GenerateUserReports') {
+        await this.userReportsQueue.add('GenerateUserReports', {
           distributor,
           reportingMonth,
           email,
@@ -44,8 +44,8 @@ export class AdminUserReportsService {
           email,
         });
         result = { message: 'User royalty reports queued for deletion.' };
-      } else if (action === 'export') {
-        await this.userReportsQueue.add('export', {
+      } else if (action === 'ExportUserReports') {
+        await this.userReportsQueue.add('ExportUserReports', {
           distributor,
           reportingMonth,
           email,

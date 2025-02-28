@@ -1,4 +1,3 @@
-// src/imports/imports.controller.ts
 import {
   Controller,
   Post,
@@ -6,18 +5,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import * as path from 'path';
 import { diskStorage } from 'multer';
+import { ImportsService } from './imports.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('imports')
 export class ImportsController {
-  constructor(
-    @InjectQueue('client-import') private clientImportQueue: Queue,
-    @InjectQueue('label-import') private labelImportQueue: Queue,
-  ) {}
+  constructor(private readonly importsService: ImportsService) {}
 
   @Post('upload/client')
   @Roles('ADMIN')
@@ -35,13 +30,9 @@ export class ImportsController {
   )
   async uploadClientCsv(@UploadedFile() file: Express.Multer.File) {
     const tempFilePath = path.resolve(file.path);
-
-    await this.clientImportQueue.add('client-import-queue', {
-      filePath: tempFilePath,
-    });
-
+    const result = await this.importsService.importClientsFromCsv(tempFilePath);
     return {
-      message: 'CSV file uploaded and queued for processing.',
+      message: result.message,
       filename: file.originalname,
     };
   }
@@ -62,13 +53,57 @@ export class ImportsController {
   )
   async uploadLabelCsv(@UploadedFile() file: Express.Multer.File) {
     const tempFilePath = path.resolve(file.path);
-
-    await this.labelImportQueue.add('labelImportQueue', {
-      filePath: tempFilePath,
-    });
-
+    const result = await this.importsService.importLabelsFromCsv(tempFilePath);
     return {
-      message: 'CSV file uploaded and queued for processing.',
+      message: result.message,
+      filename: file.originalname,
+    };
+  }
+
+  @Post('upload/client-balance')
+  @Roles('ADMIN')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './temp',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${uniqueSuffix}-${file.originalname}`);
+        },
+      }),
+    }),
+  )
+  async uploadClientBalanceCsv(@UploadedFile() file: Express.Multer.File) {
+    const tempFilePath = path.resolve(file.path);
+    const result =
+      await this.importsService.importClientBalanceFromCsv(tempFilePath);
+    return {
+      message: result.message,
+      filename: file.originalname,
+    };
+  }
+
+  @Post('reverse/client-balance')
+  @Roles('ADMIN')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './temp',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `${uniqueSuffix}-${file.originalname}`);
+        },
+      }),
+    }),
+  )
+  async reverseClientBalanceCsv(@UploadedFile() file: Express.Multer.File) {
+    const tempFilePath = path.resolve(file.path);
+    const result =
+      await this.importsService.revertClientBalanceFromCsv(tempFilePath);
+    return {
+      message: result.message,
       filename: file.originalname,
     };
   }

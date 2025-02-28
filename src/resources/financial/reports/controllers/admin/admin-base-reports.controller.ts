@@ -8,7 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { AdminBaseReportService } from '../../services/admin/admin-base-report.service';
-import { AdminReportsHelperService } from '../../services/admin/admin-reports-helper.service';
+import { AdminReportProcessCSVService } from '../../services/admin/admin-report-process-csv.service';
 import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';
 import { UserFinancialReportsService } from '../../services/user/user-financial-reports.service';
 import { Role } from '@prisma/client';
@@ -20,7 +20,7 @@ import { BaseReportDto } from '../../dto/admin-base-reports.dto';
 export class AdminBaseReportsController {
   constructor(
     private readonly baseReportService: AdminBaseReportService,
-    private readonly reportsService: AdminReportsHelperService,
+    private readonly reportsService: AdminReportProcessCSVService,
     private readonly userReports: UserFinancialReportsService,
   ) {}
 
