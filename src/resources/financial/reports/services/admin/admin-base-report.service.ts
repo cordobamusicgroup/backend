@@ -13,14 +13,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import Decimal from 'decimal.js';
 import * as dayjs from 'dayjs';
 import { S3Service } from 'src/common/services/s3.service';
-import {
-  convertReportsToCsv,
-  ReportType,
-} from '../../utils/convert-reports-csv';
-import * as fs from 'fs';
-import env from 'src/config/env.config';
 import { BaseReportDto } from '../../dto/admin-base-reports.dto';
-import * as path from 'path';
 
 @Injectable()
 export class AdminBaseReportService {
@@ -29,6 +22,7 @@ export class AdminBaseReportService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
+    @InjectQueue('base-report') private readonly generateCsvQueue: Queue,
     private readonly s3Service: S3Service,
   ) {}
 
@@ -105,7 +99,8 @@ export class AdminBaseReportService {
         },
       });
 
-      await this.uploadAndLinkBaseReportCsv(baseReport, reports);
+      // Queue CSV generation job instead of processing it synchronously
+      await this.queueCsvGeneration(baseReport.id, distributor, reportingMonth);
 
       await this.updateReportsWithBaseReportId(
         distributor,
@@ -117,7 +112,8 @@ export class AdminBaseReportService {
         `Base report created successfully for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
       return {
-        message: 'Base report created successfully.',
+        message:
+          'Base report created successfully. CSV generation has been queued.',
         baseReport,
       };
     } catch (error) {
@@ -441,7 +437,6 @@ export class AdminBaseReportService {
     distributor: Distributor,
     reportingMonth: string,
   ): Promise<BaseReportDto> {
-    const reports = await this.getReports(distributor, reportingMonth);
     const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
       where: { distributor_reportingMonth: { distributor, reportingMonth } },
     });
@@ -450,7 +445,8 @@ export class AdminBaseReportService {
       throw new BaseReportNotFoundException();
     }
 
-    await this.uploadAndLinkBaseReportCsv(baseReport, reports);
+    // Queue CSV generation job and update status
+    await this.queueCsvGeneration(baseReport.id, distributor, reportingMonth);
 
     return this.convertToDto(baseReport);
   }
@@ -471,6 +467,42 @@ export class AdminBaseReportService {
     }
 
     return this.convertToDto(baseReport);
+  }
+
+  /**
+   * Queues a job for CSV generation
+   * @param baseReportId The ID of the base report
+   * @param distributor The distributor for the report
+   * @param reportingMonth The reporting month for the report
+   */
+  private async queueCsvGeneration(
+    baseReportId: number,
+    distributor: Distributor,
+    reportingMonth: string,
+  ) {
+    this.logger.log(
+      `Queueing CSV generation for base report ID: ${baseReportId}`,
+    );
+
+    await this.generateCsvQueue.add(
+      'generateCsv', // Changed job name to match the new case in the processor
+      {
+        baseReportId,
+        distributor,
+        reportingMonth,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 10000,
+        },
+      },
+    );
+
+    this.logger.log(
+      `CSV generation job queued for base report ID: ${baseReportId}`,
+    );
   }
 
   // Private methods section
@@ -499,6 +531,7 @@ export class AdminBaseReportService {
 
   /**
    * Retrieves reports for the given distributor and reporting month.
+   * Optimized to select only necessary fields for calculation.
    * @param distributor The distributor for which to retrieve reports.
    * @param reportingMonth The reporting month for which to retrieve reports.
    * @returns A promise that resolves to an array of reports.
@@ -507,10 +540,18 @@ export class AdminBaseReportService {
     if (distributor === Distributor.KONTOR) {
       return this.prisma.kontorRoyaltyReport.findMany({
         where: { reportingMonth },
+        select: {
+          royalties: true,
+          cmg_netRevenue: true,
+        },
       });
     } else if (distributor === Distributor.BELIEVE) {
       return this.prisma.believeRoyaltyReport.findMany({
         where: { reportingMonth },
+        select: {
+          netRevenue: true,
+          cmg_netRevenue: true,
+        },
       });
     }
     return [];
@@ -518,37 +559,40 @@ export class AdminBaseReportService {
 
   /**
    * Calculates total royalties and total earnings from the given reports.
+   * Optimized for performance using reduce with Decimal.
    * @param reports The reports from which to calculate totals.
    * @param distributor The distributor for which to calculate totals.
    * @returns An object containing total royalties and total earnings.
    */
   private calculateTotals(reports: any[], distributor: Distributor) {
-    let totalRoyalties = new Decimal(0);
-    let totalEarnings = new Decimal(0); // Representa el valor restante (ganancias)
+    // Use a single pass through the data for better performance
+    const totals = reports.reduce(
+      (acc, report) => {
+        if (distributor === Distributor.KONTOR) {
+          const royalties = new Decimal(report.royalties || 0);
+          const clientRevenue = new Decimal(report.cmg_netRevenue || 0);
+          return {
+            totalRoyalties: acc.totalRoyalties.plus(royalties),
+            totalEarnings: acc.totalEarnings.plus(
+              royalties.minus(clientRevenue),
+            ),
+          };
+        } else if (distributor === Distributor.BELIEVE) {
+          const netRevenue = new Decimal(report.netRevenue || 0);
+          const clientRevenue = new Decimal(report.cmg_netRevenue || 0);
+          return {
+            totalRoyalties: acc.totalRoyalties.plus(netRevenue),
+            totalEarnings: acc.totalEarnings.plus(
+              netRevenue.minus(clientRevenue),
+            ),
+          };
+        }
+        return acc;
+      },
+      { totalRoyalties: new Decimal(0), totalEarnings: new Decimal(0) },
+    );
 
-    if (distributor === Distributor.KONTOR) {
-      totalRoyalties = reports.reduce(
-        (sum, report) => sum.plus(new Decimal(report.royalties || 0)),
-        new Decimal(0),
-      );
-      totalEarnings = reports.reduce((sum, report) => {
-        const report_royalties = new Decimal(report.royalties || 0);
-        const cmg_netRevenue = new Decimal(report.cmg_netRevenue || 0);
-        return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje restante)
-      }, new Decimal(0));
-    } else if (distributor === Distributor.BELIEVE) {
-      totalRoyalties = reports.reduce(
-        (sum, report) => sum.plus(new Decimal(report.netRevenue || 0)),
-        new Decimal(0),
-      );
-      totalEarnings = reports.reduce((sum, report) => {
-        const report_royalties = new Decimal(report.netRevenue || 0);
-        const cmg_netRevenue = new Decimal(report.cmg_netRevenue || 0);
-        return sum.plus(report_royalties.minus(cmg_netRevenue)); // Ganancias (porcentaje)
-      }, new Decimal(0));
-    }
-
-    return { totalRoyalties, totalEarnings };
+    return totals;
   }
 
   /**
@@ -572,53 +616,6 @@ export class AdminBaseReportService {
         where: { reportingMonth },
         data: { baseReportId },
       });
-    }
-  }
-
-  private async uploadAndLinkBaseReportCsv(baseReport: any, reports: any[]) {
-    try {
-      this.logger.log(`Generating CSV for base report ID: ${baseReport.id}`);
-      const csvData = await convertReportsToCsv(
-        reports,
-        baseReport.distributor,
-        ReportType.BASE, // Specify report type as BASE
-      );
-      const fileName = `${baseReport.distributor}_${baseReport.reportingMonth}_base_report.csv`;
-      // Use the "temp" folder (consistent with imports service/controller)
-      const filePath = path.resolve('temp', fileName);
-      // Ensure the "temp" directory exists
-      const directory = path.dirname(filePath);
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
-      }
-      fs.writeFileSync(filePath, csvData);
-
-      const s3Key = `base-reports/${baseReport.distributor}/${baseReport.reportingMonth}/${fileName}`;
-      const s3File = await this.s3Service.uploadFile(
-        env.AWS_S3_BUCKET_NAME_ROYALTIES,
-        s3Key,
-        filePath,
-      );
-
-      await this.prisma.baseRoyaltyReport.update({
-        where: { id: baseReport.id },
-        data: { s3FileId: s3File.id },
-      });
-
-      this.logger.log(
-        `CSV generated and uploaded for base report ID: ${baseReport.id}`,
-      );
-
-      // Delete the temporary file after successful upload
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        this.logger.log(`Temporary file ${filePath} deleted after S3 upload.`);
-      }
-    } catch (error) {
-      this.logger.error(
-        `Failed to generate and upload CSV for base report ID: ${baseReport.id}: ${error.message}`,
-      );
-      throw error;
     }
   }
 

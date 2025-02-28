@@ -12,6 +12,7 @@ import { AdminBaseReportsController } from './controllers/admin/admin-base-repor
 import { AdminImportReportsController } from './controllers/admin/admin-import-reports.controller';
 import { ImportReportsProcessor } from './processors/import-reports.processor';
 import { UserReportsProcessor } from './processors/user-reports.processor';
+import { BaseReportProcessor } from './processors/generate-csv.processor';
 import { EmailService } from 'src/resources/email/email.service';
 import { AdminUserReportsController } from './controllers/admin/admin-user-reports.controller';
 import { UsersModule } from 'src/resources/users/users.module';
@@ -34,6 +35,17 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
       },
       {
         name: 'import-reports',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: 10000,
+        },
+      },
+      {
+        name: 'base-report',
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: 10000,
+        },
       },
     ),
   ],
@@ -53,6 +65,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     // Processors
     ImportReportsProcessor,
     UserReportsProcessor,
+    BaseReportProcessor,
     ReportsGateway,
   ],
   controllers: [
