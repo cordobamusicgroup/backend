@@ -12,7 +12,6 @@ import {
 import { diskStorage } from 'multer';
 import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AdminReportProcessCSVService } from '../../services/admin/admin-report-process-csv.service';
 import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AdminImportedReportsService } from '../../services/admin/admin-imported-reports.service';
@@ -28,7 +27,6 @@ import { InjectQueue } from '@nestjs/bullmq';
 @Roles(Role.ADMIN)
 export class AdminImportReportsController {
   constructor(
-    private readonly reportsService: AdminReportProcessCSVService,
     private readonly importedReportsService: AdminImportedReportsService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
   ) {}
@@ -69,7 +67,7 @@ export class AdminImportReportsController {
       reportingMonth,
       distributor: Distributor.KONTOR,
     };
-    return this.reportsService.uploadCsvToQueue(uploadCsvDto);
+    return this.importedReportsService.uploadCsvToQueue(uploadCsvDto);
   }
 
   /**
@@ -108,7 +106,7 @@ export class AdminImportReportsController {
       reportingMonth,
       distributor: Distributor.BELIEVE,
     };
-    return this.reportsService.uploadCsvToQueue(uploadCsvDto);
+    return this.importedReportsService.uploadCsvToQueue(uploadCsvDto);
   }
 
   /**

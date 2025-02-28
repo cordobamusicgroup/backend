@@ -1,14 +1,16 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Distributor } from '@prisma/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { AdminReportProcessCSVService } from './admin-report-process-csv.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { S3Service } from 'src/common/services/s3.service';
+import { AdminUnlinkedReportService } from './admin-unlinked-report.service';
+import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
+import * as path from 'path';
 
 /**
  * Service responsible for managing imported financial reports in the system.
- * Provides functionality to delete, cancel, and retrieve imported reports.
+ * Provides functionality to upload, delete, cancel, and retrieve imported reports.
  */
 @Injectable()
 export class AdminImportedReportsService {
@@ -16,10 +18,120 @@ export class AdminImportedReportsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly processRecordsService: AdminReportProcessCSVService,
+    private readonly unlinkedReportService: AdminUnlinkedReportService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
     private readonly s3Service: S3Service,
   ) {}
+
+  /**
+   * Uploads a CSV file to the processing queue.
+   *
+   * @param uploadCsvDto The DTO containing the CSV file and related data
+   * @returns A message indicating the CSV file has been queued for processing
+   * @throws BadRequestException if there are validation errors
+   */
+  async uploadCsvToQueue(uploadCsvDto: UploadCsvDto) {
+    const { file, reportingMonth, distributor } = uploadCsvDto;
+    const tempFilePath = path.resolve(file.path);
+
+    try {
+      // Check if there are existing jobs in progress for the given distributor and reporting month
+      await this.validateNoJobInProgress(reportingMonth, distributor);
+
+      // Check if there are existing reports for the given distributor and reporting month
+      if (await this.checkForExistingReports(distributor, reportingMonth)) {
+        throw new BadRequestException(
+          'There are already records for the given distributor and reporting month.',
+        );
+      }
+
+      // Create an ImportedRoyaltyReport record
+      const importedReport = await this.prisma.importedRoyaltyReport.create({
+        data: {
+          distributor,
+          reportingMonth,
+          importStatus: 'PENDING',
+        },
+      });
+
+      // Add the CSV file to the processing queue
+      await this.importReportsQueue.add('ImportReportCSV', {
+        filePath: tempFilePath,
+        reportingMonth,
+        distributor,
+        importReportId: importedReport.id,
+      });
+
+      this.logger.log(
+        `CSV file queued for processing: ${distributor} ${reportingMonth}`,
+      );
+      return {
+        message: 'CSV file queued for processing.',
+        distributor,
+        reportingMonth,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to queue CSV for processing: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Validates that there isn't already a job in progress for the same reporting period
+   *
+   * @param reportingMonth The reporting month to validate
+   * @param distributor The distributor to validate
+   * @throws BadRequestException if a job is already in progress
+   */
+  async validateNoJobInProgress(
+    reportingMonth: string,
+    distributor: Distributor,
+  ) {
+    const existingJobs = await this.importReportsQueue.getJobs([
+      'waiting',
+      'active',
+    ]);
+    const isJobInProgress = existingJobs.some(
+      (job) =>
+        job.data.reportingMonth === reportingMonth &&
+        job.data.distributor === distributor,
+    );
+
+    if (isJobInProgress) {
+      throw new BadRequestException(
+        'There is already a job in progress for the same reporting month and distributor.',
+      );
+    }
+  }
+
+  /**
+   * Checks if there are existing reports for the given distributor and reporting month.
+   *
+   * @param distributor The distributor to check
+   * @param reportingMonth The reporting month to check
+   * @returns A boolean indicating whether there are existing reports
+   * @throws BadRequestException if reporting month is not provided
+   */
+  private async checkForExistingReports(
+    distributor: Distributor,
+    reportingMonth: string,
+  ): Promise<boolean> {
+    if (!reportingMonth) {
+      throw new BadRequestException('Reporting month must be provided.');
+    }
+
+    let existingReport = null;
+    if (distributor === Distributor.KONTOR) {
+      existingReport = await this.prisma.kontorRoyaltyReport.findFirst({
+        where: { reportingMonth },
+      });
+    } else if (distributor === Distributor.BELIEVE) {
+      existingReport = await this.prisma.believeRoyaltyReport.findFirst({
+        where: { reportingMonth },
+      });
+    }
+    return !!existingReport;
+  }
 
   /**
    * Deletes imported reports for a specific reporting month and distributor.
@@ -86,7 +198,7 @@ export class AdminImportedReportsService {
       result.retained = retainedCount;
 
       // Delete unlinked reports
-      await this.processRecordsService.deleteUnlinkedReports(
+      await this.unlinkedReportService.deleteManyUnlinkedReports(
         distributor,
         reportingMonth,
       );
