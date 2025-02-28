@@ -4,7 +4,7 @@ import { ImportReportDto } from '../dto/admin-import-report.dto';
 import { LoggerTxtService } from 'src/common/services/logger-txt.service';
 import { ProgressService } from 'src/common/services/progress.service';
 import { S3Service } from 'src/common/services/s3.service';
-import { AdminReportsHelperService } from '../services/admin/admin-reports-helper.service';
+import { AdminReportProcessCSVService } from '../services/admin/admin-report-process-csv.service';
 import cleanUp from '../utils/cleanup.util';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import env from 'src/config/env.config';
@@ -17,7 +17,7 @@ export class ImportReportsProcessor extends WorkerHost {
   private readonly redisKey = 'import-reports:progress';
 
   constructor(
-    private readonly reportsService: AdminReportsHelperService,
+    private readonly reportsService: AdminReportProcessCSVService,
     private readonly progressService: ProgressService,
     private readonly loggerTxt: LoggerTxtService,
     private readonly s3UploadService: S3Service,
@@ -80,7 +80,7 @@ export class ImportReportsProcessor extends WorkerHost {
           job.id,
         );
 
-        await this.reportsService.processRecord(
+        await this.reportsService.processCSVRecord(
           record,
           distributor,
           reportingMonth,

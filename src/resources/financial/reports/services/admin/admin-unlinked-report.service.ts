@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { AdminReportsHelperService } from './admin-reports-helper.service';
+import { AdminReportProcessCSVService } from './admin-report-process-csv.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { LinkUnlinkedReportDto } from '../../dto/admin-link-unlinked-report.dto';
 import { ProcessingType } from '../../enums/processing-type.enum';
@@ -11,7 +11,7 @@ export class AdminUnlinkedReportService {
   constructor(
     //@Inject(forwardRef(() => AdminReportsHelperService))
     // TODO; Fix circular dependency
-    private readonly processReportsService: AdminReportsHelperService,
+    private readonly processReportsService: AdminReportProcessCSVService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -44,7 +44,7 @@ export class AdminUnlinkedReportService {
 
       try {
         // Process the record with the provided labelId
-        await this.processReportsService.processRecord(
+        await this.processReportsService.processCSVRecord(
           records_detailData as RoyaltyReportRecordType,
           distributor,
           reportingMonth,

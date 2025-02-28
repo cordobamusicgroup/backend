@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { AdminReportsHelperService } from './services/admin/admin-reports-helper.service';
+import { AdminReportProcessCSVService } from './services/admin/admin-report-process-csv.service';
 import { AdminUnlinkedReportsController } from './controllers/admin/admin-unlinked-reports.controller';
 import { AdminBaseReportService } from './services/admin/admin-base-report.service';
 import { UserFinancialReportsService } from './services/user/user-financial-reports.service';
@@ -41,7 +41,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     // Services from Module
     AdminBaseReportService,
     AdminImportedReportsService,
-    AdminReportsHelperService,
+    AdminReportProcessCSVService,
     AdminUserReportsService,
     UserFinancialReportsService,
     AdminUnlinkedReportService,
@@ -63,7 +63,7 @@ import { AdminUnlinkedReportService } from './services/admin/admin-unlinked-repo
     UserFinancialReportsController,
   ],
   exports: [
-    AdminReportsHelperService,
+    AdminReportProcessCSVService,
     AdminImportedReportsService,
     AdminUnlinkedReportService,
   ],

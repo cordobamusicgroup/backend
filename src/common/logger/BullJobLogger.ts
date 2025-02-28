@@ -2,57 +2,77 @@ import { Logger } from '@nestjs/common';
 import { getBullLogger } from './bullLogger';
 
 export class BullJobLogger extends Logger {
-  private getLogger(jobName?: string, jobId?: number) {
-    return getBullLogger(jobName, jobId);
+  private contextJobId?: string | number;
+  private contextJobName?: string;
+
+  constructor(jobId?: string | number, jobName?: string) {
+    super();
+    this.contextJobId = jobId;
+    this.contextJobName = jobName;
+  }
+
+  private getLogger(jobName?: string, jobId?: number | string) {
+    const finalJobName = jobName || this.contextJobName;
+    const finalJobId = jobId || this.contextJobId;
+    return getBullLogger(finalJobName, Number(finalJobId));
   }
 
   private formatMessage(
     message: string,
     jobName?: string,
-    jobId?: number,
+    jobId?: number | string,
   ): string {
-    if (jobName && jobId) {
-      return `[JOB ${jobId} - ${jobName}] ${message}`;
-    } else if (jobId) {
-      return `[JOB ${jobId}] ${message}`;
-    } else if (jobName) {
-      return `[JOB ${jobName}] ${message}`;
+    const finalJobName = jobName || this.contextJobName;
+    const finalJobId = jobId || this.contextJobId;
+
+    if (finalJobName && finalJobId) {
+      return `[JOB ${finalJobId} - ${finalJobName}] ${message}`;
+    } else if (finalJobId) {
+      return `[JOB ${finalJobId}] ${message}`;
+    } else if (finalJobName) {
+      return `[JOB ${finalJobName}] ${message}`;
     }
-    return message; // Si no hay jobId ni jobName, deja el mensaje original
+    return message;
   }
 
+  // Overriding log methods to use either context from constructor or provided params
   log(message: string, ...optionalParams: any[]) {
     const [jobName, jobId] = optionalParams;
-    this.getLogger(jobName, jobId).info(
-      this.formatMessage(message, jobName, jobId),
-    );
+    this.getLogger(
+      jobName || this.contextJobName,
+      jobId || this.contextJobId,
+    ).info(this.formatMessage(message, jobName, jobId));
   }
 
   error(message: string, ...optionalParams: any[]) {
     const [jobName, jobId] = optionalParams;
-    this.getLogger(jobName, jobId).error(
-      this.formatMessage(`❌ ${message}`, jobName, jobId),
-    );
+    this.getLogger(
+      jobName || this.contextJobName,
+      jobId || this.contextJobId,
+    ).error(this.formatMessage(`❌ ${message}`, jobName, jobId));
   }
 
   warn(message: string, ...optionalParams: any[]) {
     const [jobName, jobId] = optionalParams;
-    this.getLogger(jobName, jobId).warn(
-      this.formatMessage(`⚠️ ${message}`, jobName, jobId),
-    );
+    this.getLogger(
+      jobName || this.contextJobName,
+      jobId || this.contextJobId,
+    ).warn(this.formatMessage(`⚠️ ${message}`, jobName, jobId));
   }
 
   debug(message: string, ...optionalParams: any[]) {
     const [jobName, jobId] = optionalParams;
-    this.getLogger(jobName, jobId).debug(
-      this.formatMessage(`🐛 ${message}`, jobName, jobId),
-    );
+    this.getLogger(
+      jobName || this.contextJobName,
+      jobId || this.contextJobId,
+    ).debug(this.formatMessage(`🐛 ${message}`, jobName, jobId));
   }
 
   verbose(message: string, ...optionalParams: any[]) {
     const [jobName, jobId] = optionalParams;
-    this.getLogger(jobName, jobId).verbose(
-      this.formatMessage(`🔍 ${message}`, jobName, jobId),
-    );
+    this.getLogger(
+      jobName || this.contextJobName,
+      jobId || this.contextJobId,
+    ).verbose(this.formatMessage(`🔍 ${message}`, jobName, jobId));
   }
 }

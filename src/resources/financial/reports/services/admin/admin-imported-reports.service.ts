@@ -1,29 +1,36 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import * as fs from 'fs';
 import { Distributor } from '@prisma/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { AdminReportsHelperService } from './admin-reports-helper.service';
+import { AdminReportProcessCSVService } from './admin-report-process-csv.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { S3Service } from 'src/common/services/s3.service';
-import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
-import { pipeline } from 'stream';
-import { promisify } from 'util';
-import env from 'src/config/env.config';
 
-const pipelineAsync = promisify(pipeline);
-
+/**
+ * Service responsible for managing imported financial reports in the system.
+ * Provides functionality to delete, cancel, and retrieve imported reports.
+ */
 @Injectable()
 export class AdminImportedReportsService {
   private readonly logger = new Logger(AdminImportedReportsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly processRecordsService: AdminReportsHelperService,
+    private readonly processRecordsService: AdminReportProcessCSVService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
     private readonly s3Service: S3Service,
   ) {}
 
+  /**
+   * Deletes imported reports for a specific reporting month and distributor.
+   * Optionally deletes associated S3 file.
+   *
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
+   * @param deleteS3File - Whether to delete the associated S3 file
+   * @returns Object containing information about deletion results
+   * @throws BadRequestException if report deletion fails
+   */
   async deleteImportedReports(
     reportingMonth: string,
     distributor: Distributor,
@@ -39,12 +46,15 @@ export class AdminImportedReportsService {
       let deleteResult;
       let retainedCount;
 
+      // Process delete operations based on distributor type
       if (distributor === Distributor.BELIEVE) {
+        // Delete Believe royalty reports
         deleteResult = await this.prisma.believeRoyaltyReport.deleteMany({
           where: { reportingMonth },
         });
         result.deleted = deleteResult.count;
 
+        // Count records that were retained due to relationships
         retainedCount = await this.prisma.believeRoyaltyReport.count({
           where: {
             reportingMonth,
@@ -55,11 +65,13 @@ export class AdminImportedReportsService {
           },
         });
       } else if (distributor === Distributor.KONTOR) {
+        // Delete Kontor royalty reports
         deleteResult = await this.prisma.kontorRoyaltyReport.deleteMany({
           where: { reportingMonth },
         });
         result.deleted = deleteResult.count;
 
+        // Count records that were retained due to relationships
         retainedCount = await this.prisma.kontorRoyaltyReport.count({
           where: {
             reportingMonth,
@@ -101,7 +113,7 @@ export class AdminImportedReportsService {
         }
       }
 
-      // Delete the ImportedRoyaltyReport record
+      // Finally, delete the ImportedRoyaltyReport record itself
       await this.prisma.importedRoyaltyReport.deleteMany({
         where: { distributor, reportingMonth },
       });
@@ -115,20 +127,31 @@ export class AdminImportedReportsService {
     }
   }
 
+  /**
+   * Cancels ongoing import jobs for a specific reporting month and distributor.
+   *
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
+   * @returns Object containing information about cancelled jobs
+   */
   async cancelJobs(reportingMonth: string, distributor: Distributor) {
+    // Find all active and waiting jobs
     const jobs = await this.importReportsQueue.getJobs(['waiting', 'active']);
+
+    // Filter jobs matching the specified criteria
     const jobsToCancel = jobs.filter(
       (job) =>
         job.data.reportingMonth === reportingMonth &&
         job.data.distributor === distributor,
     );
 
+    // Process each job for cancellation
     for (const job of jobsToCancel) {
       try {
-        // Intenta eliminar el trabajo si no se puede cancelar
+        // Try to remove the job from the queue
         await job.remove();
 
-        // Si el trabajo está activo, moverlo a estado fallido
+        // If job is active, move it to failed state
         if (job.isActive) {
           await job.moveToFailed({ message: 'Job cancelled' }, true);
         }
@@ -142,106 +165,25 @@ export class AdminImportedReportsService {
     return { message: `${jobsToCancel.length} job(s) cancelled.` };
   }
 
-  async reprocessFile(reportingMonth: string, distributor: Distributor) {
-    const s3Key = `import-reports/ImportReport_${distributor}_${reportingMonth}.csv`;
-    const bucket = process.env.AWS_S3_BUCKET_NAME_ROYALTIES;
-
-    try {
-      const file = await this.s3Service.getFile({ bucket, key: s3Key });
-      const tempFilePath = `/tmp/${s3Key.split('/').pop()}`;
-      const fileStream = fs.createWriteStream(tempFilePath);
-
-      const response = await fetch(file.url);
-      const readableStream = response.body;
-
-      await pipelineAsync(readableStream, fileStream);
-
-      const uploadCsvDto: UploadCsvDto = {
-        file: { path: tempFilePath } as Express.Multer.File,
-        reportingMonth,
-        distributor,
-      };
-      await this.processRecordsService.uploadCsvToQueue(uploadCsvDto);
-    } catch (error) {
-      this.logger.error(`Failed to reprocess file: ${error.message}`);
-      throw new BadRequestException('File does not exist in S3.');
-    }
-  }
-
-  async convertAndLinkOldReports(
-    reportingMonth: string,
-    distributor: Distributor,
-  ) {
-    this.logger.log(
-      `Starting conversion and linking for ${distributor} ${reportingMonth}`,
-    );
-
-    try {
-      const baseReports = await this.prisma.baseRoyaltyReport.findMany({
-        where: { reportingMonth, distributor },
-        include: {
-          kontorReports: true,
-          believeReports: true,
-        },
-      });
-
-      if (baseReports.length === 0) {
-        this.logger.warn(
-          `No base reports found for ${distributor} ${reportingMonth}`,
-        );
-        return;
-      }
-
-      for (const baseReport of baseReports) {
-        const importedReport = await this.prisma.importedRoyaltyReport.create({
-          data: {
-            distributor,
-            reportingMonth,
-            importStatus: 'COMPLETED',
-            s3FileId: baseReport.s3FileId,
-          },
-        });
-
-        if (distributor === Distributor.KONTOR) {
-          await this.prisma.kontorRoyaltyReport.updateMany({
-            where: { baseReportId: baseReport.id },
-            data: { importedReportId: importedReport.id },
-          });
-        } else if (distributor === Distributor.BELIEVE) {
-          await this.prisma.believeRoyaltyReport.updateMany({
-            where: { baseReportId: baseReport.id },
-            data: { importedReportId: importedReport.id },
-          });
-        }
-
-        const oldS3Key = `ImportReport_${distributor}_${reportingMonth}.csv`;
-        const newS3Key = `import-reports/ImportReport_${distributor}_${reportingMonth}.csv`;
-        const bucket = env.AWS_S3_BUCKET_NAME_ROYALTIES;
-
-        try {
-          await this.s3Service.moveFile(bucket, oldS3Key, newS3Key);
-        } catch (error) {
-          this.logger.error(`Failed to move S3 file: ${error.message}`);
-        }
-      }
-
-      this.logger.log(
-        `Conversion and linking completed for ${distributor} ${reportingMonth}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to convert and link old reports: ${error.message}`,
-      );
-      throw new BadRequestException('Failed to convert and link old reports.');
-    }
-  }
-
+  /**
+   * Retrieves imported reports for a specific reporting month and distributor.
+   *
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
+   * @returns Array of imported report records
+   */
   async getImportedReports(reportingMonth: string, distributor: Distributor) {
     return this.prisma.importedRoyaltyReport.findMany({
       where: { reportingMonth, distributor },
     });
   }
 
+  /**
+   * Retrieves all imported reports, optionally filtered by distributor.
+   *
+   * @param distributor - Optional distributor filter
+   * @returns Array of imported report records sorted by reporting month
+   */
   async getAllImportedReports(distributor?: Distributor) {
     const filter = distributor ? { distributor } : {};
     return this.prisma.importedRoyaltyReport.findMany({

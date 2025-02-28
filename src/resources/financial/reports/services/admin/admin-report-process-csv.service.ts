@@ -15,10 +15,11 @@ import Decimal from 'decimal.js';
 import { Buffer } from 'buffer';
 import { S3Service } from 'src/common/services/s3.service';
 import { ProcessingType } from '../../enums/processing-type.enum';
+import { BullJobLogger } from 'src/common/logger/BullJobLogger';
 
 @Injectable()
-export class AdminReportsHelperService {
-  private readonly logger = new Logger(AdminReportsHelperService.name);
+export class AdminReportProcessCSVService {
+  private readonly logger = new Logger(AdminReportProcessCSVService.name);
 
   constructor(
     @InjectQueue('import-reports') private importReportsQueue: Queue,
@@ -26,6 +27,8 @@ export class AdminReportsHelperService {
     private readonly loggerTxt: LoggerTxtService,
     private readonly s3Service: S3Service,
   ) {}
+
+  // [PUBLIC METHODS]
 
   /**
    * Uploads a CSV file to the processing queue.
@@ -97,33 +100,6 @@ export class AdminReportsHelperService {
   }
 
   /**
-   * Checks if there are existing reports for the given distributor and reporting month.
-   * @param distributor The distributor to check.
-   * @param reportingMonth The reporting month to check.
-   * @returns A boolean indicating whether there are existing reports.
-   */
-  private async checkForExistingReports(
-    distributor: Distributor,
-    reportingMonth: string,
-  ): Promise<boolean> {
-    if (!reportingMonth) {
-      throw new BadRequestException('Reporting month must be provided.');
-    }
-
-    let existingReport = null;
-    if (distributor === Distributor.KONTOR) {
-      existingReport = await this.prisma.kontorRoyaltyReport.findFirst({
-        where: { reportingMonth },
-      });
-    } else if (distributor === Distributor.BELIEVE) {
-      existingReport = await this.prisma.believeRoyaltyReport.findFirst({
-        where: { reportingMonth },
-      });
-    }
-    return !!existingReport;
-  }
-
-  /**
    * Reads a CSV file and maps its content to records.
    * @param filePath The path to the CSV file.
    * @param distributor The distributor associated with the CSV data.
@@ -153,7 +129,7 @@ export class AdminReportsHelperService {
     });
   }
 
-  async processRecord(
+  async processCSVRecord(
     record: RoyaltyReportRecordType,
     distributor: Distributor,
     reportingMonth: string,
@@ -163,228 +139,162 @@ export class AdminReportsHelperService {
     jobId?: string,
     importReportId?: number,
   ) {
+    // Se inicializa el logger con contexto
+    const bullLogger = new BullJobLogger(jobId, 'ProcessCSVRecord');
+
+    bullLogger.log(`🚀 Iniciando procesamiento de registro #${rowIndex}`);
+
     try {
-      /**
-       * Find label by name or ID based on processing type.
-       */
       let label;
       if (processingType === ProcessingType.UNLINKED) {
+        bullLogger.log(`🔍 Buscando etiqueta por ID: ${labelId}`);
         if (!labelId) {
           throw new BadRequestException(
             'labelId is required when processing as UNLINKED',
           );
         }
-        label = await this.findLabelById(labelId);
+        try {
+          label = await this.findLabelById(labelId);
+        } catch (error) {
+          bullLogger.error(
+            `❌ Error recuperando etiqueta por ID: ${error.message}`,
+          );
+          throw error;
+        }
         if (!label) {
           throw new BadRequestException(`Label with ID ${labelId} not found.`);
         }
+        bullLogger.log(`✅ Etiqueta encontrada: "${label.name}"`);
       } else if (processingType === ProcessingType.IMPORT) {
-        const labelNameUTF8 = Buffer.from(record.labelName, 'utf8').toString();
-        label = await this.findLabelByName(labelNameUTF8, distributor);
-        if (!label) {
-          this.loggerTxt.logError(
-            `Row ${rowIndex}: Label not found for label "${record.labelName}", saving as unlinked`,
-            jobId,
-            'ProcessReportRecord',
+        let labelNameUTF8: string;
+        try {
+          labelNameUTF8 = Buffer.from(record.labelName, 'utf8').toString();
+          bullLogger.log(`🔍 Buscando etiqueta por nombre: "${labelNameUTF8}"`);
+        } catch (error) {
+          bullLogger.error(
+            `❌ Error convirtiendo nombre de etiqueta: ${error.message}`,
           );
-          await this.saveUnlinkedRecord(record, distributor, reportingMonth);
+          throw error;
+        }
+        try {
+          label = await this.findLabelByName(labelNameUTF8, distributor);
+        } catch (error) {
+          bullLogger.error(
+            `❌ Error recuperando etiqueta por nombre: ${error.message}`,
+          );
+          throw error;
+        }
+        if (!label) {
+          bullLogger.warn(
+            `⚠️ Fila ${rowIndex}: Etiqueta no encontrada para "${record.labelName}", guardando como no vinculada`,
+          );
+          try {
+            await this.saveUnlinkedRecord(record, distributor, reportingMonth);
+            bullLogger.log(
+              `📝 Registro guardado como no vinculado correctamente`,
+            );
+          } catch (error) {
+            bullLogger.error(
+              `❌ Error guardando registro no vinculado: ${error.message}`,
+            );
+          }
           return; // Stop processing if label not found
         }
-      }
-      /**
-       * Find contract associated with the label's client
-       */
-      const contract = await this.findContract(label.client.id);
-      if (contract == null || contract.ppd == undefined) {
-        this.loggerTxt.logError(
-          `Row ${rowIndex}: Contract with valid PPD not found for client ID ${label.client.id}, saving failed record`,
-          jobId,
-          'ProcessReportRecord',
+        bullLogger.log(
+          `✅ Etiqueta encontrada: "${label.name}" (ID: ${label.id})`,
         );
+      }
+
+      bullLogger.log(
+        `🔍 Buscando contrato para cliente ID: ${label.client.id}`,
+      );
+      let contract;
+      try {
+        contract = await this.findContract(label.client.id);
+      } catch (error) {
+        bullLogger.error(`❌ Error recuperando contrato: ${error.message}`);
+        throw error;
+      }
+
+      if (contract == null || contract.ppd == undefined) {
+        bullLogger.warn(
+          `⚠️ Fila ${rowIndex}: No se encontró contrato con PPD válido para cliente ID ${label.client.id}`,
+        );
+        try {
+          await this.saveFailedRecord(
+            record,
+            distributor,
+            reportingMonth,
+            'Contract with valid PPD not found for client ID',
+          );
+          bullLogger.log(`📝 Registro guardado como fallido correctamente`);
+        } catch (error) {
+          bullLogger.error(
+            `❌ Error guardando registro fallido: ${error.message}`,
+          );
+        }
+        return;
+      }
+      bullLogger.log(`✅ Contrato encontrado con PPD: ${contract.ppd}`);
+
+      bullLogger.log(`🧮 Calculando ingresos para el registro`);
+      let cmg_clientRate: number, cmg_netRevenue: number;
+      try {
+        const revenue = this.calculateRevenue(
+          record,
+          contract.ppd,
+          distributor,
+        );
+        cmg_clientRate = revenue.cmg_clientRate;
+        cmg_netRevenue = revenue.cmg_netRevenue;
+        bullLogger.log(
+          `📊 Cálculo exitoso - Tasa cliente: ${cmg_clientRate}, Ingreso neto: ${cmg_netRevenue}`,
+        );
+      } catch (error) {
+        bullLogger.error(`❌ Error calculando ingresos: ${error.message}`);
+        throw error;
+      }
+
+      bullLogger.log(`💾 Guardando informe en base de datos`);
+      try {
+        await this.saveReport(
+          record,
+          reportingMonth,
+          distributor,
+          cmg_clientRate,
+          cmg_netRevenue,
+          label.id,
+          importReportId,
+        );
+        bullLogger.log(
+          `✅ Fila ${rowIndex}: Registro procesado y guardado exitosamente`,
+        );
+      } catch (error) {
+        bullLogger.error(`❌ Error guardando informe: ${error.message}`);
+        throw error;
+      }
+    } catch (error) {
+      bullLogger.error(
+        `❌ Fila ${rowIndex}: Error procesando registro - ${error.message}`,
+      );
+      this.loggerTxt.logError(
+        `Fila ${rowIndex}: Error procesando registro - ${error.message}`,
+        jobId,
+        'ProcessReportRecord',
+      );
+      try {
         await this.saveFailedRecord(
           record,
           distributor,
           reportingMonth,
-          'Contract with valid PPD not found for client ID',
+          error.message,
         );
-
-        return;
+        bullLogger.log(`📝 Registro guardado como fallido después del error`);
+      } catch (err) {
+        bullLogger.error(
+          `❌ Error guardando registro fallido después del error: ${err.message}`,
+        );
       }
-      /**
-       * Calculate revenue based on the contract's PPD and distributor
-       */
-      const { cmg_clientRate, cmg_netRevenue } = this.calculateRevenue(
-        record,
-        contract.ppd,
-        distributor,
-      );
-      /**
-       * Save the processed report to the database
-       */
-      await this.saveReport(
-        record,
-        reportingMonth,
-        distributor,
-        cmg_clientRate,
-        cmg_netRevenue,
-        label.id,
-        importReportId,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Row ${rowIndex}: Failed to process record - ${error.message}`,
-        jobId,
-        'ProcessReportRecord',
-      );
-      this.loggerTxt.logError(
-        `Row ${rowIndex}: Failed to process record - ${error.message}`,
-        jobId,
-        'ProcessReportRecord',
-      );
-      await this.saveFailedRecord(
-        record,
-        distributor,
-        reportingMonth,
-        error.message,
-      );
-    }
-  }
-
-  // ^ Methods
-
-  /**
-   * Finds a label by its name.
-   * @param labelName The name of the label to be found.
-   * @returns The label with its associated client.
-   */
-  private async findLabelByName(labelName: string, distributor: Distributor) {
-    if (distributor === Distributor.BELIEVE) {
-      return this.prisma.label.findFirst({
-        where: {
-          name: {
-            equals: labelName, // Cambiar contains por equals
-            mode: 'insensitive', // Esto hace que ignore mayúsculas/minúsculas (opcional si quieres exactitud case-insensitive)
-          },
-        },
-        include: { client: true },
-      });
-    } else {
-      return this.prisma.label.findFirst({
-        where: {
-          name: {
-            equals: labelName, // Cambiar contains por equals
-          },
-        },
-        include: { client: true },
-      });
-    }
-  }
-
-  /**
-   * Finds a label by its ID.
-   * @param labelId The ID of the label to be found.
-   * @returns The label with its associated client.
-   */
-  private async findLabelById(labelId: number) {
-    return this.prisma.label.findUnique({
-      where: { id: labelId },
-      include: { client: true },
-    });
-  }
-
-  /**
-   * Finds a contract by the client ID.
-   * @param clientId The ID of the client.
-   * @returns The contract associated with the client.
-   */
-  private async findContract(clientId: number) {
-    return this.prisma.contract.findFirst({
-      where: {
-        clientId,
-        contractType: {
-          in: [
-            ContractType.DISTRIBUTION_EXCLUSIVE,
-            ContractType.DISTRIBUTION_NONEXCLUSIVE,
-          ],
-        },
-      },
-    });
-  }
-
-  /**
-   * Calculates the revenue for a record.
-   * @param record The record to calculate revenue for.
-   * @param ppd The PPD value for the contract.
-   * @param distributor The distributor associated with the record.
-   * @returns The calculated client rate and net revenue.
-   */
-  private calculateRevenue(record: any, ppd: number, distributor: Distributor) {
-    const cmg_clientRate = ppd; // Float
-    let cmg_netRevenue: number;
-
-    if (distributor === Distributor.BELIEVE) {
-      cmg_netRevenue = new Decimal(record.netRevenue)
-        .mul(ppd)
-        .div(100)
-        .toDP(10) // Ensure full decimal precision
-        .toNumber();
-    } else if (distributor === Distributor.KONTOR) {
-      cmg_netRevenue = new Decimal(record.royalties)
-        .mul(ppd)
-        .div(100)
-        .toDP(10) // Ensure full decimal precision
-        .toNumber();
-    } else {
-      throw new Error(`Unsupported distributor: ${distributor}`);
-    }
-
-    if (cmg_netRevenue < 0) {
-      cmg_netRevenue =
-        parseFloat(record.netRevenue) || parseFloat(record.royalties);
-    }
-    return { cmg_clientRate, cmg_netRevenue };
-  }
-
-  /**
-   * Saves a report to the database.
-   * @param record The record to be saved.
-   * @param reportingMonth The reporting month for the record.
-   * @param distributor The distributor associated with the record.
-   * @param cmg_clientRate The client rate for the record.
-   * @param cmg_netRevenue The net revenue for the record.
-   * @param importReportId The ID of the import report (optional).
-   */
-  private async saveReport(
-    record: any,
-    reportingMonth: string,
-    distributor: Distributor,
-    cmg_clientRate: number,
-    cmg_netRevenue: number,
-    labelId: number,
-    importReportId?: number,
-  ) {
-    const data = {
-      ...record,
-      reportingMonth,
-      cmg_clientRate: new Decimal(cmg_clientRate),
-      cmg_netRevenue: new Decimal(cmg_netRevenue),
-      label: { connect: { id: labelId } },
-    };
-
-    if (distributor === Distributor.BELIEVE) {
-      data.currency = 'USD';
-    } else if (distributor === Distributor.KONTOR) {
-      data.currency = 'EUR';
-    }
-
-    if (importReportId) {
-      data.importedReport = { connect: { id: importReportId } };
-    }
-
-    if (distributor === Distributor.BELIEVE) {
-      await this.prisma.believeRoyaltyReport.create({ data });
-    } else if (distributor === Distributor.KONTOR) {
-      await this.prisma.kontorRoyaltyReport.create({ data });
     }
   }
 
@@ -549,6 +459,171 @@ export class AdminReportsHelperService {
           UnlinkedReportDetail: { create: { data: record } },
         },
       });
+    }
+  }
+
+  // [PRIVATE METHODS]
+
+  /**
+   * Checks if there are existing reports for the given distributor and reporting month.
+   * @param distributor The distributor to check.
+   * @param reportingMonth The reporting month to check.
+   * @returns A boolean indicating whether there are existing reports.
+   */
+  private async checkForExistingReports(
+    distributor: Distributor,
+    reportingMonth: string,
+  ): Promise<boolean> {
+    if (!reportingMonth) {
+      throw new BadRequestException('Reporting month must be provided.');
+    }
+
+    let existingReport = null;
+    if (distributor === Distributor.KONTOR) {
+      existingReport = await this.prisma.kontorRoyaltyReport.findFirst({
+        where: { reportingMonth },
+      });
+    } else if (distributor === Distributor.BELIEVE) {
+      existingReport = await this.prisma.believeRoyaltyReport.findFirst({
+        where: { reportingMonth },
+      });
+    }
+    return !!existingReport;
+  }
+
+  /**
+   * Finds a label by its name.
+   * @param labelName The name of the label to be found.
+   * @returns The label with its associated client.
+   */
+  private async findLabelByName(labelName: string, distributor: Distributor) {
+    if (distributor === Distributor.BELIEVE) {
+      return this.prisma.label.findFirst({
+        where: {
+          name: {
+            equals: labelName, // Cambiar contains por equals
+            mode: 'insensitive', // Esto hace que ignore mayúsculas/minúsculas (opcional si quieres exactitud case-insensitive)
+          },
+        },
+        include: { client: true },
+      });
+    } else {
+      return this.prisma.label.findFirst({
+        where: {
+          name: {
+            equals: labelName, // Cambiar contains por equals
+          },
+        },
+        include: { client: true },
+      });
+    }
+  }
+
+  /**
+   * Finds a label by its ID.
+   * @param labelId The ID of the label to be found.
+   * @returns The label with its associated client.
+   */
+  private async findLabelById(labelId: number) {
+    return this.prisma.label.findUnique({
+      where: { id: labelId },
+      include: { client: true },
+    });
+  }
+
+  /**
+   * Finds a contract by the client ID.
+   * @param clientId The ID of the client.
+   * @returns The contract associated with the client.
+   */
+  private async findContract(clientId: number) {
+    return this.prisma.contract.findFirst({
+      where: {
+        clientId,
+        contractType: {
+          in: [
+            ContractType.DISTRIBUTION_EXCLUSIVE,
+            ContractType.DISTRIBUTION_NONEXCLUSIVE,
+          ],
+        },
+      },
+    });
+  }
+
+  /**
+   * Calculates the revenue for a record.
+   * @param record The record to calculate revenue for.
+   * @param ppd The PPD value for the contract.
+   * @param distributor The distributor associated with the record.
+   * @returns The calculated client rate and net revenue.
+   */
+  private calculateRevenue(record: any, ppd: number, distributor: Distributor) {
+    const cmg_clientRate = ppd; // Float
+    let cmg_netRevenue: number;
+
+    if (distributor === Distributor.BELIEVE) {
+      cmg_netRevenue = new Decimal(record.netRevenue)
+        .mul(ppd)
+        .div(100)
+        .toDP(10) // Ensure full decimal precision
+        .toNumber();
+    } else if (distributor === Distributor.KONTOR) {
+      cmg_netRevenue = new Decimal(record.royalties)
+        .mul(ppd)
+        .div(100)
+        .toDP(10) // Ensure full decimal precision
+        .toNumber();
+    } else {
+      throw new Error(`Unsupported distributor: ${distributor}`);
+    }
+
+    if (cmg_netRevenue < 0) {
+      cmg_netRevenue =
+        parseFloat(record.netRevenue) || parseFloat(record.royalties);
+    }
+    return { cmg_clientRate, cmg_netRevenue };
+  }
+
+  /**
+   * Saves a report to the database.
+   * @param record The record to be saved.
+   * @param reportingMonth The reporting month for the record.
+   * @param distributor The distributor associated with the record.
+   * @param cmg_clientRate The client rate for the record.
+   * @param cmg_netRevenue The net revenue for the record.
+   * @param importReportId The ID of the import report (optional).
+   */
+  private async saveReport(
+    record: any,
+    reportingMonth: string,
+    distributor: Distributor,
+    cmg_clientRate: number,
+    cmg_netRevenue: number,
+    labelId: number,
+    importReportId?: number,
+  ) {
+    const data = {
+      ...record,
+      reportingMonth,
+      cmg_clientRate: new Decimal(cmg_clientRate),
+      cmg_netRevenue: new Decimal(cmg_netRevenue),
+      label: { connect: { id: labelId } },
+    };
+
+    if (distributor === Distributor.BELIEVE) {
+      data.currency = 'USD';
+    } else if (distributor === Distributor.KONTOR) {
+      data.currency = 'EUR';
+    }
+
+    if (importReportId) {
+      data.importedReport = { connect: { id: importReportId } };
+    }
+
+    if (distributor === Distributor.BELIEVE) {
+      await this.prisma.believeRoyaltyReport.create({ data });
+    } else if (distributor === Distributor.KONTOR) {
+      await this.prisma.kontorRoyaltyReport.create({ data });
     }
   }
 }

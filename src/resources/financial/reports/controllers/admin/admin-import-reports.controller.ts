@@ -12,22 +12,35 @@ import {
 import { diskStorage } from 'multer';
 import { Distributor, Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AdminReportsHelperService } from '../../services/admin/admin-reports-helper.service';
+import { AdminReportProcessCSVService } from '../../services/admin/admin-report-process-csv.service';
 import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AdminImportedReportsService } from '../../services/admin/admin-imported-reports.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 
+/**
+ * Controller responsible for handling administrative operations related to importing financial reports.
+ * Provides endpoints for uploading, deleting, and managing report imports from different distributors.
+ * All endpoints require ADMIN role permissions.
+ */
 @Controller('admin/import')
 @Roles(Role.ADMIN)
 export class AdminImportReportsController {
   constructor(
-    private readonly reportsService: AdminReportsHelperService,
+    private readonly reportsService: AdminReportProcessCSVService,
     private readonly importedReportsService: AdminImportedReportsService,
     @InjectQueue('import-reports') private readonly importReportsQueue: Queue,
   ) {}
 
+  /**
+   * Uploads and processes a Kontor CSV report file
+   *
+   * @param file - The uploaded CSV file containing Kontor report data
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @returns A response indicating that the file has been queued for processing
+   * @throws BadRequestException if the reportingMonth format is invalid
+   */
   @Post('kontor')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -59,6 +72,14 @@ export class AdminImportReportsController {
     return this.reportsService.uploadCsvToQueue(uploadCsvDto);
   }
 
+  /**
+   * Uploads and processes a Believe CSV report file
+   *
+   * @param file - The uploaded CSV file containing Believe report data
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @returns A response indicating that the file has been queued for processing
+   * @throws BadRequestException if the reportingMonth format is invalid
+   */
   @Post('believe')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -90,6 +111,15 @@ export class AdminImportReportsController {
     return this.reportsService.uploadCsvToQueue(uploadCsvDto);
   }
 
+  /**
+   * Deletes imported reports for a specific reporting month and distributor
+   *
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
+   * @param deleteS3File - Whether to delete the associated S3 file
+   * @returns Information about the deletion operation
+   * @throws BadRequestException if reportingMonth format or distributor is invalid
+   */
   @Delete('delete')
   async deleteImportedReports(
     @Body('reportingMonth') reportingMonth: string,
@@ -113,6 +143,14 @@ export class AdminImportReportsController {
     );
   }
 
+  /**
+   * Cancels ongoing import jobs for a specific reporting month and distributor
+   *
+   * @param reportingMonth - The reporting month in YYYYMM format
+   * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
+   * @returns A message indicating the number of jobs cancelled
+   * @throws BadRequestException if reportingMonth format or distributor is invalid
+   */
   @Delete('cancel')
   async cancelJobs(
     @Body('reportingMonth') reportingMonth: string,
@@ -131,48 +169,12 @@ export class AdminImportReportsController {
     return this.importedReportsService.cancelJobs(reportingMonth, distributor);
   }
 
-  @Post('reprocess')
-  async reprocessFile(
-    @Body('reportingMonth') reportingMonth: string,
-    @Body('distributor') distributor: Distributor,
-  ) {
-    if (!reportingMonth || !/^(\d{4})(0[1-9]|1[0-2])$/.test(reportingMonth)) {
-      throw new BadRequestException(
-        'Invalid reportingMonth format. Expected format is YYYYMM.',
-      );
-    }
-
-    if (!distributor || !Object.values(Distributor).includes(distributor)) {
-      throw new BadRequestException('Invalid distributor.');
-    }
-
-    return this.importedReportsService.reprocessFile(
-      reportingMonth,
-      distributor,
-    );
-  }
-
-  @Post('convert-link-old-reports')
-  async convertAndLinkOldReports(
-    @Body('reportingMonth') reportingMonth: string,
-    @Body('distributor') distributor: Distributor,
-  ) {
-    if (!reportingMonth || !/^(\d{4})(0[1-9]|1[0-2])$/.test(reportingMonth)) {
-      throw new BadRequestException(
-        'Invalid reportingMonth format. Expected format is YYYYMM.',
-      );
-    }
-
-    if (!distributor || !Object.values(Distributor).includes(distributor)) {
-      throw new BadRequestException('Invalid distributor.');
-    }
-
-    return this.importedReportsService.convertAndLinkOldReports(
-      reportingMonth,
-      distributor,
-    );
-  }
-
+  /**
+   * Retrieves all imported reports, optionally filtered by distributor
+   *
+   * @param distributor - Optional distributor filter
+   * @returns A list of imported report records
+   */
   @Get('imported-reports')
   async getImportedReports(@Query('distributor') distributor?: Distributor) {
     return this.importedReportsService.getAllImportedReports(distributor);
