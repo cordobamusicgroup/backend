@@ -10,14 +10,14 @@ import env from 'src/config/env.config';
 import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
 
 // Interface defining the CSV generation job data structure
-interface GenerateBaseReportCsvJob {
+interface BaseReportJobProps {
   baseReportId: number;
   distributor: Distributor;
   reportingMonth: string;
 }
 
 // Union type for all job types this processor can handle
-type BaseReportJobData = GenerateBaseReportCsvJob;
+type BaseReportJobData = BaseReportJobProps;
 
 @Processor('base-report')
 export class BaseReportProcessor extends WorkerHost {
@@ -38,8 +38,8 @@ export class BaseReportProcessor extends WorkerHost {
 
     try {
       switch (job.name) {
-        case 'generateCsv':
-          await this.handleGenerateCsv(job as Job<GenerateBaseReportCsvJob>);
+        case 'BaseReportGenerateCsv':
+          await this.handleGenerateCsv(job as Job<BaseReportJobProps>);
           break;
         default:
           logger.error(`Unknown job type: ${job.name}`);
@@ -56,9 +56,7 @@ export class BaseReportProcessor extends WorkerHost {
    * Handles the generation of CSV files for base reports
    * @param job The CSV generation job
    */
-  private async handleGenerateCsv(
-    job: Job<GenerateBaseReportCsvJob>,
-  ): Promise<void> {
+  private async handleGenerateCsv(job: Job<BaseReportJobProps>): Promise<void> {
     const { baseReportId, distributor, reportingMonth } = job.data;
     const logger = new BullJobLogger(job.id, 'generateCsv');
 

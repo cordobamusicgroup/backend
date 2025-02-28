@@ -35,17 +35,26 @@ export class AdminImportedReportsService {
     const tempFilePath = path.resolve(file.path);
 
     try {
+      this.logger.log(
+        `🔍 Validating upload for ${distributor} ${reportingMonth}...`,
+      );
       // Check if there are existing jobs in progress for the given distributor and reporting month
       await this.validateNoJobInProgress(reportingMonth, distributor);
 
       // Check if there are existing reports for the given distributor and reporting month
       if (await this.checkForExistingReports(distributor, reportingMonth)) {
+        this.logger.warn(
+          `⚠️ Found existing reports for ${distributor} ${reportingMonth}`,
+        );
         throw new BadRequestException(
           'There are already records for the given distributor and reporting month.',
         );
       }
 
       // Create an ImportedRoyaltyReport record
+      this.logger.log(
+        `📝 Creating imported report record for ${distributor} ${reportingMonth}...`,
+      );
       const importedReport = await this.prisma.importedRoyaltyReport.create({
         data: {
           distributor,
@@ -55,6 +64,9 @@ export class AdminImportedReportsService {
       });
 
       // Add the CSV file to the processing queue
+      this.logger.log(
+        `📥 Adding file to import queue for ${distributor} ${reportingMonth}...`,
+      );
       await this.importReportsQueue.add('ImportReportCSV', {
         filePath: tempFilePath,
         reportingMonth,
@@ -63,7 +75,7 @@ export class AdminImportedReportsService {
       });
 
       this.logger.log(
-        `CSV file queued for processing: ${distributor} ${reportingMonth}`,
+        `✅ CSV file queued for processing: ${distributor} ${reportingMonth}`,
       );
       return {
         message: 'CSV file queued for processing.',
@@ -71,7 +83,9 @@ export class AdminImportedReportsService {
         reportingMonth,
       };
     } catch (error) {
-      this.logger.error(`Failed to queue CSV for processing: ${error.message}`);
+      this.logger.error(
+        `❌ Failed to queue CSV for processing: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -136,6 +150,7 @@ export class AdminImportedReportsService {
   /**
    * Deletes imported reports for a specific reporting month and distributor.
    * Optionally deletes associated S3 file.
+   * Will not delete reports that have associated base or user reports.
    *
    * @param reportingMonth - The reporting month in YYYYMM format
    * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
@@ -151,91 +166,168 @@ export class AdminImportedReportsService {
     const result = {
       deleted: 0,
       retained: 0,
-      reasons: [],
+      reasons: [] as string[],
     };
 
     try {
+      this.logger.log(
+        `🔍 Checking for imported reports to delete: ${distributor} ${reportingMonth}...`,
+      );
+      // First, determine if there are associated base or user reports
+      const importedReport = await this.prisma.importedRoyaltyReport.findFirst({
+        where: { distributor, reportingMonth },
+      });
+
+      if (!importedReport) {
+        this.logger.warn(
+          `⚠️ No imported reports found for ${distributor} ${reportingMonth}`,
+        );
+        return {
+          message: 'No imported reports found for the specified criteria.',
+        };
+      }
+
+      // Check for related reports based on distributor
+      this.logger.log(
+        `🔎 Checking for associated reports for ${distributor} ${reportingMonth}...`,
+      );
+      let hasRelatedReports = false;
+
+      if (distributor === Distributor.BELIEVE) {
+        const relatedReportsCount =
+          await this.prisma.believeRoyaltyReport.count({
+            where: {
+              reportingMonth,
+              OR: [
+                { baseReportId: { not: null } },
+                { userReportId: { not: null } },
+              ],
+            },
+          });
+
+        if (relatedReportsCount > 0) {
+          hasRelatedReports = true;
+          const reason = `Found ${relatedReportsCount} Believe reports with base or user report associations.`;
+          result.reasons.push(reason);
+          this.logger.warn(`🔗 ${reason}`);
+        }
+      } else if (distributor === Distributor.KONTOR) {
+        const relatedReportsCount = await this.prisma.kontorRoyaltyReport.count(
+          {
+            where: {
+              reportingMonth,
+              OR: [
+                { baseReportId: { not: null } },
+                { userReportId: { not: null } },
+              ],
+            },
+          },
+        );
+
+        if (relatedReportsCount > 0) {
+          hasRelatedReports = true;
+          const reason = `Found ${relatedReportsCount} Kontor reports with base or user report associations.`;
+          result.reasons.push(reason);
+          this.logger.warn(`🔗 ${reason}`);
+        }
+      }
+
+      // If there are related reports, don't proceed with deletion
+      if (hasRelatedReports) {
+        this.logger.warn(
+          `❌ Cannot delete imported reports for ${distributor} ${reportingMonth} - found associated base or user reports`,
+        );
+        return {
+          message:
+            'Cannot delete imported reports with associated base or user reports.',
+          details: result.reasons,
+        };
+      }
+
+      // If no related reports, proceed with deletion
+      this.logger.log(
+        `🗑️ Proceeding with deletion for ${distributor} ${reportingMonth}...`,
+      );
       let deleteResult;
-      let retainedCount;
 
       // Process delete operations based on distributor type
       if (distributor === Distributor.BELIEVE) {
         // Delete Believe royalty reports
         deleteResult = await this.prisma.believeRoyaltyReport.deleteMany({
-          where: { reportingMonth },
-        });
-        result.deleted = deleteResult.count;
-
-        // Count records that were retained due to relationships
-        retainedCount = await this.prisma.believeRoyaltyReport.count({
           where: {
             reportingMonth,
-            OR: [
-              { baseReportId: { not: null } },
-              { userReportId: { not: null } },
-            ],
+            baseReportId: null,
+            userReportId: null,
           },
         });
+        result.deleted = deleteResult.count;
+        this.logger.log(`🗑️ Deleted ${result.deleted} Believe royalty reports`);
       } else if (distributor === Distributor.KONTOR) {
         // Delete Kontor royalty reports
         deleteResult = await this.prisma.kontorRoyaltyReport.deleteMany({
-          where: { reportingMonth },
-        });
-        result.deleted = deleteResult.count;
-
-        // Count records that were retained due to relationships
-        retainedCount = await this.prisma.kontorRoyaltyReport.count({
           where: {
             reportingMonth,
-            OR: [
-              { baseReportId: { not: null } },
-              { userReportId: { not: null } },
-            ],
+            baseReportId: null,
+            userReportId: null,
           },
         });
+        result.deleted = deleteResult.count;
+        this.logger.log(`🗑️ Deleted ${result.deleted} Kontor royalty reports`);
       }
 
-      result.retained = retainedCount;
-
       // Delete unlinked reports
+      this.logger.log(
+        `🗑️ Deleting unlinked reports for ${distributor} ${reportingMonth}...`,
+      );
       await this.unlinkedReportService.deleteManyUnlinkedReports(
         distributor,
         reportingMonth,
       );
 
       // Optionally delete the S3 file
-      if (deleteS3File) {
-        const importedReport =
-          await this.prisma.importedRoyaltyReport.findFirst({
-            where: { distributor, reportingMonth },
-          });
-
-        if (importedReport && importedReport.s3FileId) {
-          try {
-            await this.s3Service.deleteFile({ id: importedReport.s3FileId });
-          } catch (error) {
-            this.logger.warn(
-              `S3 file not found for imported report ID: ${importedReport.id}`,
-            );
-          }
-        } else {
-          this.logger.warn(
-            `Imported report or S3 file not found for ${distributor} ${reportingMonth}`,
+      if (deleteS3File && importedReport.s3FileId) {
+        try {
+          this.logger.log(
+            `🗑️ Deleting S3 file for imported report ID: ${importedReport.id}...`,
           );
+          await this.s3Service.deleteFile({ id: importedReport.s3FileId });
+          this.logger.log(
+            `✅ Deleted S3 file for imported report ID: ${importedReport.id}`,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `⚠️ Failed to delete S3 file for imported report ID: ${importedReport.id} - ${error.message}`,
+          );
+          result.reasons.push(`S3 file deletion failed: ${error.message}`);
         }
       }
 
       // Finally, delete the ImportedRoyaltyReport record itself
+      this.logger.log(
+        `🗑️ Deleting imported royalty report record for ${distributor} ${reportingMonth}...`,
+      );
       await this.prisma.importedRoyaltyReport.deleteMany({
         where: { distributor, reportingMonth },
       });
+      this.logger.log(
+        `✅ Completed deletion process for ${distributor} ${reportingMonth}`,
+      );
 
       return {
-        message: `Deleted ${result.deleted} reports, retained ${result.retained} reports.`,
+        message: `Successfully deleted ${result.deleted} reports with no associations.`,
+        details: {
+          deleted: result.deleted,
+          retained: result.retained,
+          reasons: result.reasons,
+        },
       };
     } catch (error) {
-      this.logger.error(`Failed to delete imported reports: ${error.message}`);
-      throw new BadRequestException('Failed to delete imported reports.');
+      this.logger.error(
+        `❌ Failed to delete imported reports: ${error.message}`,
+      );
+      throw new BadRequestException(
+        `Failed to delete imported reports: ${error.message}`,
+      );
     }
   }
 
@@ -247,6 +339,9 @@ export class AdminImportedReportsService {
    * @returns Object containing information about cancelled jobs
    */
   async cancelJobs(reportingMonth: string, distributor: Distributor) {
+    this.logger.log(
+      `🔍 Looking for jobs to cancel for ${distributor} ${reportingMonth}...`,
+    );
     // Find all active and waiting jobs
     const jobs = await this.importReportsQueue.getJobs(['waiting', 'active']);
 
@@ -257,6 +352,16 @@ export class AdminImportedReportsService {
         job.data.distributor === distributor,
     );
 
+    if (jobsToCancel.length === 0) {
+      this.logger.log(
+        `ℹ️ No jobs found to cancel for ${distributor} ${reportingMonth}`,
+      );
+      return { message: 'No jobs found to cancel.' };
+    }
+
+    this.logger.log(
+      `🚫 Found ${jobsToCancel.length} job(s) to cancel for ${distributor} ${reportingMonth}`,
+    );
     // Process each job for cancellation
     for (const job of jobsToCancel) {
       try {
@@ -268,9 +373,11 @@ export class AdminImportedReportsService {
           await job.moveToFailed({ message: 'Job cancelled' }, true);
         }
 
-        this.logger.log(`Job ${job.id} cancelled successfully.`);
+        this.logger.log(`✅ Job ${job.id} cancelled successfully.`);
       } catch (error) {
-        this.logger.error(`Failed to cancel job ${job.id}: ${error.message}`);
+        this.logger.error(
+          `❌ Failed to cancel job ${job.id}: ${error.message}`,
+        );
       }
     }
 
@@ -285,9 +392,16 @@ export class AdminImportedReportsService {
    * @returns Array of imported report records
    */
   async getImportedReports(reportingMonth: string, distributor: Distributor) {
-    return this.prisma.importedRoyaltyReport.findMany({
+    this.logger.log(
+      `🔍 Fetching imported reports for ${distributor} ${reportingMonth}...`,
+    );
+    const reports = await this.prisma.importedRoyaltyReport.findMany({
       where: { reportingMonth, distributor },
     });
+    this.logger.log(
+      `📋 Found ${reports.length} imported reports for ${distributor} ${reportingMonth}`,
+    );
+    return reports;
   }
 
   /**
@@ -297,10 +411,18 @@ export class AdminImportedReportsService {
    * @returns Array of imported report records sorted by reporting month
    */
   async getAllImportedReports(distributor?: Distributor) {
+    const distributorInfo = distributor
+      ? `for ${distributor}`
+      : 'for all distributors';
+    this.logger.log(`🔍 Fetching all imported reports ${distributorInfo}...`);
     const filter = distributor ? { distributor } : {};
-    return this.prisma.importedRoyaltyReport.findMany({
+    const reports = await this.prisma.importedRoyaltyReport.findMany({
       where: filter,
       orderBy: { reportingMonth: 'desc' },
     });
+    this.logger.log(
+      `📋 Found ${reports.length} imported reports ${distributorInfo}`,
+    );
+    return reports;
   }
 }

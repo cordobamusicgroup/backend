@@ -485,7 +485,7 @@ export class AdminBaseReportService {
     );
 
     await this.generateCsvQueue.add(
-      'generateCsv', // Changed job name to match the new case in the processor
+      'BaseReportGenerateCsv', // Changed job name to match the new case in the processor
       {
         baseReportId,
         distributor,
