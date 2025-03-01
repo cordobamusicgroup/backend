@@ -7,6 +7,7 @@ import { S3Service } from 'src/common/services/s3.service';
 import { AdminUnlinkedReportService } from './admin-unlinked-report.service';
 import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import * as path from 'path';
+import { ImportedReportDto } from '../../dto/admin-get-imported-reports.dto';
 
 /**
  * Service responsible for managing imported financial reports in the system.
@@ -151,6 +152,7 @@ export class AdminImportedReportsService {
    * Deletes imported reports for a specific reporting month and distributor.
    * Optionally deletes associated S3 file.
    * Will not delete reports that have associated base or user reports.
+   * Also deletes any associated failed report details.
    *
    * @param reportingMonth - The reporting month in YYYYMM format
    * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
@@ -166,6 +168,7 @@ export class AdminImportedReportsService {
     const result = {
       deleted: 0,
       retained: 0,
+      failedRecordsDeleted: 0,
       reasons: [] as string[],
     };
 
@@ -284,6 +287,20 @@ export class AdminImportedReportsService {
         reportingMonth,
       );
 
+      // Delete any failed report details for this period
+      this.logger.log(
+        `🗑️ Deleting failed report details for ${distributor} ${reportingMonth}...`,
+      );
+      const failedReportDeleteResult =
+        await this.prisma.failedReportDetail.deleteMany({
+          where: { distributor, reportingMonth },
+        });
+
+      result.failedRecordsDeleted = failedReportDeleteResult.count;
+      this.logger.log(
+        `🗑️ Deleted ${result.failedRecordsDeleted} failed report details`,
+      );
+
       // Optionally delete the S3 file
       if (deleteS3File && importedReport.s3FileId) {
         try {
@@ -314,9 +331,10 @@ export class AdminImportedReportsService {
       );
 
       return {
-        message: `Successfully deleted ${result.deleted} reports with no associations.`,
+        message: `Successfully deleted ${result.deleted} reports with no associations and ${result.failedRecordsDeleted} failed report details.`,
         details: {
           deleted: result.deleted,
+          failedRecordsDeleted: result.failedRecordsDeleted,
           retained: result.retained,
           reasons: result.reasons,
         },
@@ -410,7 +428,9 @@ export class AdminImportedReportsService {
    * @param distributor - Optional distributor filter
    * @returns Array of imported report records sorted by reporting month
    */
-  async getAllImportedReports(distributor?: Distributor) {
+  async getAllImportedReports(
+    distributor?: Distributor,
+  ): Promise<ImportedReportDto[]> {
     const distributorInfo = distributor
       ? `for ${distributor}`
       : 'for all distributors';
@@ -423,6 +443,38 @@ export class AdminImportedReportsService {
     this.logger.log(
       `📋 Found ${reports.length} imported reports ${distributorInfo}`,
     );
-    return reports;
+    return await Promise.all(
+      reports.map(async (report) => this.convertToDto(report)),
+    );
+  }
+
+  /**
+   * Converts an imported report entity to a DTO with a signed URL
+   */
+  private async convertToDto(report: any): Promise<ImportedReportDto> {
+    let url;
+    if (report.s3FileId) {
+      try {
+        const s3File = await this.s3Service.getFile({
+          id: report.s3FileId,
+        });
+        url = s3File.url;
+      } catch (error) {
+        this.logger.error(
+          `Failed to retrieve signed URL for S3 file ID: ${report.s3FileId}: ${error.message}`,
+        );
+        url = undefined;
+      }
+    }
+
+    return {
+      id: report.id,
+      reportingMonth: report.reportingMonth,
+      distributor: report.distributor,
+      status: report.status,
+      url: url,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+    };
   }
 }
