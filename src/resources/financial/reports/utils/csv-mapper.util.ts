@@ -3,35 +3,82 @@ import * as dayjs from 'dayjs';
 import Decimal from 'decimal.js';
 
 /**
- * Validates and converts a value to a Decimal object.
+ * Validates and converts a value to a Decimal object with financial precision.
  * @param value The value to validate and convert.
  * @param fieldName The name of the field (for error messages).
- * @returns A Decimal object.
+ * @param removeThousandsSeparator Whether to remove thousands separator (commas) from the value.
+ * @returns A Decimal object with 10 decimal places precision.
  * @throws Error if the value is invalid and cannot be converted.
  */
-function validateDecimal(value: string | number, fieldName: string): Decimal {
+function validateDecimal(
+  value: string | number | null | undefined,
+  fieldName: string,
+  removeThousandsSeparator = false,
+): Decimal {
   // Handle empty or undefined values
   if (value === undefined || value === null || value === '') {
     return new Decimal(0);
   }
 
-  // Attempt to convert to a number
-  let numericValue: number;
-  if (typeof value === 'string') {
-    numericValue = parseFloat(value);
-  } else if (typeof value === 'number') {
-    numericValue = value;
-  } else {
-    throw new Error(`Invalid value for ${fieldName}: "${value}"`);
+  try {
+    // Process string values
+    if (typeof value === 'string') {
+      const processedValue = removeThousandsSeparator
+        ? value.replace(/,/g, '')
+        : value;
+
+      // Check if the string is a valid number
+      if (!/^-?\d*\.?\d*$/.test(processedValue.trim())) {
+        throw new Error(`Invalid numeric format for ${fieldName}: "${value}"`);
+      }
+
+      return new Decimal(processedValue).toDP(10);
+    }
+
+    // Process numeric values
+    if (typeof value === 'number') {
+      if (!isFinite(value)) {
+        throw new Error(`Invalid numeric value for ${fieldName}: "${value}"`);
+      }
+      return new Decimal(value).toDP(10);
+    }
+
+    throw new Error(`Unsupported type for ${fieldName}: ${typeof value}`);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error processing ${fieldName}: ${error.message}`);
+    }
+    throw new Error(`Failed to process ${fieldName}: "${value}"`);
+  }
+}
+
+/**
+ * Safely parses an integer from a string, removing thousands separators.
+ * @param value The value to parse
+ * @param fieldName The field name for error messages
+ * @returns The parsed integer or 0 if invalid
+ */
+function safeParseInt(value: any, fieldName: string): number {
+  if (value === undefined || value === null || value === '') {
+    return 0;
   }
 
-  // Validate if the conversion was successful
-  if (isNaN(numericValue)) {
-    throw new Error(`Invalid value for ${fieldName}: "${value}"`);
-  }
+  try {
+    if (typeof value === 'number') {
+      return Math.floor(value);
+    }
 
-  // Create the Decimal object with standard precision and return it
-  return new Decimal(numericValue).toDP(10);
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/,/g, '');
+      const result = parseInt(cleaned, 10);
+      return isNaN(result) ? 0 : result;
+    }
+
+    return 0;
+  } catch (error) {
+    console.warn(`Error parsing integer for ${fieldName}:`, error);
+    return 0;
+  }
 }
 
 /**
@@ -54,8 +101,8 @@ function mapKontorCsvToRecord(row: any) {
     isrc: String(row['ISRC'] ?? ''),
     grid: String(row['GRID'] ?? ''),
     articleNo: String(row['Article No'] ?? ''),
-    royalties: validateDecimal(row['Royalties'], 'Royalties').toFixed(),
-    units: parseInt(row['Units'], 10) || 0,
+    royalties: validateDecimal(row['Royalties'], 'Royalties', true).toFixed(),
+    units: safeParseInt(row['Units'], 'Units'),
   };
 }
 
@@ -65,8 +112,10 @@ function mapKontorCsvToRecord(row: any) {
  * @returns A mapped object with the row data.
  */
 function mapBelieveCsvToRecord(row: any) {
+  const salesMonth = row['Sales Month'] ?? '';
+
   return {
-    salesMonth: dayjs(String(row['Sales Month'] ?? '')).format('YYYYMM'),
+    salesMonth: dayjs(String(salesMonth)).format('YYYYMM'),
     platform: String(row['Platform'] ?? ''),
     countryRegion: String(row['Country / Region'] ?? ''),
     labelName: String(row['Label Name'] ?? ''),
@@ -106,6 +155,10 @@ function mapBelieveCsvToRecord(row: any) {
  * @throws Error if the distributor is unknown.
  */
 export function mapCsvToRecord(row: any, distributor: Distributor) {
+  if (!row) {
+    throw new Error('Cannot map empty or null CSV row');
+  }
+
   switch (distributor) {
     case Distributor.KONTOR:
       return mapKontorCsvToRecord(row);

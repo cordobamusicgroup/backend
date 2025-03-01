@@ -360,7 +360,8 @@ export class ImportReportsProcessor extends WorkerHost {
       const contract = await this.findClientContract(label.client.id);
 
       // Validate contract has PPD (Percentage Per Distribution)
-      if (!contract?.ppd) {
+      // Modified to handle PPD value of 0
+      if (contract?.ppd === null || contract?.ppd === undefined) {
         logger.warn(
           `⚠️ Record #${rowIndex + 1}: No valid contract with PPD found for client ID ${label.client.id}`,
         );
