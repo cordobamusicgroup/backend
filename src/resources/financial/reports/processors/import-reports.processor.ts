@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { ImportReportDto } from '../dto/admin-import-report.dto';
+import { JobImportReportDto } from '../dto/admin-job-import-report.dto';
 import { ProgressService } from 'src/common/services/progress.service';
 import { S3Service } from 'src/common/services/s3.service';
 import { AdminReportProcessCSVService } from '../services/admin/admin-report-process-csv.service';
@@ -45,7 +45,7 @@ export class ImportReportsProcessor extends WorkerHost {
    * @param job - The job to be processed
    */
   async process(
-    job: Job<ImportReportDto | LinkUnlinkedReportJobDto>,
+    job: Job<JobImportReportDto | LinkUnlinkedReportJobDto>,
   ): Promise<void> {
     const logger = new BullJobLogger(job.id, job.name);
     logger.log(`🚀 Starting job: ${job.name}`);
@@ -53,7 +53,7 @@ export class ImportReportsProcessor extends WorkerHost {
     try {
       switch (job.name) {
         case 'ImportReportCSV':
-          await this.processImportReportCSV(job as Job<ImportReportDto>);
+          await this.processImportReportCSV(job as Job<JobImportReportDto>);
           break;
         case 'LinkUnlinkedReport':
           await this.processUnlinkedReportLinking(
@@ -151,7 +151,7 @@ export class ImportReportsProcessor extends WorkerHost {
    * @param job - The job containing CSV file import data
    */
   private async processImportReportCSV(
-    job: Job<ImportReportDto>,
+    job: Job<JobImportReportDto>,
   ): Promise<void> {
     const { filePath, reportingMonth, distributor, importReportId } = job.data;
     const logger = new BullJobLogger(job.id, 'ImportReportCSV');

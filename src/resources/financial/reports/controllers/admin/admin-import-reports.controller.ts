@@ -17,6 +17,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { AdminImportedReportsService } from '../../services/admin/admin-imported-reports.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { ImportedReportDto } from '../../dto/admin-get-imported-reports.dto';
 
 /**
  * Controller responsible for handling administrative operations related to importing financial reports.
@@ -169,12 +170,15 @@ export class AdminImportReportsController {
 
   /**
    * Retrieves all imported reports, optionally filtered by distributor
+   * Returns reports sorted by reportingMonth (newest first) with S3 download URLs
    *
    * @param distributor - Optional distributor filter
-   * @returns A list of imported report records
+   * @returns A list of imported report records with signed S3 URLs
    */
-  @Get('imported-reports')
-  async getImportedReports(@Query('distributor') distributor?: Distributor) {
+  @Get()
+  async getImportedReports(
+    @Query('distributor') distributor?: Distributor,
+  ): Promise<ImportedReportDto[]> {
     return this.importedReportsService.getAllImportedReports(distributor);
   }
 }
