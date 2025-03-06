@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 // Remove NotFoundException from imports
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthLoginDto } from './dto/auth-login.dto';
@@ -37,25 +37,40 @@ export class AuthService {
    * @param password - The password of the user.
    * @returns A Promise that resolves to the User object if the credentials are valid, or null otherwise.
    * @throws UnauthorizedException if the credentials are invalid.
+   * @throws ClientBlockedException if the client is blocked and the user is not an admin.
    */
   async validateUser(login: string, password: string): Promise<User | null> {
     try {
-      const user = login.includes('@')
-        ? await this.prisma.user.findUnique({
-            where: { email: login },
-            include: { client: true },
-          })
-        : await this.prisma.user.findUnique({
-            where: { username: login },
-            include: { client: true },
-          });
+      let user;
+      if (login.includes('@')) {
+        // Email login - case insensitive
+        user = await this.prisma.user.findFirst({
+          where: {
+            email: {
+              equals: login,
+              mode: 'insensitive',
+            },
+          },
+          include: { client: true },
+        });
+      } else {
+        // Username login - case sensitive
+        user = await this.prisma.user.findUnique({
+          where: { username: login },
+          include: { client: true },
+        });
+      }
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new InvalidCredentialsException();
       }
 
-      // Check if the client associated with the user is blocked
-      if (user.client && user.client.isBlocked) {
+      // Check if the user has any admin role (ADMIN, ADMIN_CONTENT, etc.)
+      const isAdminRole =
+        user.role === Role.ADMIN || user.role.includes('ADMIN_');
+
+      // Skip client blocked check if user has any admin role
+      if (!isAdminRole && user.client && user.client.isBlocked) {
         throw new ClientBlockedException();
       }
 
@@ -150,8 +165,15 @@ export class AuthService {
   async forgotPassword(email: string): Promise<void> {
     // Log the request regardless of the result
     this.logger.log(`Password reset request received for ${email}`);
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+
+    // Case insensitive email search
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
     });
 
     if (user) {
@@ -180,7 +202,11 @@ export class AuthService {
         },
       });
 
-      this.emailService.sendPasswordResetEmail(user.username, email, token);
+      this.emailService.sendPasswordResetEmail(
+        user.username,
+        user.email,
+        token,
+      );
 
       this.logger.log(`Password reset email sent to ${email}`);
     } else {
