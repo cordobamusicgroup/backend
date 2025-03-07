@@ -22,10 +22,14 @@ export class AdminUserReportsService {
 
   async createUserReportsJob(
     distributorReportDto: DistributorReportDto,
-    action: 'GenerateUserReports' | 'delete' | 'ExportUserReports',
+    action:
+      | 'GenerateUserReports'
+      | 'DeleteUserReports'
+      | 'ExportUserReports'
+      | 'DeleteExportedUserReports',
     user: JwtPayloadDto,
   ) {
-    const { email } = await this.usersService.findByUsername(user.username);
+    const findUser = await this.usersService.findByUsername(user.username);
     const { distributor, reportingMonth } = distributorReportDto;
 
     try {
@@ -34,23 +38,39 @@ export class AdminUserReportsService {
         await this.userReportsQueue.add('GenerateUserReports', {
           distributor,
           reportingMonth,
-          email,
+          findUser,
         });
-        result = { message: 'User royalty reports queued for generation.' };
-      } else if (action === 'delete') {
-        await this.userReportsQueue.add('delete', {
+        result = {
+          message:
+            'User royalty reports queued for generation and automatic export.',
+        };
+      } else if (action === 'DeleteUserReports') {
+        await this.userReportsQueue.add('DeleteUserReports', {
           distributor,
           reportingMonth,
-          email,
+          findUser,
         });
-        result = { message: 'User royalty reports queued for deletion.' };
+        result = {
+          message: 'User royalty reports and CSV files queued for deletion.',
+        };
       } else if (action === 'ExportUserReports') {
         await this.userReportsQueue.add('ExportUserReports', {
           distributor,
           reportingMonth,
-          email,
+          findUser,
         });
-        result = { message: 'User royalty reports queued for export.' };
+        result = {
+          message: 'User royalty reports queued for export only.',
+        };
+      } else if (action === 'DeleteExportedUserReports') {
+        await this.userReportsQueue.add('DeleteExportedUserReports', {
+          distributor,
+          reportingMonth,
+          findUser,
+        });
+        result = {
+          message: 'Exported CSV files queued for deletion.',
+        };
       }
 
       return result;
@@ -87,64 +107,27 @@ export class AdminUserReportsService {
     }
   }
 
-  async deleteExportedFilesFromS3(
+  // Delete via queue - both reports and exports
+  async deleteUserRoyaltyReports(
     distributorReportDto: DistributorReportDto,
-  ): Promise<{ message: string }> {
-    const { distributor, reportingMonth } = distributorReportDto;
-    try {
-      const reports = await this.prisma.userRoyaltyReport.findMany({
-        where: { distributor, reportingMonth },
-      });
-
-      for (const report of reports) {
-        if (report.s3FileId) {
-          await this.s3Service.deleteFile({ id: report.s3FileId });
-          await this.prisma.userRoyaltyReport.update({
-            where: { id: report.id },
-            data: { s3FileId: null },
-          });
-        }
-      }
-
-      return { message: 'Exported files deleted successfully from S3.' };
-    } catch (error) {
-      this.logger.error(
-        `Failed to delete exported files from S3: ${error.message}`,
-      );
-      throw new HttpException(
-        `Failed to delete exported files from S3: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    user: JwtPayloadDto,
+  ) {
+    return this.createUserReportsJob(
+      distributorReportDto,
+      'DeleteUserReports',
+      user,
+    );
   }
 
-  async deleteUserRoyaltyReports(distributorReportDto: DistributorReportDto) {
-    const { distributor, reportingMonth } = distributorReportDto;
-    try {
-      this.logger.log(
-        `Starting deletion of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-      );
-      await this.deleteExportedFilesFromS3(distributorReportDto);
-
-      await this.prisma.userRoyaltyReport.deleteMany({
-        where: { distributor, reportingMonth },
-      });
-
-      this.logger.log(
-        `User royalty reports deleted successfully for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-      );
-
-      return {
-        message: 'User royalty reports deleted successfully.',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error deleting user royalty reports: ${error.message}`,
-      );
-      throw new HttpException(
-        `Error deleting user royalty reports: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  // Delete only the exports via queue
+  async deleteExportedFilesFromS3(
+    distributorReportDto: DistributorReportDto,
+    user: JwtPayloadDto,
+  ) {
+    return this.createUserReportsJob(
+      distributorReportDto,
+      'DeleteExportedUserReports',
+      user,
+    );
   }
 }

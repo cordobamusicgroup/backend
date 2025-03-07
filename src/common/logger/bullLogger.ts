@@ -46,7 +46,7 @@ export function getBullLogger(jobName?: string, jobId?: number) {
         filename: logFilePath,
         datePattern: 'YYYY-MM-DD',
         maxSize: '20m',
-        maxFiles: '30d', // Mantener solo 30 días
+        maxFiles: '15d', // Mantener solo 30 días
         zippedArchive: true,
       }),
     ],

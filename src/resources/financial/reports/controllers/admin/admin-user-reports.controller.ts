@@ -37,9 +37,11 @@ export class AdminUserReportsController {
   @UseGuards(JwtAuthGuard)
   async deleteUserRoyaltyReports(
     @Body() distributorReportDto: DistributorReportDto,
+    @Request() req,
   ) {
     return this.adminFinancialReports.deleteUserRoyaltyReports(
       distributorReportDto,
+      req.user,
     );
   }
 
@@ -66,9 +68,11 @@ export class AdminUserReportsController {
   @UseGuards(JwtAuthGuard)
   async deleteExportedFilesFromS3(
     @Body() distributorReportDto: DistributorReportDto,
+    @Request() req,
   ) {
     return this.adminFinancialReports.deleteExportedFilesFromS3(
       distributorReportDto,
+      req.user,
     );
   }
 }

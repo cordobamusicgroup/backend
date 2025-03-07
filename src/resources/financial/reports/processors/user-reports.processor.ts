@@ -12,13 +12,16 @@ import { convertReportsToCsv, ReportType } from '../utils/convert-reports-csv';
 import Decimal from 'decimal.js';
 import env from 'src/config/env.config';
 import { BullJobLogger } from 'src/common/logger/BullJobLogger';
+import * as path from 'path';
 
 /**
  * Processor for handling user royalty reports operations
  *
- * This processor manages two main operations:
- * - generate: Creates user royalty reports from base reports
- * - export: Exports user royalty reports to CSV files and uploads to S3
+ * This processor manages four main operations:
+ * - GenerateUserReports: Creates user royalty reports from base reports and automatically exports them
+ * - ExportUserReports: Exports user royalty reports to CSV files and uploads to S3
+ * - DeleteUserReports: Deletes both user royalty reports and their associated CSV files
+ * - DeleteExportedUserReports: Deletes only the exported CSV files, keeping the reports
  */
 @Processor('user-reports')
 export class UserReportsProcessor extends WorkerHost {
@@ -42,31 +45,95 @@ export class UserReportsProcessor extends WorkerHost {
     const jobLogger = new BullJobLogger(job.id, job.name);
     jobLogger.log(`🚀 Starting job processing: ${job.name}`);
 
+    this.logger.log(
+      `[JobId: ${job.id}] Received ${job.name} job for processing`,
+    );
+
     try {
+      let result;
       switch (job.name) {
         case 'GenerateUserReports':
-          return await this.generateUserRoyaltyReports(
+          this.logger.log(
+            `Processing GenerateUserReports job for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          // Generate reports
+          result = await this.generateUserRoyaltyReports(
             job.data.distributor,
             job.data.reportingMonth,
             job.id,
           );
 
-        case 'ExportUserReports':
-          return await this.exportUserReports(
+          // After generating reports, immediately export them to CSV
+          jobLogger.log(`Automatically starting CSV export after generation`);
+          await this.exportUserReports(
             job.data.distributor,
             job.data.reportingMonth,
             job.id,
           );
+
+          this.logger.log(
+            `Successfully completed GenerateUserReports with CSV export for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          return result;
+
+        case 'ExportUserReports':
+          this.logger.log(
+            `Processing ExportUserReports job for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          result = await this.exportUserReports(
+            job.data.distributor,
+            job.data.reportingMonth,
+            job.id,
+          );
+          this.logger.log(
+            `Successfully completed ExportUserReports for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          return result;
+
+        case 'DeleteUserReports':
+          this.logger.log(
+            `Processing DeleteUserReports job for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          result = await this.deleteUserRoyaltyReports(
+            job.data.distributor,
+            job.data.reportingMonth,
+            job.id,
+          );
+          this.logger.log(
+            `Successfully completed DeleteUserReports for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          return result;
+
+        case 'DeleteExportedUserReports':
+          this.logger.log(
+            `Processing DeleteExportedUserReports job for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          result = await this.deleteExportedUserReports(
+            job.data.distributor,
+            job.data.reportingMonth,
+            job.id,
+          );
+          this.logger.log(
+            `Successfully completed DeleteExportedUserReports for distributor: ${job.data.distributor}, month: ${job.data.reportingMonth}`,
+          );
+          return result;
+
         default:
           jobLogger.error(`Unknown job name: ${job.name}`);
+          this.logger.error(`[JobId: ${job.id}] Unknown job name: ${job.name}`);
           throw new Error(`Unknown job name: ${job.name}`);
       }
     } catch (error) {
       jobLogger.error(`Error processing job ${job.name}: ${error.message}`);
       jobLogger.debug(`Stack trace: ${error.stack}`);
+      this.logger.error(
+        `[JobId: ${job.id}] Error processing ${job.name}: ${error.message}`,
+      );
+      this.logger.debug(`[JobId: ${job.id}] Stack trace: ${error.stack}`);
       throw error;
     } finally {
       jobLogger.log(`🏁 Job processing completed: ${job.name}`);
+      this.logger.log(`[JobId: ${job.id}] Job ${job.name} processing finished`);
     }
   }
 
@@ -89,37 +156,58 @@ export class UserReportsProcessor extends WorkerHost {
       jobLogger.log(
         `🚀 Starting generation of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
+      this.logger.log(
+        `Starting user royalty reports generation for ${distributor}/${reportingMonth}`,
+      );
 
       // Find base report
+      this.logger.log(
+        `Finding base report for ${distributor}/${reportingMonth}`,
+      );
       const baseReport = await this.findBaseReport(
         distributor,
         reportingMonth,
         jobLogger,
       );
+      this.logger.log(`Found base report ID: ${baseReport.id}`);
 
       // Check for existing reports
+      this.logger.log(
+        `Checking for existing user reports for base report ID: ${baseReport.id}`,
+      );
       await this.checkForExistingReports(baseReport.id, jobLogger);
+      this.logger.log(
+        `No existing user reports found for base report ID: ${baseReport.id}`,
+      );
 
       // Determine unique client IDs from reports
       const clientIds = this.extractUniqueClientIds(baseReport);
       if (clientIds.size === 0) {
         const errorMessage = 'No reports found to determine client';
         jobLogger.error(errorMessage);
+        this.logger.error(errorMessage);
         throw new Error('No reports found to determine client');
       }
 
       jobLogger.log(
         `📊 Client IDs determined: ${Array.from(clientIds).join(', ')}`,
       );
+      this.logger.log(`Found ${clientIds.size} unique clients for processing`);
 
       // Generate user reports for each client
+      this.logger.log(`Creating user reports for ${clientIds.size} clients...`);
       await this.createUserReportsForClients(baseReport, clientIds, jobLogger);
+      this.logger.log(`User reports created successfully for all clients`);
 
       // Verify that all records were assigned to user reports
+      this.logger.log(`Verifying report coverage...`);
       await this.verifyReportCoverage(baseReport, jobLogger);
 
       jobLogger.log(
         `✅ User royalty reports generated successfully for baseReportId: ${baseReport.id}`,
+      );
+      this.logger.log(
+        `✅ User royalty reports generation completed for ${distributor}/${reportingMonth}`,
       );
 
       return {
@@ -131,6 +219,9 @@ export class UserReportsProcessor extends WorkerHost {
     } catch (error) {
       jobLogger.error(
         `Failed to generate user royalty reports: ${error.message}`,
+      );
+      this.logger.error(
+        `Failed to generate user royalty reports for ${distributor}/${reportingMonth}: ${error.message}`,
       );
       throw error;
     }
@@ -164,6 +255,7 @@ export class UserReportsProcessor extends WorkerHost {
       if (!baseReport) {
         const errorMessage = `Base report not found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`;
         logger.error(errorMessage);
+        this.logger.error(errorMessage);
         throw new Error('Base report not found');
       }
 
@@ -171,6 +263,9 @@ export class UserReportsProcessor extends WorkerHost {
       return baseReport;
     } catch (error) {
       logger.error(`Error finding base report: ${error.message}`);
+      this.logger.error(
+        `Error finding base report for ${distributor}/${reportingMonth}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -551,9 +646,15 @@ export class UserReportsProcessor extends WorkerHost {
       jobLogger.log(
         `🚀 Starting export of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
+      this.logger.log(
+        `Starting user reports export for ${distributor}/${reportingMonth}`,
+      );
 
       // Find base report
       jobLogger.log(`🔍 Finding base report`);
+      this.logger.log(
+        `Finding base report for ${distributor}/${reportingMonth}`,
+      );
       const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
         where: {
           distributor_reportingMonth: {
@@ -566,12 +667,17 @@ export class UserReportsProcessor extends WorkerHost {
       if (!baseReport) {
         const errorMessage = `Base report not found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`;
         jobLogger.error(errorMessage);
+        this.logger.error(errorMessage);
         throw new Error(errorMessage);
       }
+      this.logger.log(`Found base report ID: ${baseReport.id}`);
 
       // Find user reports for this base report
       jobLogger.log(
         `🔍 Finding user reports for baseReportId: ${baseReport.id}`,
+      );
+      this.logger.log(
+        `Finding user reports for base report ID: ${baseReport.id}`,
       );
       const userReports = await this.prisma.userRoyaltyReport.findMany({
         where: { baseReportId: baseReport.id },
@@ -581,22 +687,37 @@ export class UserReportsProcessor extends WorkerHost {
       if (userReports.length === 0) {
         const errorMessage = `No user reports found for baseReportId: ${baseReport.id}`;
         jobLogger.error(errorMessage);
+        this.logger.error(errorMessage);
         throw new Error(errorMessage);
       }
 
       jobLogger.log(`📊 Found ${userReports.length} user reports to export`);
+      this.logger.log(`Found ${userReports.length} user reports to export`);
 
       // Process each user report
       let successCount = 0;
       let failureCount = 0;
 
+      this.logger.log(
+        `Starting export of ${userReports.length} user reports...`,
+      );
       for (const userReport of userReports) {
         try {
           await this.exportSingleUserReport(userReport, jobLogger);
           successCount++;
+
+          // Log progress periodically to avoid overwhelming logs
+          if (successCount % 5 === 0 || successCount === userReports.length) {
+            this.logger.log(
+              `Exported ${successCount}/${userReports.length} user reports so far`,
+            );
+          }
         } catch (error) {
           failureCount++;
           jobLogger.error(
+            `Failed to export user report ID: ${userReport.id} - ${error.message}`,
+          );
+          this.logger.error(
             `Failed to export user report ID: ${userReport.id} - ${error.message}`,
           );
           // Continue with other reports even if one fails
@@ -605,6 +726,9 @@ export class UserReportsProcessor extends WorkerHost {
 
       jobLogger.log(
         `🏁 User royalty reports export complete: ${successCount} succeeded, ${failureCount} failed`,
+      );
+      this.logger.log(
+        `✅ User reports export completed for ${distributor}/${reportingMonth}: ${successCount} succeeded, ${failureCount} failed`,
       );
 
       return {
@@ -616,6 +740,9 @@ export class UserReportsProcessor extends WorkerHost {
       };
     } catch (error) {
       jobLogger.error(`Error exporting user royalty reports: ${error.message}`);
+      this.logger.error(
+        `Error exporting user royalty reports for ${distributor}/${reportingMonth}: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -668,13 +795,21 @@ export class UserReportsProcessor extends WorkerHost {
       ReportType.USER,
     );
 
-    // Create temporary file
+    // Create temporary file with proper directory handling
     const fileName = `${userReport.distributor}_${userReport.reportingMonth}_${userReport.baseReportId}_${userReport.id}.csv`;
-    const filePath = `/tmp/${fileName}`;
+
+    // Use 'temp' directory in the project root for compatibility with both Windows and Unix
+    const tempDir = path.resolve(process.cwd(), 'temp');
+    if (!fs.existsSync(tempDir)) {
+      logger.log(`Creating temporary directory: ${tempDir}`);
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const filePath = path.join(tempDir, fileName);
 
     try {
+      logger.log(`📁 Writing CSV data to temporary file: ${filePath}`);
       fs.writeFileSync(filePath, csvData);
-      logger.log(`📁 Created temporary file: ${filePath}`);
     } catch (error) {
       logger.error(`Error writing CSV to file: ${error.message}`);
       throw error;
@@ -715,5 +850,143 @@ export class UserReportsProcessor extends WorkerHost {
     }
 
     logger.log(`✨ Successfully exported user report ID: ${userReport.id}`);
+  }
+
+  /**
+   * Deletes all user royalty reports and their associated CSV files for a specific distributor and month
+   *
+   * @param distributor - The distributor source (KONTOR, BELIEVE)
+   * @param reportingMonth - The reporting month in YYYY-MM format
+   * @param jobId - ID of the job for logging
+   * @returns Object with success message
+   */
+  async deleteUserRoyaltyReports(
+    distributor: Distributor,
+    reportingMonth: string,
+    jobId?: string,
+  ) {
+    const jobLogger = new BullJobLogger(jobId, 'DeleteUserReports');
+
+    try {
+      jobLogger.log(
+        `🚀 Starting deletion of user royalty reports for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      );
+      this.logger.log(
+        `Starting deletion of user royalty reports for ${distributor}/${reportingMonth}`,
+      );
+
+      // First delete all associated S3 files
+      await this.deleteExportedUserReports(
+        distributor,
+        reportingMonth,
+        jobId,
+        false,
+      );
+
+      // Then delete all user royalty reports
+      const deleteResult = await this.prisma.userRoyaltyReport.deleteMany({
+        where: { distributor, reportingMonth },
+      });
+
+      jobLogger.log(
+        `✅ Successfully deleted ${deleteResult.count} user royalty reports`,
+      );
+      this.logger.log(
+        `✅ Successfully deleted ${deleteResult.count} user royalty reports for ${distributor}/${reportingMonth}`,
+      );
+
+      return {
+        success: true,
+        message: 'User royalty reports and CSV files deleted successfully.',
+        deletedReports: deleteResult.count,
+      };
+    } catch (error) {
+      jobLogger.error(
+        `Failed to delete user royalty reports: ${error.message}`,
+      );
+      this.logger.error(
+        `Failed to delete user royalty reports for ${distributor}/${reportingMonth}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes only the exported CSV files for a specific distributor and month
+   *
+   * @param distributor - The distributor source (KONTOR, BELIEVE)
+   * @param reportingMonth - The reporting month in YYYY-MM format
+   * @param jobId - ID of the job for logging
+   * @param standalone - Whether this is a standalone operation (true) or part of another operation (false)
+   * @returns Object with success message
+   */
+  async deleteExportedUserReports(
+    distributor: Distributor,
+    reportingMonth: string,
+    jobId?: string,
+    standalone: boolean = true,
+  ) {
+    const jobLogger = new BullJobLogger(jobId, 'DeleteExportedUserReports');
+
+    try {
+      if (standalone) {
+        jobLogger.log(
+          `🚀 Starting deletion of exported CSV files for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        this.logger.log(
+          `Starting deletion of exported CSV files for ${distributor}/${reportingMonth}`,
+        );
+      }
+
+      // Find all reports that need to have their exports deleted
+      const userReports = await this.prisma.userRoyaltyReport.findMany({
+        where: { distributor, reportingMonth },
+      });
+
+      if (standalone) {
+        jobLogger.log(`Found ${userReports.length} user reports to process`);
+        this.logger.log(`Found ${userReports.length} user reports to process`);
+      }
+
+      // Delete all associated S3 files
+      let deletedFilesCount = 0;
+      for (const report of userReports) {
+        if (report.s3FileId) {
+          try {
+            await this.s3UploadService.deleteFile({ id: report.s3FileId });
+            deletedFilesCount++;
+
+            // Update the report to remove the S3 file reference
+            await this.prisma.userRoyaltyReport.update({
+              where: { id: report.id },
+              data: { s3FileId: null },
+            });
+          } catch (error) {
+            jobLogger.error(
+              `Error deleting S3 file for report ${report.id}: ${error.message}`,
+            );
+          }
+        }
+      }
+
+      jobLogger.log(`Deleted ${deletedFilesCount} CSV files from S3`);
+      this.logger.log(`Deleted ${deletedFilesCount} CSV files from S3`);
+
+      if (standalone) {
+        return {
+          success: true,
+          message: 'Exported CSV files deleted successfully from S3.',
+          deletedFiles: deletedFilesCount,
+        };
+      } else {
+        return deletedFilesCount;
+      }
+    } catch (error) {
+      jobLogger.error(`Failed to delete exported CSV files: ${error.message}`);
+      this.logger.error(
+        `Failed to delete exported CSV files for ${distributor}/${reportingMonth}: ${error.message}`,
+      );
+      throw error;
+    }
   }
 }

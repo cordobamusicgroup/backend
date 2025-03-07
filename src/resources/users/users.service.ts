@@ -42,16 +42,25 @@ export class UsersService {
    */
   async createUser(createUserDto: CreateUserDto) {
     const { username, email, fullName, role, clientId } = createUserDto;
+
     const existingUserByUsername = await this.prisma.user.findUnique({
       where: { username },
     });
+
     if (existingUserByUsername) {
       throw new UserAlreadyExistsException();
     }
 
-    const existingUserByEmail = await this.prisma.user.findUnique({
-      where: { email },
+    // Case insensitive email check
+    const existingUserByEmail = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
     });
+
     if (existingUserByEmail) {
       throw new EmailAlreadyExistsException();
     }
@@ -86,16 +95,25 @@ export class UsersService {
    */
   async registerUser(createUserDto: CreateUserDto) {
     const { username, email, fullName, role, clientId } = createUserDto;
+
     const existingUserByUsername = await this.prisma.user.findUnique({
       where: { username },
     });
+
     if (existingUserByUsername) {
       throw new UserAlreadyExistsException();
     }
 
-    const existingUserByEmail = await this.prisma.user.findUnique({
-      where: { email },
+    // Case insensitive email check
+    const existingUserByEmail = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
     });
+
     if (existingUserByEmail) {
       throw new EmailAlreadyExistsException();
     }
@@ -159,8 +177,13 @@ export class UsersService {
    * @throws InternalServerErrorException if any error occurs
    */
   async resendAccountInfoEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
     });
     if (!user) {
       throw new UserNotFoundException();
@@ -195,6 +218,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
+
     if (!user) {
       throw new UserNotFoundException();
     }
@@ -208,9 +232,16 @@ export class UsersService {
    * @throws UserNotFoundException if the user is not found
    */
   async findByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    // Case insensitive email search
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive',
+        },
+      },
     });
+
     if (!user) {
       throw new UserNotFoundException();
     }
@@ -330,7 +361,10 @@ export class UsersService {
    * @throws BadRequestException if the clientId is not found
    */
   async changeClientId(username: string, clientId: number) {
-    const user = await this.prisma.user.findUnique({ where: { username } });
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
     if (!user) {
       throw new UserNotFoundException();
     }
@@ -344,7 +378,7 @@ export class UsersService {
 
     try {
       const updatedUser = await this.prisma.user.update({
-        where: { username },
+        where: { id: user.id },
         data: { clientId: clientId },
       });
       return this.convertToDto(updatedUser);
