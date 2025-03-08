@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-// Remove NotFoundException from imports
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { Role, User } from '@prisma/client';
@@ -15,7 +14,6 @@ import {
   InvalidCredentialsException,
   InvalidOrExpiredTokenException,
   RecordNotFoundException,
-  UnauthorizedException,
   ClientBlockedException,
 } from 'src/common/exceptions/CustomHttpException';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -33,16 +31,19 @@ export class AuthService {
 
   /**
    * Validates a user's credentials.
-   * @param login - The username of the user.
+   * @param login - The username or email of the user.
    * @param password - The password of the user.
-   * @returns A Promise that resolves to the User object if the credentials are valid, or null otherwise.
-   * @throws UnauthorizedException if the credentials are invalid.
-   * @throws ClientBlockedException if the client is blocked and the user is not an admin.
+   * @returns A Promise that resolves to the User object if the credentials are valid.
+   * @throws InvalidCredentialsException if credentials are invalid.
+   * @throws ClientBlockedException if the client is blocked and user is not admin.
    */
-  async validateUser(login: string, password: string): Promise<User | null> {
+  async validateUser(login: string, password: string): Promise<User> {
     try {
+      // Determine whether the login is an email or username
+      const isEmail = login.includes('@');
+
       let user;
-      if (login.includes('@')) {
+      if (isEmail) {
         // Email login - case insensitive
         user = await this.prisma.user.findFirst({
           where: {
@@ -61,21 +62,23 @@ export class AuthService {
         });
       }
 
+      // Validate user exists and password is correct
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new InvalidCredentialsException();
       }
 
-      // Check if the user has any admin role (ADMIN, ADMIN_CONTENT, etc.)
+      // Check if the user has any admin role
       const isAdminRole =
         user.role === Role.ADMIN || user.role.includes('ADMIN_');
 
-      // Skip client blocked check if user has any admin role
-      if (!isAdminRole && user.client && user.client.isBlocked) {
+      // Check client blocked status (skip for admin users)
+      if (!isAdminRole && user.client?.isBlocked) {
         throw new ClientBlockedException();
       }
 
       return user;
     } catch (error) {
+      // Re-throw specific exceptions, wrap others in InvalidCredentialsException
       if (
         error instanceof InvalidCredentialsException ||
         error instanceof ClientBlockedException
@@ -83,6 +86,10 @@ export class AuthService {
         throw error;
       }
 
+      // Log unexpected errors before wrapping
+      this.logger.error(
+        `Unexpected error during user validation: ${error.message}`,
+      );
       throw new InvalidCredentialsException();
     }
   }
@@ -92,12 +99,13 @@ export class AuthService {
    * @param authLoginDto - The DTO containing the login credentials.
    * @param req - The Express Request object.
    * @returns An object containing the access token.
-   * @throws Error if the login attempt fails.
    */
   async login(authLoginDto: AuthLoginDto, req: Request) {
     try {
       const { username, password } = authLoginDto;
       const user = await this.validateUser(username, password);
+
+      // Create JWT payload and sign token
       const payload: JwtPayloadDto = {
         username: user.username,
         sub: user.id,
@@ -105,22 +113,24 @@ export class AuthService {
       };
       const accessToken = this.jwtService.sign(payload);
 
-      const ipAddress = req.ip;
+      // Get client information for logging
+      const ipAddress = this.getClientIp(req);
       const userAgent = req.headers['user-agent'] || 'Unknown';
 
-      // Log successful login
+      // Log successful login with emoji
       this.logger.log(
-        `User with ID ${user.id} logged in successfully from IP ${ipAddress} using ${userAgent}.`,
+        `🔓 User ${user.username} (ID: ${user.id}) logged in successfully from IP ${ipAddress} using ${userAgent}.`,
       );
 
       return { access_token: accessToken };
     } catch (error) {
-      const ipAddress = req.ip;
+      // Get client information for failed login logging
+      const ipAddress = this.getClientIp(req);
       const userAgent = req.headers['user-agent'] || 'Unknown';
 
       // Log failed login attempt
       this.logger.warn(
-        `Failed login attempt for username ${authLoginDto.username} from IP ${ipAddress} using ${userAgent}. Reason: ${error.message}`,
+        `❌ Failed login attempt for "${authLoginDto.username}" from IP ${ipAddress} using ${userAgent}. Reason: ${error.message}`,
       );
 
       throw error;
@@ -128,19 +138,63 @@ export class AuthService {
   }
 
   /**
+   * Gets the real client IP address with special handling for Cloudflare headers
+   * @param req - The Express Request object
+   * @returns The client IP address
+   */
+  private getClientIp(req: Request): string {
+    // Check for Cloudflare-specific headers first
+    const cfConnectingIp = req.headers['cf-connecting-ip'];
+    if (cfConnectingIp) {
+      return Array.isArray(cfConnectingIp) ? cfConnectingIp[0] : cfConnectingIp;
+    }
+
+    // True-Client-IP is sometimes used by Cloudflare
+    const trueClientIp = req.headers['true-client-ip'];
+    if (trueClientIp) {
+      return Array.isArray(trueClientIp) ? trueClientIp[0] : trueClientIp;
+    }
+
+    // Try standard proxy headers
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+      // Get the first IP in the chain (client IP)
+      const ips = Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : forwardedFor.split(',')[0].trim();
+      return ips;
+    }
+
+    // Try other common headers
+    const realIp = req.headers['x-real-ip'];
+    if (realIp) {
+      return Array.isArray(realIp) ? realIp[0] : realIp;
+    }
+
+    // If no proxy headers are found, fall back to the direct connection IP
+    return req.ip || req.connection.remoteAddress || 'Unknown';
+  }
+
+  /**
    * Retrieves the current user's data.
    * @param user - The JWT payload containing the user's information.
    * @returns A Promise that resolves to the CurrentUserResponseDto object.
-   * @throws NotFoundException if the user is not found.
+   * @throws RecordNotFoundException if the user is not found.
    */
   async getCurrentUserData(
     user: JwtPayloadDto,
   ): Promise<CurrentUserResponseDto> {
+    // Find the user by username
     const userData = await this.usersService.findByUsername(user.username);
     if (!userData) {
       throw new RecordNotFoundException('User');
     }
 
+    this.logger.log(
+      `👤 Retrieved user data for ${userData.username} (ID: ${userData.id})`,
+    );
+
+    // Get client data if the user belongs to a client
     let clientData = { id: null, clientName: 'Unknown' };
     if (userData.clientId) {
       const client = await this.prisma.client.findUnique({
@@ -148,9 +202,13 @@ export class AuthService {
       });
       if (client) {
         clientData = { id: client.id, clientName: client.clientName };
+        this.logger.log(
+          `🏢 User belongs to client: ${client.clientName} (ID: ${client.id})`,
+        );
       }
     }
 
+    // Return formatted user response
     return {
       id: userData.id,
       fullName: userData.fullName,
@@ -162,11 +220,15 @@ export class AuthService {
     };
   }
 
+  /**
+   * Initiates the password reset process for a user with the given email
+   * @param email - The email address of the user
+   */
   async forgotPassword(email: string): Promise<void> {
-    // Log the request regardless of the result
-    this.logger.log(`Password reset request received for ${email}`);
+    // Log the request but don't expose if the user exists
+    this.logger.log(`🔑 Password reset request received for email: ${email}`);
 
-    // Case insensitive email search
+    // Find user by case-insensitive email search
     const user = await this.prisma.user.findFirst({
       where: {
         email: {
@@ -177,23 +239,21 @@ export class AuthService {
     });
 
     if (user) {
-      // If the user exists, delete any previous password reset tokens
+      // Clean up any existing reset tokens
       await this.prisma.passwordResetToken.deleteMany({
-        where: {
-          userId: user.id,
-        },
+        where: { userId: user.id },
       });
 
-      // Generate a new token and hash it
+      // Generate secure token
       const token = randomBytes(16).toString('hex');
       const salt = await bcrypt.genSalt(10);
       const hashedToken = await bcrypt.hash(token, salt);
 
-      // Set token expiration to 24 hours
+      // Set expiration time (24 hours)
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
 
-      // Save the new token in the database
+      // Store token in database
       await this.prisma.passwordResetToken.create({
         data: {
           userId: user.id,
@@ -202,69 +262,87 @@ export class AuthService {
         },
       });
 
+      // Send the reset email
       this.emailService.sendPasswordResetEmail(
         user.username,
         user.email,
         token,
       );
 
-      this.logger.log(`Password reset email sent to ${email}`);
+      this.logger.log(`📧 Password reset email sent to ${email}`);
     } else {
+      // Don't expose that the user doesn't exist in response
       this.logger.warn(
-        `Password reset attempt failed for ${email}: user not found.`,
+        `❓ Password reset attempted for non-existent email: ${email}`,
       );
     }
-    return;
   }
 
   /**
    * Resets the user's password using the provided reset token.
    * @param resetPasswordDto - The DTO containing the reset token and new password.
-   * @throws UnauthorizedException if the token is invalid or expired.
-   * @throws NotFoundException if the token is not found.
-   * @throws BadRequestException if the token has already been used.
+   * @throws InvalidOrExpiredTokenException if the token is invalid or expired.
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
     const { token, newPassword } = resetPasswordDto;
+    this.logger.log(`🔄 Processing password reset request with token`);
 
-    // Find the reset token in the database
-    const resetToken = await this.prisma.passwordResetToken.findFirst({
+    // Find all unexpired tokens with user information
+    const allValidTokens = await this.prisma.passwordResetToken.findMany({
       where: {
         expiresAt: {
-          gte: new Date(), // Ensure the token has not expired
+          gte: new Date(), // Ensure token has not expired
         },
       },
+      include: { user: true },
     });
 
-    if (!resetToken) {
-      this.logger.warn('Invalid or expired password reset token.');
+    if (allValidTokens.length === 0) {
+      this.logger.warn(
+        '❌ No valid password reset tokens found in the database',
+      );
       throw new InvalidOrExpiredTokenException();
     }
 
-    // Verify if the token matches the stored hash
-    const isTokenValid = await bcrypt.compare(token, resetToken.token);
-    if (!isTokenValid) {
-      this.logger.warn('Invalid password reset token attempt.');
-      throw new UnauthorizedException();
+    // Find the matching token by comparing with each stored hash
+    let matchedToken = null;
+    let userData = null;
+
+    for (const resetToken of allValidTokens) {
+      const isMatch = await bcrypt.compare(token, resetToken.token);
+      if (isMatch) {
+        matchedToken = resetToken;
+        userData = resetToken.user;
+        break;
+      }
     }
+
+    if (!matchedToken || !userData) {
+      this.logger.warn('❌ No matching password reset token found');
+      throw new InvalidOrExpiredTokenException();
+    }
+
+    // Token is valid, update the user's password
+    this.logger.log(
+      `✅ Valid reset token found for user: ${userData.username} (${userData.email})`,
+    );
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update the user's password in the database
+    // Update password in database
     await this.prisma.user.update({
-      where: { id: resetToken.userId },
+      where: { id: userData.id },
       data: { password: hashedPassword },
     });
 
-    // Delete the reset token after it has been used
+    // Delete the used token
     await this.prisma.passwordResetToken.delete({
-      where: { userId: resetToken.userId },
+      where: { id: matchedToken.id },
     });
 
     this.logger.log(
-      `Password successfully reset for user ID: ${resetToken.userId}`,
+      `🎉 Password successfully reset for user: ${userData.username} (${userData.email})`,
     );
-    return;
   }
 }
