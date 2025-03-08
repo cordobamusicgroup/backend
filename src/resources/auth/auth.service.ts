@@ -138,41 +138,34 @@ export class AuthService {
   }
 
   /**
-   * Gets the real client IP address with special handling for Cloudflare headers
+   * Gets the real client IP address using NestJS/Express methods
    * @param req - The Express Request object
    * @returns The client IP address
    */
   private getClientIp(req: Request): string {
-    // Check for Cloudflare-specific headers first
-    const cfConnectingIp = req.headers['cf-connecting-ip'];
-    if (cfConnectingIp) {
-      return Array.isArray(cfConnectingIp) ? cfConnectingIp[0] : cfConnectingIp;
+    // NestJS/Express automatically handles common proxy headers like x-forwarded-for
+    // and sets req.ip to the client's IP address, making this much simpler
+
+    // Get IP from Cloudflare headers if available (highest priority)
+    const cfIP = req.headers['cf-connecting-ip'];
+    if (cfIP) {
+      const ip = Array.isArray(cfIP) ? cfIP[0] : cfIP;
+      this.logger.debug(`Using IP from Cloudflare: ${ip}`);
+      return ip;
     }
 
-    // True-Client-IP is sometimes used by Cloudflare
-    const trueClientIp = req.headers['true-client-ip'];
-    if (trueClientIp) {
-      return Array.isArray(trueClientIp) ? trueClientIp[0] : trueClientIp;
+    // For other proxies, NestJS/Express already handles this with req.ip
+    // which typically reads X-Forwarded-For and other common headers
+    const ip = req.ip || 'unknown';
+
+    // Log the source of the IP for debugging
+    if (req.ip !== req.socket.remoteAddress) {
+      this.logger.debug(`Using IP from proxy headers: ${ip}`);
+    } else {
+      this.logger.debug(`Using direct connection IP: ${ip}`);
     }
 
-    // Try standard proxy headers
-    const forwardedFor = req.headers['x-forwarded-for'];
-    if (forwardedFor) {
-      // Get the first IP in the chain (client IP)
-      const ips = Array.isArray(forwardedFor)
-        ? forwardedFor[0]
-        : forwardedFor.split(',')[0].trim();
-      return ips;
-    }
-
-    // Try other common headers
-    const realIp = req.headers['x-real-ip'];
-    if (realIp) {
-      return Array.isArray(realIp) ? realIp[0] : realIp;
-    }
-
-    // If no proxy headers are found, fall back to the direct connection IP
-    return req.ip || req.connection.remoteAddress || 'Unknown';
+    return ip;
   }
 
   /**
