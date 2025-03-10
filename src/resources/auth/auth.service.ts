@@ -291,6 +291,7 @@ export class AuthService {
     });
 
     if (allValidTokens.length === 0) {
+      // Pasa el contexto como segundo parámetro en warn, error, etc.
       this.logger.warn(
         '❌ No valid password reset tokens found in the database',
       );

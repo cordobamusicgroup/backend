@@ -7,14 +7,15 @@ import { TrimPipe } from './common/pipe/trim.pipe';
 import { logger } from './winston-logger'; // Import the logger
 
 async function bootstrap() {
-  // Initialize NestJS with Winston logger
+  // Initialize NestJS with Winston logger - ensure context is passed to all log methods
   const app = await NestFactory.create(AppModule, {
     logger: {
       log: (message, context) => logger.info(message, { context }),
-      error: (message) => logger.error(message),
-      warn: (message) => logger.warn(message),
-      debug: (message) => logger.debug?.(message),
-      verbose: (message) => logger.verbose?.(message),
+      error: (message, trace, context) =>
+        logger.error(`${message}${trace ? `\n${trace}` : ''}`, { context }),
+      warn: (message, context) => logger.warn(message, { context }),
+      debug: (message, context) => logger.debug?.(message, { context }),
+      verbose: (message, context) => logger.verbose?.(message, { context }),
     },
   });
 
@@ -42,12 +43,11 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  logger.info('🚀 Starting database seed...');
+  logger.info('🚀 Starting database seed...', { context: 'Bootstrap' });
   await seedService.runSeed();
-  logger.info('✅ Database seed completed successfully.');
 
   await app.listen(6060);
-  logger.info(`🌍 Server is running at port 6060`);
+  logger.info(`🌍 Server is running at port 6060`, { context: 'Bootstrap' });
 }
 
 bootstrap();
