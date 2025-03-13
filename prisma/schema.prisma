@@ -33,38 +33,6 @@ model S3File {
   @@map("s3_files")
 }
 
-model Workflow {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  name   String
-  status WorkflowStatus @default(PENDING)
-  steps  WorkflowStep[]
-}
-
-model WorkflowStep {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workflowId Int
-  workflow   Workflow @relation(fields: [workflowId], references: [id])
-
-  name           String
-  order          Int
-  type           StepTypeWorkflow
-  // Relaciones many-to-many con usuarios y roles
-  assignees      User[]           @relation("WorkflowStepAssignees")
-  assigneesRoles Role[]
-  // Política de aprobación: ONE o ALL
-  approvalPolicy ApprovalPolicy?
-  // Configuración en JSON para acciones específicas
-  actions        Json?
-
-  @@map("workflows_steps")
-}
-
 model Log {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -98,9 +66,7 @@ model User {
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[]
 
-  generalContactClient Client[]      @relation("GeneralContact")
-  WorkflowStep         WorkflowStep? @relation(name: "WorkflowStepAssignees", fields: [workflowStepId], references: [id])
-  workflowStepId       Int?
+  generalContactClient Client[] @relation("GeneralContact")
 
   @@map("users")
 }
@@ -522,32 +488,6 @@ model FailedReportDetail {
 }
 
 //*** Enums  ***//
-
-enum FormKeyWorkflow {
-  UPDATE_PAYMENT_INFORMATION
-  REQUEST_PAYMENT
-}
-
-enum WorkflowStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  IN_PROGRESS
-  FAILED
-  CANCELLED
-  COMPLETED
-}
-
-enum StepTypeWorkflow {
-  APPROVAL
-  NOTIFICATION
-  USER_INPUT
-}
-
-enum ApprovalPolicy {
-  ONE
-  ALL
-}
 
 enum Currency {
   USD
