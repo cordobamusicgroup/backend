@@ -33,23 +33,36 @@ model S3File {
   @@map("s3_files")
 }
 
-model WorkflowEntry {
+model Workflow {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  formKey    String
-  stepKey    String
-  stepStatus String
-  stepType   StepTypeWorkflow @default(APPROVAL)
-  stepData   Json?
-  entryData  Json
-  statusForm String
+  name   String
+  status WorkflowStatus @default(PENDING)
+  steps  WorkflowStep[]
+}
 
-  clientId Int?
-  client   Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
+model WorkflowStep {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("workflows")
+  workflowId Int
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+
+  name           String
+  order          Int
+  type           StepTypeWorkflow
+  // Relaciones many-to-many con usuarios y roles
+  assignees      User[]           @relation("WorkflowStepAssignees")
+  assigneesRoles Role[]
+  // Política de aprobación: ONE o ALL
+  approvalPolicy ApprovalPolicy?
+  // Configuración en JSON para acciones específicas
+  actions        Json?
+
+  @@map("workflows_steps")
 }
 
 model Log {
@@ -85,7 +98,9 @@ model User {
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[]
 
-  generalContactClient Client[] @relation("GeneralContact")
+  generalContactClient Client[]      @relation("GeneralContact")
+  WorkflowStep         WorkflowStep? @relation(name: "WorkflowStepAssignees", fields: [workflowStepId], references: [id])
+  workflowStepId       Int?
 
   @@map("users")
 }
@@ -167,7 +182,6 @@ model Client {
   users             User[]
   contract          Contract?
   userRoyaltyReport UserRoyaltyReport[]
-  workflowEntries   WorkflowEntry[]           @relation("ClientWorkflowEntries")
 
   @@map("clients")
 }
@@ -509,12 +523,30 @@ model FailedReportDetail {
 
 //*** Enums  ***//
 
+enum FormKeyWorkflow {
+  UPDATE_PAYMENT_INFORMATION
+  REQUEST_PAYMENT
+}
+
+enum WorkflowStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  FAILED
+  CANCELLED
+  COMPLETED
+}
+
 enum StepTypeWorkflow {
   APPROVAL
   NOTIFICATION
   USER_INPUT
-  USER_REGISTRATION
-  USER_UPDATE
+}
+
+enum ApprovalPolicy {
+  ONE
+  ALL
 }
 
 enum Currency {
