@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Post,
   Req,
-  Request,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +16,9 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GetCurrentUser } from 'src/common/decorators/get-user.decorator';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { TokensDto } from './dto/tokens.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,11 +29,37 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() authLoginDto: AuthLoginDto,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
     @Req() req,
-  ) {
-    const { access_token } = await this.authService.login(authLoginDto, req);
-    return res.send({ access_token });
+  ): Promise<TokensDto> {
+    return this.authService.login(authLoginDto, req);
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshTokens(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<TokensDto> {
+    return this.authService.refreshTokens(refreshTokenDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @GetCurrentUser() user,
+    @Body('refreshToken') refreshToken: string,
+  ): Promise<{ message: string }> {
+    // If a specific refresh token is provided, revoke only that token
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    } else {
+      // Otherwise revoke all tokens for the user (logout from all devices)
+      await this.authService.revokeAllUserTokens(user.id);
+    }
+
+    return { message: 'Logged out successfully' };
   }
 
   @Public()
@@ -60,7 +88,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async me(@Request() req): Promise<CurrentUserResponseDto> {
-    return this.authService.getCurrentUserData(req.user);
+  async me(@GetCurrentUser() user): Promise<CurrentUserResponseDto> {
+    return this.authService.getCurrentUserData(user);
   }
 }

@@ -5,6 +5,7 @@ import * as cookieParser from 'cookie-parser';
 import { SeedService } from './seed/seed.service';
 import { TrimPipe } from './common/pipe/trim.pipe';
 import { logger } from './winston-logger'; // Import the logger
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   // Initialize NestJS with Winston logger - ensure context is passed to all log methods
@@ -20,6 +21,15 @@ async function bootstrap() {
   });
 
   const seedService = app.get(SeedService);
+
+  const config = new DocumentBuilder()
+    .setTitle('Cats example')
+    .setDescription('The cats API description')
+    .setVersion('1.0')
+    .addTag('cats')
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
 
   app.enableCors({
     origin: [

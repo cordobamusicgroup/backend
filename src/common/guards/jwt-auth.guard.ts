@@ -2,6 +2,7 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
@@ -13,6 +14,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
   constructor(private reflector: Reflector) {
     super();
   }
@@ -36,7 +39,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     // Proceed with JWT authentication if the route is not public
-    return (await super.canActivate(context)) as boolean;
+    const canActivate = (await super.canActivate(context)) as boolean;
+
+    return canActivate;
   }
 
   /**

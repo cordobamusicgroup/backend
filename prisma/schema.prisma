@@ -33,6 +33,35 @@ model S3File {
   @@map("s3_files")
 }
 
+// model WorkflowSubmission {
+//   id          Int              @id @default(autoincrement())
+//   formType    String // Antes era FormType enum, ahora es un String
+//   status      SubmissionStatus @default(PENDING)
+//   currentStep String
+//   data        Json
+//   userId      Int
+//   user        User             @relation(fields: [userId], references: [id])
+//   createdAt   DateTime         @default(now())
+//   updatedAt   DateTime         @updatedAt
+// }
+
+// enum SubmissionStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   IN_PROGRESS
+// }
+
+// model ActivityLog {
+//   id        Int      @id @default(autoincrement())
+//   action    String
+//   note      String?
+//   createdAt DateTime @default(now())
+//   // Relación opcional con el usuario que realizó la acción
+//   userId    Int?
+//   user      User?    @relation(fields: [userId], references: [id])
+// }
+
 model Log {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -64,9 +93,10 @@ model User {
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
-  logs     Log[]
+  logs     Log[] //TODO -- Remove this
 
-  generalContactClient Client[] @relation("GeneralContact")
+  generalContactClient Client[]             @relation("GeneralContact")
+  refreshTokens        RefreshToken[]
 
   @@map("users")
 }
@@ -485,6 +515,19 @@ model FailedReportDetail {
   data           Json
 
   @@map("failed_details_reports")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isRevoked Boolean  @default(false)
+
+  @@index([userId])
 }
 
 //*** Enums  ***//

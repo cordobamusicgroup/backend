@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   UseGuards,
-  UseInterceptors,
   Request,
   Patch,
   Body,
@@ -10,13 +9,11 @@ import {
 } from '@nestjs/common';
 import { PaymentsUserService } from './payments-user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { JwtPayloadInterceptor } from 'src/common/interceptors/jwt-payload.interceptor';
 import { updatePaymentInfoSchema } from './validation-schemas';
 import { ZodError } from 'zod';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(JwtPayloadInterceptor)
 export class PaymentsUserController {
   constructor(private readonly paymentsUserService: PaymentsUserService) {}
 

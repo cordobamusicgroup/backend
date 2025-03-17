@@ -5,7 +5,7 @@ import { PrismaService } from './resources/prisma/prisma.service';
 import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PrismaModule } from './resources/prisma/prisma.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './resources/healthcheck/health.module';
@@ -25,8 +25,6 @@ import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
 import { FeedbackModule } from './resources/feedback/feedback.module';
 import env from './config/env.config';
-import { WorkflowModule } from './resources/workflow/workflow.module';
-import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interceptor';
 
 @Global()
 @Module({
@@ -83,7 +81,6 @@ import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interce
     FinancialModule,
     ImportsModule,
     FeedbackModule,
-    WorkflowModule,
   ],
   controllers: [AppController],
   providers: [
@@ -97,10 +94,6 @@ import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interce
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: JwtPayloadInterceptor,
     },
   ],
 })
