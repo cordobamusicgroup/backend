@@ -8,7 +8,17 @@ import { PrismaModule } from 'src/resources/prisma/prisma.module';
 @Global() // Si es un servicio global que usarás en varios módulos
 @Module({
   imports: [PrismaModule],
-  providers: [RedisService, ProgressService, LoggerTxtService, S3Service],
-  exports: [RedisService, ProgressService, LoggerTxtService, S3Service], // Exporta para que otros módulos puedan usarlo
+  providers: [
+    RedisService,
+    ProgressService,
+    LoggerTxtService,
+    S3Service,
+  ],
+  exports: [
+    RedisService,
+    ProgressService,
+    LoggerTxtService,
+    S3Service,
+  ], // Exporta para que otros módulos puedan usarlo
 })
 export class CommonModule {}

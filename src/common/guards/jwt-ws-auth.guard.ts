@@ -1,4 +1,4 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Injectable, ExecutionContext, Logger } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { WsException } from '@nestjs/websockets';
@@ -10,6 +10,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
  */
 @Injectable()
 export class JwtWsAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtWsAuthGuard.name);
+
   constructor(private reflector: Reflector) {
     super();
   }
@@ -32,32 +34,60 @@ export class JwtWsAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    const client = context.switchToWs().getClient();
-    const authToken = client.handshake?.headers?.authorization?.split(' ')[1];
+    try {
+      const client = context.switchToWs().getClient();
+      const authHeader = client.handshake?.headers?.authorization;
 
-    if (!authToken) {
-      throw new WsException('Unauthorized');
+      if (!authHeader) {
+        this.logger.warn(
+          'WebSocket connection attempt without authorization header',
+        );
+        throw new WsException('Authorization header is missing');
+      }
+
+      const authParts = authHeader.split(' ');
+      if (authParts.length !== 2 || authParts[0] !== 'Bearer') {
+        this.logger.warn(
+          'Invalid authorization format in WebSocket connection',
+        );
+        throw new WsException('Invalid authorization format');
+      }
+
+      const authToken = authParts[1];
+      if (!authToken) {
+        this.logger.warn('WebSocket connection attempt with empty token');
+        throw new WsException('Empty token provided');
+      }
+
+      const request = context.switchToHttp().getRequest();
+      request.headers = request.headers || {};
+      request.headers.authorization = `Bearer ${authToken}`;
+
+      // Proceed with JWT authentication if the route is not public
+      return (await super.canActivate(context)) as boolean;
+    } catch (error) {
+      this.logger.error(`WebSocket authentication error: ${error.message}`);
+      throw new WsException(error.message || 'Unauthorized');
     }
-
-    const request = context.switchToHttp().getRequest();
-    request.headers = request.headers || {};
-    request.headers.authorization = `Bearer ${authToken}`;
-
-    // Proceed with JWT authentication if the route is not public
-    return (await super.canActivate(context)) as boolean;
   }
 
   /**
    * Handle the request and provide custom error message if unauthorized.
    * @param err - The error encountered during authentication.
    * @param user - The authenticated user, if any.
-   * @param info - Additional information about the authentication process.
    * @returns The authenticated user or throws a custom unauthorized exception.
    */
   handleRequest(err: any, user: any) {
-    if (err || !user) {
-      throw new WsException('Unauthorized');
+    if (err) {
+      this.logger.error(`JWT validation error: ${err.message}`);
+      throw new WsException('Authentication failed');
     }
+
+    if (!user) {
+      this.logger.warn('JWT validation succeeded but no user was returned');
+      throw new WsException('User not found');
+    }
+
     return user;
   }
 }
