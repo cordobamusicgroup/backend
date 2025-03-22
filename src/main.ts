@@ -34,11 +34,13 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
+      'http://localhost:5173',
       'http://localhost:6060',
       'https://app.cordobamusicgroup.uk',
       'https://app.cordobamusicgroup.co.uk',
       'https://app.cmgdistro.dev',
       /\.cmg-app\.pages\.dev$/,
+      /\.frontend-cmg-vite\.pages\.dev$/,
     ],
     credentials: true,
   });
