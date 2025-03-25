@@ -198,6 +198,9 @@ export class AuthService {
     const refreshTokenExpiry = new Date();
     refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + refreshTokenTTL);
 
+    // Calculate refresh token expiration in seconds
+    const refreshExpiresInSeconds = refreshTokenTTL * 24 * 60 * 60; // Convert days to seconds
+
     // Store refresh token in the database
     await this.prisma.refreshToken.create({
       data: {
@@ -211,6 +214,7 @@ export class AuthService {
       access_token: accessToken,
       refresh_token: refreshToken,
       expires_in: expiresInSeconds,
+      refresh_expires_in: refreshExpiresInSeconds,
     };
   }
 
