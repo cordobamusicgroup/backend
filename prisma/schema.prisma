@@ -95,7 +95,7 @@ model User {
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[] //TODO -- Remove this
 
-  generalContactClient Client[]             @relation("GeneralContact")
+  generalContactClient Client[]       @relation("GeneralContact")
   refreshTokens        RefreshToken[]
 
   @@map("users")
@@ -220,11 +220,11 @@ model Contract {
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
 
-  uuid         String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
-  ppd          Float?         @default(75.00)
-  status       ContractStatus @default(DRAFT)
-  docUrl       String?
+  uuid   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type   ContractType   @default(DISTRIBUTION_EXCLUSIVE)
+  ppd    Float?         @default(75.00)
+  status ContractStatus @default(DRAFT)
+  docUrl String?
 
   startDate DateTime  @default(now())
   endDate   DateTime?
