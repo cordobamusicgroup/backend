@@ -13,7 +13,7 @@ import {
 export class CreateContractDto {
   @IsEnum(ContractType)
   @IsNotEmpty()
-  contractType: ContractType;
+  type: ContractType;
 
   @ValidateIf((o) => o.signed === true)
   @IsNotEmpty()
