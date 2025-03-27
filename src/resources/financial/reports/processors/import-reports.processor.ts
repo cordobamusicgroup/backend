@@ -518,7 +518,7 @@ export class ImportReportsProcessor extends WorkerHost {
     return this.prisma.contract.findFirst({
       where: {
         clientId,
-        contractType: {
+        type: {
           in: [
             ContractType.DISTRIBUTION_EXCLUSIVE,
             ContractType.DISTRIBUTION_NONEXCLUSIVE,
