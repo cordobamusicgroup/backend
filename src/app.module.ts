@@ -25,6 +25,7 @@ import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
 import { FeedbackModule } from './resources/feedback/feedback.module';
 import env from './config/env.config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Global()
 @Module({
@@ -68,6 +69,14 @@ import env from './config/env.config';
         },
       }),
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ],
+    }),
     ScheduleModule.forRoot(),
     S3Module,
     CommonModule,
@@ -87,6 +96,10 @@ import env from './config/env.config';
     PrismaService,
     SeedService,
     EmailService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
