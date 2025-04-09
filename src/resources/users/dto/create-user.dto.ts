@@ -18,8 +18,8 @@ export class CreateUserDto {
   email: string;
 
   @IsString()
-  @IsOptional()
-  fullName?: string;
+  @IsNotEmpty()
+  fullName: string;
 
   @IsEnum(Role)
   @IsNotEmpty()
