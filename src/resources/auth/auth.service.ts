@@ -7,7 +7,6 @@ import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
 import { Request } from 'express';
-import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -21,6 +20,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { TokensDto } from './dto/tokens.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { EmailService } from '../email-deprecated/email.service';
 
 @Injectable()
 export class AuthService {

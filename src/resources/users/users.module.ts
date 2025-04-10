@@ -9,7 +9,7 @@ import { UsersProfileService } from './public/users-profile.service';
 @Module({
   imports: [PrismaModule],
   controllers: [UsersAdminController, UsersController],
-  providers: [UsersAdminService, PrismaService],
+  providers: [UsersAdminService, UsersProfileService, PrismaService],
   exports: [UsersAdminService],
 })
 export class UsersModule {}
