@@ -1,6 +1,6 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
+import { UsersAdminService } from '../users/admin/users-admin.service';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { JwtPayloadDto } from './dto/jwt-payload.dto';
@@ -27,7 +27,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private usersService: UsersService,
+    private usersService: UsersAdminService,
     private prisma: PrismaService,
     private jwtService: JwtService,
     private emailService: EmailService,

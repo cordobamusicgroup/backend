@@ -1,0 +1,33 @@
+{
+  "material-icon-theme.folders.associations": {
+    "controllers": "controller",
+    "services": "service",
+    "dtos": "class",
+    "dto": "class",
+    "entities": "class",
+    "interceptors": "decorators",
+    "middlewares": "middleware",
+    "guards": "guard",
+    "pipes": "pipe",
+    "modules": "module",
+    "interfaces": "interface",
+    "user": "client",
+    "users": "client",
+    "admin": "admin",
+    "client": "client",
+    "clients": "client",
+    "shared": "shared",
+    "common": "shared"
+  },
+  "material-icon-theme.files.associations": {
+    "*.controller.ts": "nest-controller",
+    "*.service.ts": "nest-service",
+    "*.module.ts": "nest-module",
+    "*.dto.ts": "typescript",
+    "*.entity.ts": "database",
+    "*.guard.ts": "guard",
+    "*.pipe.ts": "pipe",
+    "*.interceptor.ts": "decorator"
+  },
+  "material-icon-theme.activeIconPack": "nest"
+}

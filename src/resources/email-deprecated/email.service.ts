@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import env from 'src/config/env.config';
 
+/**
+ * @deprecated This service is deprecated and will be removed in future versions.
+ * Please migrate all methods to their respective modules or services.
+ */
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+
   constructor(private readonly mailerService: MailerService) {}
 
   // Método para enviar el correo de restablecimiento de contraseña
@@ -12,6 +18,9 @@ export class EmailService {
     email: string,
     token: string,
   ): Promise<void> {
+    this.logger.warn(
+      'sendPasswordResetEmail is deprecated and should be migrated.',
+    );
     const reset_link = `${env.APP_FRONTEND_URL}/auth/reset?token=${token}`;
 
     // Enviar el correo usando el servicio de MailerModule
@@ -32,6 +41,9 @@ export class EmailService {
     message: string,
     logFilePath: string,
   ): Promise<void> {
+    this.logger.warn(
+      'sendJobResultEmail is deprecated and should be migrated.',
+    );
     await this.mailerService.sendMail({
       to: email,
       subject: subject,
@@ -47,19 +59,6 @@ export class EmailService {
           path: logFilePath,
         },
       ],
-    });
-  }
-
-  async sendFeedbackEmail(content: {
-    username: string;
-    email: string;
-    description: string;
-  }): Promise<void> {
-    await this.mailerService.sendMail({
-      to: 'feedback@cordobamusicgroup.co.uk',
-      subject: 'New Feedback Received',
-      template: './feedback-template',
-      context: content,
     });
   }
 }

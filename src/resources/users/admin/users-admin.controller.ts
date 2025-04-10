@@ -10,18 +10,19 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersAdminService } from './users-admin.service';
+
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Controller('users/admin')
 @Roles(Role.ADMIN)
 @UseGuards(JwtAuthGuard)
 export class UsersAdminController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersAdminService) {}
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {

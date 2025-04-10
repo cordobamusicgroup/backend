@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
-import { UsersService } from 'src/resources/users/users.service';
+import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { MailerService } from '@nestjs-modules/mailer';
 import { updatePaymentInfoSchema } from './validation-schemas';
 import { ZodError } from 'zod';
@@ -17,7 +17,7 @@ import { PaymentMethod } from '@prisma/client';
 export class PaymentsUserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly usersService: UsersService,
+    private readonly usersService: UsersAdminService,
     private readonly mailerService: MailerService,
   ) {}
 

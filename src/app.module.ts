@@ -15,7 +15,6 @@ import { CountriesModule } from './resources/countries/countries.module';
 import { FinancialModule } from './resources/financial/financial.module';
 import { SeedService } from './seed/seed.service';
 import { LabelsModule } from './resources/labels/labels.module';
-import { EmailService } from './resources/email/email.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
@@ -26,6 +25,7 @@ import { ImportsModule } from './resources/imports/imports.module';
 import { FeedbackModule } from './resources/feedback/feedback.module';
 import env from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { EmailService } from './resources/email-deprecated/email.service';
 
 @Global()
 @Module({
@@ -95,7 +95,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
   providers: [
     PrismaService,
     SeedService,
-    EmailService,
+    EmailService, // Deprecated, but still used in some modules
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

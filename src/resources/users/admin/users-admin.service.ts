@@ -7,10 +7,10 @@ import {
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
-import { UserDto } from './dto/user.dto';
+import { UserDto } from '../dto/user.dto';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import {
   UserAlreadyExistsException,
@@ -20,8 +20,8 @@ import {
 import env from 'src/config/env.config';
 
 @Injectable()
-export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
+export class UsersAdminService {
+  private readonly logger = new Logger(UsersAdminService.name);
 
   constructor(
     private prisma: PrismaService,
@@ -33,57 +33,8 @@ export class UsersService {
   }
 
   /**
-   * Creates a new user in the database.
-   * @param createUserDto - The DTO containing the user data
-   * @returns The created user
-   * @throws UserAlreadyExistsException if the username is already in use
-   * @throws EmailAlreadyExistsException if the email is already in use
-   * @throws InternalServerErrorException if any other error occurs
+   * Removed the unused createUser method as it is not referenced anywhere in the codebase.
    */
-  async createUser(createUserDto: CreateUserDto) {
-    const { username, email, fullName, role, clientId } = createUserDto;
-
-    const existingUserByUsername = await this.prisma.user.findUnique({
-      where: { username },
-    });
-
-    if (existingUserByUsername) {
-      throw new UserAlreadyExistsException();
-    }
-
-    // Case insensitive email check
-    const existingUserByEmail = await this.prisma.user.findFirst({
-      where: {
-        email: {
-          equals: email,
-          mode: 'insensitive',
-        },
-      },
-    });
-
-    if (existingUserByEmail) {
-      throw new EmailAlreadyExistsException();
-    }
-
-    const password = this.generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(password, 10);
-    try {
-      const user = await this.prisma.user.create({
-        data: {
-          username,
-          email,
-          password: hashedPassword,
-          fullName,
-          role,
-          clientId,
-        },
-      });
-      return this.convertToDto(user);
-    } catch (error) {
-      this.logger.error(error);
-      throw new InternalServerErrorException('Error creating user.');
-    }
-  }
 
   /**
    * Registers a new user with a randomly generated password and sends an email with the account information.
