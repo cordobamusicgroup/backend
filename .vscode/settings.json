@@ -1,7 +1,5 @@
 {
   "material-icon-theme.folders.associations": {
-    "controllers": "controller",
-    "services": "service",
     "dtos": "class",
     "dto": "class",
     "entities": "class",
@@ -9,7 +7,6 @@
     "middlewares": "middleware",
     "guards": "guard",
     "pipes": "pipe",
-    "modules": "module",
     "interfaces": "interface",
     "user": "client",
     "users": "client",
