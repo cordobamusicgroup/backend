@@ -22,7 +22,6 @@ import { S3Module } from './providers/s3.module';
 import { BullModule } from '@nestjs/bullmq';
 import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
-import { FeedbackModule } from './resources/feedback/feedback.module';
 import env from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EmailService } from './resources/email-deprecated/email.service';
@@ -89,7 +88,6 @@ import { EmailService } from './resources/email-deprecated/email.service';
     CountriesModule,
     FinancialModule,
     ImportsModule,
-    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [
