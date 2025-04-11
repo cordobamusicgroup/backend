@@ -33,24 +33,34 @@ model S3File {
   @@map("s3_files")
 }
 
-model WorkflowEntry {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// model WorkflowSubmission {
+//   id          Int              @id @default(autoincrement())
+//   formType    String // Antes era FormType enum, ahora es un String
+//   status      SubmissionStatus @default(PENDING)
+//   currentStep String
+//   data        Json
+//   userId      Int
+//   user        User             @relation(fields: [userId], references: [id])
+//   createdAt   DateTime         @default(now())
+//   updatedAt   DateTime         @updatedAt
+// }
 
-  formKey    String
-  stepKey    String
-  stepStatus String
-  stepType   StepTypeWorkflow @default(APPROVAL)
-  stepData   Json?
-  entryData  Json
-  statusForm String
+// enum SubmissionStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   IN_PROGRESS
+// }
 
-  clientId Int?
-  client   Client? @relation(fields: [clientId], references: [id], name: "ClientWorkflowEntries")
-
-  @@map("workflows")
-}
+// model ActivityLog {
+//   id        Int      @id @default(autoincrement())
+//   action    String
+//   note      String?
+//   createdAt DateTime @default(now())
+//   // Relación opcional con el usuario que realizó la acción
+//   userId    Int?
+//   user      User?    @relation(fields: [userId], references: [id])
+// }
 
 model Log {
   id        Int      @id @default(autoincrement())
@@ -83,9 +93,10 @@ model User {
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
-  logs     Log[]
+  logs     Log[] //TODO -- Remove this
 
-  generalContactClient Client[] @relation("GeneralContact")
+  generalContactClient Client[]       @relation("GeneralContact")
+  refreshTokens        RefreshToken[]
 
   @@map("users")
 }
@@ -167,7 +178,6 @@ model Client {
   users             User[]
   contract          Contract?
   userRoyaltyReport UserRoyaltyReport[]
-  workflowEntries   WorkflowEntry[]           @relation("ClientWorkflowEntries")
 
   @@map("clients")
 }
@@ -210,11 +220,11 @@ model Contract {
   clientId Int?    @unique
   client   Client? @relation(fields: [clientId], references: [id])
 
-  uuid         String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contractType ContractType   @default(DISTRIBUTION_EXCLUSIVE)
-  ppd          Float?         @default(75.00)
-  status       ContractStatus @default(DRAFT)
-  docUrl       String?
+  uuid   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type   ContractType   @default(DISTRIBUTION_EXCLUSIVE)
+  ppd    Float?         @default(75.00)
+  status ContractStatus @default(DRAFT)
+  docUrl String?
 
   startDate DateTime  @default(now())
   endDate   DateTime?
@@ -507,15 +517,20 @@ model FailedReportDetail {
   @@map("failed_details_reports")
 }
 
-//*** Enums  ***//
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isRevoked Boolean  @default(false)
 
-enum StepTypeWorkflow {
-  APPROVAL
-  NOTIFICATION
-  USER_INPUT
-  USER_REGISTRATION
-  USER_UPDATE
+  @@index([userId])
 }
+
+//*** Enums  ***//
 
 enum Currency {
   USD

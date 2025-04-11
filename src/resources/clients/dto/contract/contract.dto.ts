@@ -9,7 +9,7 @@ export class ContractDto {
   uuid: string;
 
   @Expose()
-  contractType: ContractType;
+  type: ContractType;
 
   @Expose()
   ppd?: number;

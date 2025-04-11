@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { UsersService } from 'src/resources/users/users.service';
+import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { S3Service } from 'src/common/services/s3.service';
 import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
@@ -19,7 +19,7 @@ export class UserFinancialReportsService {
   private readonly logger = new Logger(UserFinancialReportsService.name);
 
   constructor(
-    private usersService: UsersService,
+    private usersService: UsersAdminService,
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
   ) {}

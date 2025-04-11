@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { UsersService } from 'src/resources/users/users.service';
+import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { S3Service } from 'src/common/services/s3.service';
 import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
@@ -14,7 +14,7 @@ export class AdminUserReportsService {
   private readonly logger = new Logger(AdminUserReportsService.name);
 
   constructor(
-    private usersService: UsersService,
+    private usersService: UsersAdminService,
     private readonly prisma: PrismaService,
     @InjectQueue('user-reports') private userReportsQueue: Queue,
     private readonly s3Service: S3Service,

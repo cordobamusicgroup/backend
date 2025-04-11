@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { Currency, Prisma, TransactionType } from '@prisma/client';
-import { UsersService } from 'src/resources/users/users.service';
+import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { ModifyBalanceDto } from './dto/modify-balance.dto';
 
 @Injectable()
 export class BalancesAdminService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly usersService: UsersService,
+    private readonly usersService: UsersAdminService,
   ) {}
 
   /**

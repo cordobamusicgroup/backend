@@ -5,7 +5,7 @@ import { PrismaService } from './resources/prisma/prisma.service';
 import { UsersModule } from './resources/users/users.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PrismaModule } from './resources/prisma/prisma.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './resources/healthcheck/health.module';
@@ -15,7 +15,6 @@ import { CountriesModule } from './resources/countries/countries.module';
 import { FinancialModule } from './resources/financial/financial.module';
 import { SeedService } from './seed/seed.service';
 import { LabelsModule } from './resources/labels/labels.module';
-import { EmailService } from './resources/email/email.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
@@ -23,10 +22,9 @@ import { S3Module } from './providers/s3.module';
 import { BullModule } from '@nestjs/bullmq';
 import { CommonModule } from './common/common.module';
 import { ImportsModule } from './resources/imports/imports.module';
-import { FeedbackModule } from './resources/feedback/feedback.module';
 import env from './config/env.config';
-import { WorkflowModule } from './resources/workflow/workflow.module';
-import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interceptor';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { EmailService } from './resources/email-deprecated/email.service';
 
 @Global()
 @Module({
@@ -70,6 +68,14 @@ import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interce
         },
       }),
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 300,
+        },
+      ],
+    }),
     ScheduleModule.forRoot(),
     S3Module,
     CommonModule,
@@ -82,14 +88,16 @@ import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interce
     CountriesModule,
     FinancialModule,
     ImportsModule,
-    FeedbackModule,
-    WorkflowModule,
   ],
   controllers: [AppController],
   providers: [
     PrismaService,
     SeedService,
-    EmailService,
+    EmailService, // Deprecated, but still used in some modules
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -97,10 +105,6 @@ import { JwtPayloadInterceptor } from './common/interceptors/jwt-payload.interce
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: JwtPayloadInterceptor,
     },
   ],
 })

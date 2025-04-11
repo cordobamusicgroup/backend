@@ -18,7 +18,7 @@ export function mapClientCsvToIntermediate(row: any) {
       isBlocked: row['is_blocked'] === 'TRUE',
     },
     contractData: {
-      contractType: ContractType.DISTRIBUTION_NONEXCLUSIVE,
+      type: ContractType.DISTRIBUTION_NONEXCLUSIVE,
       status: ContractStatus.DRAFT,
       ppd: parseFloat(row['distribution_fee']),
     },

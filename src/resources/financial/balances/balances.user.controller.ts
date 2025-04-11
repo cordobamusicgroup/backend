@@ -4,6 +4,9 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Currency } from '@prisma/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { BalanceTransactionDto } from './dto/balance-transaction.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { GetCurrentUserJwt } from 'src/common/decorators/get-user.decorator';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -17,11 +20,11 @@ export class BalancesUserController {
   }
 
   @Get('transactions')
+  @Roles(Role.ADMIN)
   async getBalanceTransactions(
     @Query('currency') currency: string,
-    @Request() req,
+    @GetCurrentUserJwt() user,
   ): Promise<BalanceTransactionDto[]> {
-    const user: JwtPayloadDto = req.user;
     return this.balancesService.getBalanceTransactions(
       user,
       currency as Currency,

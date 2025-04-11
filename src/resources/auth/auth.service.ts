@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
+import { UsersAdminService } from '../users/admin/users-admin.service';
 import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthLoginDto } from './dto/auth-login.dto';
 import { CurrentUserResponseDto } from './dto/current-user-data.dto';
 import { Request } from 'express';
-import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 import {
   InvalidCredentialsException,
   InvalidOrExpiredTokenException,
@@ -17,16 +17,21 @@ import {
   ClientBlockedException,
 } from 'src/common/exceptions/CustomHttpException';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TokensDto } from './dto/tokens.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { EmailService } from '../email-deprecated/email.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private usersService: UsersService,
+    private usersService: UsersAdminService,
     private prisma: PrismaService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -95,23 +100,31 @@ export class AuthService {
   }
 
   /**
-   * Logs in a user and returns an access token.
+   * Logs in a user and returns access and refresh tokens.
    * @param authLoginDto - The DTO containing the login credentials.
    * @param req - The Express Request object.
-   * @returns An object containing the access token.
+   * @returns An object containing the access and refresh tokens.
    */
-  async login(authLoginDto: AuthLoginDto, req: Request) {
+  async login(authLoginDto: AuthLoginDto, req: Request): Promise<TokensDto> {
     try {
       const { username, password } = authLoginDto;
       const user = await this.validateUser(username, password);
 
-      // Create JWT payload and sign token
-      const payload: JwtPayloadDto = {
-        username: user.username,
-        sub: user.id,
-        role: user.role,
-      };
-      const accessToken = this.jwtService.sign(payload);
+      // Get client information if available
+      let clientId = null;
+      let clientName = null;
+      if (user.clientId) {
+        const client = await this.prisma.client.findUnique({
+          where: { id: user.clientId },
+        });
+        if (client) {
+          clientId = client.id;
+          clientName = client.clientName;
+        }
+      }
+
+      // Generate tokens
+      const tokens = await this.generateTokens(user, clientId, clientName);
 
       // Get client information for logging
       const ipAddress = this.getClientIp(req);
@@ -122,7 +135,7 @@ export class AuthService {
         `🔓 User ${user.username} (ID: ${user.id}) logged in successfully from IP ${ipAddress} using ${userAgent}.`,
       );
 
-      return { access_token: accessToken };
+      return tokens;
     } catch (error) {
       // Get client information for failed login logging
       const ipAddress = this.getClientIp(req);
@@ -135,6 +148,159 @@ export class AuthService {
 
       throw error;
     }
+  }
+
+  /**
+   * Generates new access and refresh tokens for a user
+   * @param user - User object
+   * @param clientId - Optional client ID
+   * @param clientName - Optional client name
+   * @returns Object containing access and refresh tokens
+   */
+  async generateTokens(
+    user: User,
+    clientId: number | null,
+    clientName: string | null,
+  ): Promise<TokensDto> {
+    // Create JWT payload with additional security fields
+    const jti = uuidv4(); // Generate unique token ID
+    const payload: JwtPayloadDto = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+      clientId: clientId,
+      clientName: clientName,
+      jti: jti, // Add unique token identifier
+    };
+
+    // Get access token expiration from config
+    const expiresIn = this.configService.get<string>('JWT_EXPIRATION') || '60m';
+
+    // Convert expiration time to seconds for token response
+    let expiresInSeconds = 3600; // Default 1 hour
+    if (expiresIn.endsWith('m')) {
+      expiresInSeconds = parseInt(expiresIn.slice(0, -1)) * 60;
+    } else if (expiresIn.endsWith('h')) {
+      expiresInSeconds = parseInt(expiresIn.slice(0, -1)) * 3600;
+    } else if (expiresIn.endsWith('d')) {
+      expiresInSeconds = parseInt(expiresIn.slice(0, -1)) * 86400;
+    }
+
+    // Generate access token
+    const accessToken = this.jwtService.sign(payload);
+
+    // Generate refresh token (longer lived)
+    const refreshToken = randomBytes(64).toString('hex');
+
+    // Calculate refresh token expiration (default: 7 days)
+    const refreshTokenTTL =
+      this.configService.get<number>('REFRESH_TOKEN_TTL') || 7;
+    const refreshTokenExpiry = new Date();
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + refreshTokenTTL);
+
+    // Calculate refresh token expiration in seconds
+    const refreshExpiresInSeconds = refreshTokenTTL * 24 * 60 * 60; // Convert days to seconds
+
+    // Store refresh token in the database
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: refreshTokenExpiry,
+      },
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: expiresInSeconds,
+      refresh_expires_in: refreshExpiresInSeconds,
+    };
+  }
+
+  /**
+   * Refreshes an access token using a refresh token
+   * @param refreshTokenDto - Object containing the refresh token
+   * @returns New access and refresh tokens
+   * @throws UnauthorizedException if the refresh token is invalid or expired
+   */
+  async refreshTokens(refreshTokenDto: RefreshTokenDto): Promise<TokensDto> {
+    const { refreshToken } = refreshTokenDto;
+
+    try {
+      // Find the refresh token in the database
+      const tokenRecord = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      // Validate that the token exists and is not expired or revoked
+      if (
+        !tokenRecord ||
+        tokenRecord.isRevoked ||
+        tokenRecord.expiresAt < new Date()
+      ) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+
+      const user = tokenRecord.user;
+
+      // Get client information if available
+      let clientId = null;
+      let clientName = null;
+      if (user.clientId) {
+        const client = await this.prisma.client.findUnique({
+          where: { id: user.clientId },
+        });
+        if (client) {
+          clientId = client.id;
+          clientName = client.clientName;
+        }
+      }
+
+      // Delete the used refresh token (one-time use)
+      await this.prisma.refreshToken.delete({
+        where: { id: tokenRecord.id },
+      });
+
+      // Generate new tokens
+      const tokens = await this.generateTokens(user, clientId, clientName);
+
+      this.logger.log(
+        `🔄 Tokens refreshed successfully for user: ${user.username} (ID: ${user.id})`,
+      );
+
+      return tokens;
+    } catch (error) {
+      this.logger.error(`❌ Token refresh failed: ${error.message}`);
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
+
+  /**
+   * Invalidates all refresh tokens for a user (logout from all devices)
+   * @param userId - The ID of the user
+   */
+  async revokeAllUserTokens(userId: number): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId },
+      data: { isRevoked: true },
+    });
+
+    this.logger.log(`🚫 All tokens revoked for user ID: ${userId}`);
+  }
+
+  /**
+   * Invalidates a specific refresh token
+   * @param token - The refresh token to invalidate
+   */
+  async revokeRefreshToken(token: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { token },
+      data: { isRevoked: true },
+    });
+
+    this.logger.log(`🚫 Specific token revoked`);
   }
 
   /**
@@ -186,7 +352,6 @@ export class AuthService {
     this.logger.log(
       `👤 Retrieved user data for ${userData.username} (ID: ${userData.id})`,
     );
-
     // Get client data if the user belongs to a client
     let clientData = { id: null, clientName: 'Unknown' };
     if (userData.clientId) {
@@ -291,6 +456,7 @@ export class AuthService {
     });
 
     if (allValidTokens.length === 0) {
+      // Pasa el contexto como segundo parámetro en warn, error, etc.
       this.logger.warn(
         '❌ No valid password reset tokens found in the database',
       );
