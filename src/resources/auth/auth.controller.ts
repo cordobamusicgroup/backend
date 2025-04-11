@@ -16,7 +16,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { GetCurrentUser } from 'src/common/decorators/get-user.decorator';
+import { GetCurrentUserJwt } from 'src/common/decorators/get-user.decorator';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { TokensDto } from './dto/tokens.dto';
 
@@ -48,7 +48,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
-    @GetCurrentUser() user,
+    @GetCurrentUserJwt() user,
     @Body('refreshToken') refreshToken: string,
   ): Promise<{ message: string }> {
     // If a specific refresh token is provided, revoke only that token
@@ -88,7 +88,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async me(@GetCurrentUser() user): Promise<CurrentUserResponseDto> {
+  async me(@GetCurrentUserJwt() user): Promise<CurrentUserResponseDto> {
     return this.authService.getCurrentUserData(user);
   }
 }
