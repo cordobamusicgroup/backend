@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersAdminService } from '../users/admin/users-admin.service';
 import { Role, User } from '@prisma/client';
@@ -21,6 +26,8 @@ import { TokensDto } from './dto/tokens.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { EmailService } from '../email-deprecated/email.service';
+import { resetPasswordSchema } from './schemas/reset-password.schema';
+import { z } from 'zod';
 
 @Injectable()
 export class AuthService {
@@ -443,6 +450,40 @@ export class AuthService {
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
     const { token, newPassword } = resetPasswordDto;
+
+    console.log('Password to validate:', newPassword);
+
+    try {
+      // Validaciones manuales para depuración
+      let errorMessage = '';
+
+      if (newPassword.length < 8) {
+        errorMessage = 'Password must be at least 8 characters long';
+      } else if (!/[A-Z]/.test(newPassword)) {
+        errorMessage = 'Password must contain at least one uppercase letter';
+      } else if (!/[a-z]/.test(newPassword)) {
+        errorMessage = 'Password must contain at least one lowercase letter';
+      } else if (!/\d/.test(newPassword)) {
+        errorMessage = 'Password must contain at least one number';
+      }
+
+      if (errorMessage) {
+        this.logger.warn(`❌ Password validation failed: ${errorMessage}`);
+        throw new BadRequestException(errorMessage);
+      }
+
+      // Si pasó todas las validaciones, continuamos con el proceso
+      this.logger.log(`✅ Password validation successful`);
+    } catch (error) {
+      if (!(error instanceof BadRequestException)) {
+        const errorMessage =
+          'Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number';
+        this.logger.warn(`❌ Password validation failed: ${errorMessage}`);
+        throw new BadRequestException(errorMessage);
+      }
+      throw error;
+    }
+
     this.logger.log(`🔄 Processing password reset request with token`);
 
     // Find all unexpired tokens with user information
@@ -456,7 +497,6 @@ export class AuthService {
     });
 
     if (allValidTokens.length === 0) {
-      // Pasa el contexto como segundo parámetro en warn, error, etc.
       this.logger.warn(
         '❌ No valid password reset tokens found in the database',
       );
@@ -481,7 +521,6 @@ export class AuthService {
       throw new InvalidOrExpiredTokenException();
     }
 
-    // Token is valid, update the user's password
     this.logger.log(
       `✅ Valid reset token found for user: ${userData.username} (${userData.email})`,
     );
