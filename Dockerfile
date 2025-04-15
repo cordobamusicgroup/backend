@@ -15,6 +15,9 @@ WORKDIR /app
 # Copy configuration files
 COPY package.json bun.lockb* ./
 
+# ✅ Permitir scripts postinstall (bcrypt, prisma, etc.)
+RUN pnpm config set enable-pre-post-scripts true
+
 # Instalar dependencias usando pnpm con cache
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install
 
