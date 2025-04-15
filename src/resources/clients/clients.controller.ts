@@ -14,7 +14,7 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientExtendedDto } from './dto/client-extended.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 
 @Controller('clients')
 @UseGuards(RolesGuard)

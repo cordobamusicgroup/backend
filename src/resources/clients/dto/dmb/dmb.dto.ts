@@ -1,4 +1,4 @@
-import { AccessTypeDMB, DMBStatus } from '@prisma/client';
+import { AccessTypeDMB, DMBStatus } from 'src/generated/client';
 import { Expose } from 'class-transformer';
 
 export class DmbDto {

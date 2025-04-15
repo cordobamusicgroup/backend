@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { LinkUnlinkedReportDto } from '../../dto/admin-link-unlinked-report.dto';
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'src/generated/client';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bull';
 

@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { TransactionType } from '@prisma/client';
+import { TransactionType } from 'src/generated/client';
 
 export class BalanceTransactionDto {
   @Expose()

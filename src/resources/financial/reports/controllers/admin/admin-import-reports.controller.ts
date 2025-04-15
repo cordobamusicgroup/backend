@@ -10,7 +10,7 @@ import {
   Get,
 } from '@nestjs/common';
 import { diskStorage } from 'multer';
-import { Distributor, Role } from '@prisma/client';
+import { Distributor, Role } from 'src/generated/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadCsvDto } from '../../dto/admin-upload-csv.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';

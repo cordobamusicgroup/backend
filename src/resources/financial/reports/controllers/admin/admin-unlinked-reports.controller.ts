@@ -8,7 +8,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AdminUnlinkedReportService } from '../../services/admin/admin-unlinked-report.service';
 import { LinkUnlinkedReportDto } from '../../dto/admin-link-unlinked-report.dto';

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Distributor, TransactionType } from '@prisma/client';
+import { Distributor, TransactionType } from 'src/generated/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import {
   UnlinkedReportsExistException,

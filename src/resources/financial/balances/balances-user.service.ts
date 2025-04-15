@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { Currency } from '@prisma/client';
+import { Currency } from 'src/generated/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { BalanceTransactionDto } from './dto/balance-transaction.dto';

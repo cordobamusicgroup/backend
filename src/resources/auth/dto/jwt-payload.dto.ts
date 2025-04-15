@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 
 export class JwtPayloadDto {
   /**

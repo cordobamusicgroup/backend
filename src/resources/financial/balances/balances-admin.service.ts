@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
-import { Currency, Prisma, TransactionType } from '@prisma/client';
+import { Currency, Prisma, TransactionType } from 'src/generated/client';
 import { UsersAdminService } from 'src/resources/users/admin/users-admin.service';
 import { ModifyBalanceDto } from './dto/modify-balance.dto';
 

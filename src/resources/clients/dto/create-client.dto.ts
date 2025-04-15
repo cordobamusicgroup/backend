@@ -9,7 +9,7 @@ import {
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ClientType, TaxIdType } from '@prisma/client';
+import { ClientType, TaxIdType } from 'src/generated/client';
 import { CreateContractDto } from './contract/create-contract.dto';
 import { CreateAddressDto } from './address/create-address.dto';
 import { CreateDmbDto } from './dmb/create-dmb.dto';

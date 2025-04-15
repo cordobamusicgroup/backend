@@ -1,4 +1,4 @@
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'src/generated/client';
 import * as dayjs from 'dayjs';
 import Decimal from 'decimal.js';
 

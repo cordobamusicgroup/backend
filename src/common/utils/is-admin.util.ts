@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 
 /**
  * Checks if a given role is an admin role.

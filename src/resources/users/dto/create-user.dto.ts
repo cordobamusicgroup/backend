@@ -6,7 +6,7 @@ import {
   IsInt,
   IsEnum,
 } from 'class-validator';
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 
 export class CreateUserDto {
   @IsString()

@@ -3,7 +3,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { ProgressService } from 'src/common/services/progress.service';
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'src/generated/client';
 import { UserRoyaltyReportsAlreadyExistException } from 'src/common/exceptions/CustomHttpException';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { S3Service } from 'src/common/services/s3.service';

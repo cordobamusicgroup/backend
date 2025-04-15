@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 import { ModifyBalanceDto } from './dto/modify-balance.dto';
 import { BalancesAdminService } from './balances-admin.service';
 

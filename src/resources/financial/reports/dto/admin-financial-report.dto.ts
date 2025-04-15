@@ -1,4 +1,4 @@
-import { DebitState } from '@prisma/client';
+import { DebitState } from 'src/generated/client';
 import { Expose } from 'class-transformer';
 
 export class AdminFinancialReportDto {

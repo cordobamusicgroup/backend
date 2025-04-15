@@ -1,4 +1,4 @@
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'src/generated/client';
 
 export class JobImportReportDto {
   filePath: string;

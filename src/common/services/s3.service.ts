@@ -10,7 +10,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
-import { S3File } from '@prisma/client';
+import { S3File } from 'src/generated/client';
 import { Upload } from '@aws-sdk/lib-storage';
 
 @Injectable()

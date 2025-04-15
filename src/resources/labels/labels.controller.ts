@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { LabelsService } from './labels.service';
-import { Role } from '@prisma/client';
+import { Role } from 'src/generated/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CreateLabelDto } from './dto/create-label.dto';
 import { LabelDto } from './dto/label.dto';
