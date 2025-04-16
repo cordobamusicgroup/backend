@@ -1,4 +1,4 @@
-import { DebitState } from 'src/generated/client';
+import { DebitState } from 'generated/client';
 import { Expose } from 'class-transformer';
 
 export class AdminFinancialReportDto {

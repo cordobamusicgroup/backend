@@ -11,7 +11,7 @@ import { updatePaymentInfoSchema } from './validation-schemas';
 import { ZodError } from 'zod';
 import axios from 'axios';
 
-import { PaymentMethod } from 'src/generated/client';
+import { PaymentMethod } from 'generated/client';
 
 @Injectable()
 export class PaymentsUserService {

@@ -13,7 +13,7 @@ import {
 import { UsersAdminService } from './users-admin.service';
 
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';

@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 
 /**
  * Determines if the user has the required roles to access a specific route.

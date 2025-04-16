@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { TransactionType } from 'src/generated/client';
+import { TransactionType } from 'generated/client';
 
 export class BalanceTransactionDto {
   @Expose()

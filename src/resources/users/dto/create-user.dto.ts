@@ -6,7 +6,7 @@ import {
   IsInt,
   IsEnum,
 } from 'class-validator';
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 
 export class CreateUserDto {
   @IsString()

@@ -1,5 +1,5 @@
 import { IsNumber, IsString, IsEnum, IsOptional } from 'class-validator';
-import { Currency, TransactionType } from 'src/generated/client';
+import { Currency, TransactionType } from 'generated/client';
 
 export class ModifyBalanceDto {
   @IsNumber()

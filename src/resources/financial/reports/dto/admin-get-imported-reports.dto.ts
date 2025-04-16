@@ -1,4 +1,4 @@
-import { Distributor } from 'src/generated/client';
+import { Distributor } from 'generated/client';
 
 export class ImportedReportDto {
   id: number;

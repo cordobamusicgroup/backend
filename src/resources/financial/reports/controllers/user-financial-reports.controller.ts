@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { UserFinancialReportsService } from '../services/user/user-financial-reports.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Distributor } from 'src/generated/client';
+import { Distributor } from 'generated/client';
 
 @Controller('user-reports')
 export class UserFinancialReportsController {

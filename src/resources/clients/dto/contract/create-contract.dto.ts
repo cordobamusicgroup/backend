@@ -1,4 +1,4 @@
-import { ContractStatus, ContractType } from 'src/generated/client';
+import { ContractStatus, ContractType } from 'generated/client';
 import {
   IsBoolean,
   IsDateString,

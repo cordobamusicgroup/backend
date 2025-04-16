@@ -1,4 +1,4 @@
-import { Distributor } from 'src/generated/client';
+import { Distributor } from 'generated/client';
 
 /**
  * Data transfer object for linking unlinked reports to a specific label.

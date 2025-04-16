@@ -1,4 +1,4 @@
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 
 /**
  * Checks if a given role is an admin role.

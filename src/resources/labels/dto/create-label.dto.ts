@@ -1,4 +1,4 @@
-import { LabelRegistrationStatus, LabelStatus } from 'src/generated/client';
+import { LabelRegistrationStatus, LabelStatus } from 'generated/client';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateLabelDto {

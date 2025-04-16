@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { mapClientCsvToIntermediate } from './utils/client-csv-mapper.util';
 import { mapLabelCsvToIntermediate } from './utils/label-csv-mapper.util';
 import { mapClientBalanceCsvToTransaction } from './utils/client-balance-csv-mapper.util';
-import { TransactionType } from 'src/generated/client';
+import { TransactionType } from 'generated/client';
 import Decimal from 'decimal.js';
 
 @Injectable()

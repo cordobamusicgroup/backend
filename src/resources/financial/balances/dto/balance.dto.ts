@@ -1,4 +1,4 @@
-import { Currency, Transaction } from 'src/generated/client';
+import { Currency, Transaction } from 'generated/client';
 import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsArray } from 'class-validator';
 

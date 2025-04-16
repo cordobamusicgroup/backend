@@ -3,7 +3,7 @@ import {
   ContractStatus,
   ContractType,
   DMBStatus,
-} from 'src/generated/client';
+} from 'generated/client';
 
 export function mapClientCsvToIntermediate(row: any) {
   return {

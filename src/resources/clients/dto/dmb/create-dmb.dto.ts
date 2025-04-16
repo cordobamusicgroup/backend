@@ -1,4 +1,4 @@
-import { AccessTypeDMB, DMBStatus } from 'src/generated/client';
+import { AccessTypeDMB, DMBStatus } from 'generated/client';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateDmbDto {

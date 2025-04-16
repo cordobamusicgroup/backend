@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Distributor } from 'src/generated/client';
+import { Distributor } from 'generated/client';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';

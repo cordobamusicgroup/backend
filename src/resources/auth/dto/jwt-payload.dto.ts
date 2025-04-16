@@ -1,4 +1,4 @@
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 
 export class JwtPayloadDto {
   /**

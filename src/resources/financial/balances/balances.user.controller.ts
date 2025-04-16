@@ -1,11 +1,11 @@
 import { Controller, Get, UseGuards, Request, Query } from '@nestjs/common';
 import { BalancesService } from './balances-user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Currency } from 'src/generated/client';
+import { Currency } from 'generated/client';
 import { JwtPayloadDto } from 'src/resources/auth/dto/jwt-payload.dto';
 import { BalanceTransactionDto } from './dto/balance-transaction.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from 'src/generated/client';
+import { Role } from 'generated/client';
 import { GetCurrentUserJwt } from 'src/common/decorators/get-user.decorator';
 
 @Controller()

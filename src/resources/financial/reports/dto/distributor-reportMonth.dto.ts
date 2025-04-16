@@ -1,5 +1,5 @@
 import { IsEnum, IsString, Matches } from 'class-validator';
-import { Distributor } from 'src/generated/client';
+import { Distributor } from 'generated/client';
 
 export class DistributorReportDto {
   @IsEnum(Distributor)
