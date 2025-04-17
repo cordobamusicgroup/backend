@@ -31,17 +31,37 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
+  // Leer orígenes CORS desde variable de entorno y permitir wildcards
+  const corsOriginsEnv = process.env.CORS_ORIGINS || '';
+  const corsOrigins = corsOriginsEnv
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  function matchOrigin(origin: string, allowedOrigins: string[]): boolean {
+    for (const allowed of allowedOrigins) {
+      if (allowed.startsWith('*.')) {
+        // Permitir subdominios wildcard
+        const domain = allowed.replace(/^\*\./, '');
+        if (origin.endsWith('.' + domain) || origin === domain) {
+          return true;
+        }
+      } else if (allowed === origin) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:6060',
-      'https://app.cordobamusicgroup.uk',
-      'https://app.cordobamusicgroup.co.uk',
-      'https://app.cmgdistro.dev',
-      /\.cmg-app\.pages\.dev$/,
-      /\.frontend-cmg-vite\.pages\.dev$/,
-    ],
+    origin: (origin, callback) => {
+      // Permitir requests sin origen (como Postman)
+      if (!origin) return callback(null, true);
+      if (matchOrigin(origin, corsOrigins)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
   });
 
