@@ -12,7 +12,7 @@ import { S3Service } from 'src/common/services/s3.service';
 import { AdminFinancialReportDto } from '../../dto/admin-financial-report.dto';
 import { plainToInstance } from 'class-transformer';
 import { UserFinancialReportDto } from '../../dto/user-financial-report.dto';
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'generated/client';
 
 @Injectable()
 export class UserFinancialReportsService {

@@ -1,4 +1,4 @@
-import { Currency, Transaction } from '@prisma/client';
+import { Currency, Transaction } from 'generated/client';
 import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsArray } from 'class-validator';
 

@@ -1,5 +1,5 @@
 import { IsNumber, IsString, IsEnum, IsOptional } from 'class-validator';
-import { Currency, TransactionType } from '@prisma/client';
+import { Currency, TransactionType } from 'generated/client';
 
 export class ModifyBalanceDto {
   @IsNumber()

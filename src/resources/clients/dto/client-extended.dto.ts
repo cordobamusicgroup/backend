@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { ClientType, TaxIdType } from '@prisma/client';
+import { ClientType, TaxIdType } from 'generated/client';
 import { ContractDto } from './contract/contract.dto';
 import { AddressDto } from './address/address.dto';
 import { DmbDto } from './dmb/dmb.dto';

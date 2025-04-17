@@ -9,7 +9,7 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import env from 'src/config/env.config';
 import { ProcessingType } from '../enums/processing-type.enum';
 import { BullJobLogger } from 'src/common/logger/BullJobLogger';
-import { ContractType, Distributor } from '@prisma/client';
+import { ContractType, Distributor } from 'generated/client';
 import { parse } from 'fast-csv';
 import * as fs from 'fs';
 import { decode } from 'html-entities';

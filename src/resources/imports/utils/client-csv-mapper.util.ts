@@ -3,7 +3,7 @@ import {
   ContractStatus,
   ContractType,
   DMBStatus,
-} from '@prisma/client';
+} from 'generated/client';
 
 export function mapClientCsvToIntermediate(row: any) {
   return {

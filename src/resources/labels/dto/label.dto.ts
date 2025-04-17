@@ -1,4 +1,4 @@
-import { LabelRegistrationStatus, LabelStatus } from '@prisma/client';
+import { LabelRegistrationStatus, LabelStatus } from 'generated/client';
 import { Expose, Transform } from 'class-transformer';
 
 export class LabelDto {

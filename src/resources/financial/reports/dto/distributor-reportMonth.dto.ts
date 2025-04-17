@@ -1,5 +1,5 @@
 import { IsEnum, IsString, Matches } from 'class-validator';
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'generated/client';
 
 export class DistributorReportDto {
   @IsEnum(Distributor)

@@ -1,5 +1,5 @@
 # Base image
-FROM node:20-slim AS base
+FROM node:23-slim AS base
 
 # Install necessary system packages for Prisma and other dependencies (including OpenSSL and unzip)
 RUN apt-get update -y && apt-get install -y openssl curl unzip && rm -rf /var/lib/apt/lists/*
@@ -13,7 +13,10 @@ RUN SHA_SUM=$(npm view pnpm@10.1.0 dist.shasum) && corepack install -g pnpm@10.1
 WORKDIR /app
 
 # Copy configuration files
-COPY package.json bun.lockb* ./
+COPY package.json pnpm-lock.yaml ./
+
+# ✅ Permitir scripts postinstall (bcrypt, prisma, etc.)
+ENV PNPM_ENABLE_PRE_POST_SCRIPTS=true
 
 # Instalar dependencias usando pnpm con cache
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install

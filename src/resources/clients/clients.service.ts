@@ -11,7 +11,7 @@ import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { Currency } from '@prisma/client';
+import { Currency } from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import {
@@ -21,7 +21,7 @@ import {
 import {
   PrismaClientKnownRequestError,
   Decimal,
-} from '@prisma/client/runtime/library';
+} from 'generated/client/runtime/library';
 
 @Injectable()
 export class ClientsService {

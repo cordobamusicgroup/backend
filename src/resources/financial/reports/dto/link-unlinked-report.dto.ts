@@ -1,4 +1,4 @@
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'generated/client';
 
 /**
  * Data transfer object for linking unlinked reports to a specific label.

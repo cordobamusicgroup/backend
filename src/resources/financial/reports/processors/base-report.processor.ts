@@ -3,7 +3,7 @@ import { Job } from 'bullmq';
 import { S3Service } from 'src/common/services/s3.service';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { BullJobLogger } from 'src/common/logger/BullJobLogger';
-import { Distributor } from '@prisma/client';
+import { Distributor } from 'generated/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import env from 'src/config/env.config';

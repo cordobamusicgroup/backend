@@ -11,7 +11,7 @@ import { AdminBaseReportService } from '../../services/admin/admin-base-report.s
 import { AdminReportProcessCSVService } from '../../services/admin/admin-report-process-csv.service';
 import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';
 import { UserFinancialReportsService } from '../../services/user/user-financial-reports.service';
-import { Role } from '@prisma/client';
+import { Role } from 'generated/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { BaseReportDto } from '../../dto/admin-base-reports.dto';
 

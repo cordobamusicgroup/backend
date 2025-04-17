@@ -1,4 +1,4 @@
-import { ContractStatus, ContractType } from '@prisma/client';
+import { ContractStatus, ContractType } from 'generated/client';
 import { Expose } from 'class-transformer';
 
 export class ContractDto {

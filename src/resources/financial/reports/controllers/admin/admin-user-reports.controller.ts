@@ -8,7 +8,7 @@ import {
   Get,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Role } from '@prisma/client';
+import { Role } from 'generated/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AdminUserReportsService } from '../../services/admin/admin-user-reports.service';
 import { DistributorReportDto } from '../../dto/distributor-reportMonth.dto';

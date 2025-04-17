@@ -1,0 +1,668 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+  // binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("APP_DATABASE_URL")
+}
+
+model InitializationStatus {
+  id          Int     @id @default(autoincrement())
+  initialized Boolean @default(false)
+  adminInit   Boolean @default(false)
+
+  @@map("initialization_status")
+}
+
+model S3File {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  fileName  String
+  type      String
+  folder    String?
+  bucket    String
+  key       String
+
+  UserRoyaltyReport     UserRoyaltyReport[]
+  BaseRoyaltyReport     BaseRoyaltyReport[]
+  ImportedRoyaltyReport ImportedRoyaltyReport[]
+
+  @@map("s3_files")
+}
+
+// model WorkflowSubmission {
+//   id          Int              @id @default(autoincrement())
+//   formType    String // Antes era FormType enum, ahora es un String
+//   status      SubmissionStatus @default(PENDING)
+//   currentStep String
+//   data        Json
+//   userId      Int
+//   user        User             @relation(fields: [userId], references: [id])
+//   createdAt   DateTime         @default(now())
+//   updatedAt   DateTime         @updatedAt
+// }
+
+// enum SubmissionStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   IN_PROGRESS
+// }
+
+// model ActivityLog {
+//   id        Int      @id @default(autoincrement())
+//   action    String
+//   note      String?
+//   createdAt DateTime @default(now())
+//   // Relación opcional con el usuario que realizó la acción
+//   userId    Int?
+//   user      User?    @relation(fields: [userId], references: [id])
+// }
+
+model Log {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  object    String
+  objectId  Int?
+  message   String
+  script    String?
+  ip        String?
+
+  @@map("logs")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  username  String   @unique
+  email     String   @unique
+  password  String
+
+  fullName String @default("Change Me")
+
+  preferences UserPreferences[]
+  comms       UserComms[]
+  resetToken  PasswordResetToken? @relation("PasswordResetToken")
+
+  role     Role    @default(USER)
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id])
+  logs     Log[] //TODO -- Remove this
+
+  generalContactClient Client[]       @relation("GeneralContact")
+  refreshTokens        RefreshToken[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String // Aqu�� guardamos el hash del token
+  expiresAt DateTime // Fecha de expiración del token
+  userId    Int      @unique // Relación uno a uno con el usuario
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, name: "PasswordResetToken")
+
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model UserPreferences {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+
+  fontSize          String?
+  mainMenuCollapsed Boolean?
+  theme             String?
+  language          String?
+
+  @@map("users_preferences")
+}
+
+model UserComms {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  type  CommsChannels
+  value String
+
+  @@map("users_comms")
+}
+
+//*** Clients ***//
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  wp_id     Int?     @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientName    String     @unique
+  firstName     String
+  lastName      String
+  type          ClientType @default(PERSON)
+  addressId     Int
+  address       Address    @relation(fields: [addressId], references: [id], onDelete: Cascade, name: "ClientAddress")
+  taxIdType     TaxIdType
+  taxId         String
+  vatRegistered Boolean    @default(false)
+  vatId         String?
+
+  generalContact   User? @relation("GeneralContact", fields: [generalContactId], references: [id])
+  generalContactId Int?
+
+  isBlocked                 Boolean @default(false)
+  isPaymentsBlocked         Boolean @default(false)
+  isPaymentInProgress       Boolean @default(false)
+  isPaymentDataInValidation Boolean @default(false)
+
+  dmb ClientDMB? @relation("ClientDMB")
+
+  balances          Balance[]                 @relation("ClientBalances")
+  paymentData       ClientPaymentInformation?
+  labels            Label[]                   @relation("ClientLabel")
+  users             User[]
+  contract          Contract?
+  userRoyaltyReport UserRoyaltyReport[]
+
+  @@map("clients")
+}
+
+model ClientDMB {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  clientId Int    @unique
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientDMB")
+
+  accessType    AccessTypeDMB @default(STANDARD)
+  status        DMBStatus     @default(PENDING)
+  subclientName String?
+  username      String?
+
+  @@map("clients_dmb")
+}
+
+model ClientPaymentInformation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  clientId Int    @unique
+  client   Client @relation(fields: [clientId], references: [id])
+
+  paymentMethod PaymentMethod?
+  data          Json?
+
+  @@map("clients_payments_information")
+}
+
+model Contract {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  clientId Int?    @unique
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  uuid   String         @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type   ContractType   @default(DISTRIBUTION_EXCLUSIVE)
+  ppd    Float?         @default(75.00)
+  status ContractStatus @default(DRAFT)
+  docUrl String?
+
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  signed    Boolean   @default(false)
+  signedAt  DateTime?
+  signedBy  String?
+
+  @@map("contracts")
+}
+
+model Balance {
+  id           Int           @id @default(autoincrement())
+  clientId     Int
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
+  currency     Currency      @default(EUR)
+  amount       Decimal       @default(0.00)
+  amountRetain Decimal       @default(0.00)
+  transactions Transaction[] @relation("BalanceTransactions")
+
+  @@unique([currency, clientId])
+  @@map("clients_balances")
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type          TransactionType
+  description   String
+  amount        Decimal
+  balanceAmount Decimal
+
+  reversed Boolean @default(false)
+
+  distributor Distributor?
+
+  balanceId Int
+  balance   Balance @relation(fields: [balanceId], references: [id], name: "BalanceTransactions", onDelete: Cascade)
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "TransactionBaseReport")
+  userReportId Int?
+  userReport   UserRoyaltyReport? @relation(fields: [userReportId], references: [id], name: "TransactionUserReport")
+
+  @@map("clients_transactions")
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  street    String
+  street2   String?
+  city      String
+  state     String
+  countryId Int
+  zip       String
+  country   Country  @relation(fields: [countryId], references: [id])
+  client    Client[] @relation("ClientAddress")
+
+  @@map("clients_addresses")
+}
+
+model Country {
+  id        Int       @id @default(autoincrement())
+  name      String
+  shortCode String    @unique
+  code      String    @unique
+  address   Address[]
+  label     Label[]
+
+  @@map("countries")
+}
+
+//*** Labels ***//
+
+model Label {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id], name: "ClientLabel")
+
+  name      String      @unique
+  status    LabelStatus @default(ACTIVE)
+  website   String?
+  countryId Int?
+  country   Country?    @relation(fields: [countryId], references: [id])
+
+  beatportStatus   LabelRegistrationStatus @default(NO_REGISTRATION)
+  traxsourceStatus LabelRegistrationStatus @default(NO_REGISTRATION)
+  beatportUrl      String?
+  traxsourceUrl    String?
+
+  KontorRoyaltyReport  KontorRoyaltyReport[]
+  BelieveRoyaltyReport BelieveRoyaltyReport[]
+
+  @@map("labels")
+}
+
+//*** Royalties Reports ***//
+
+model ImportedRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  distributor    Distributor
+  reportingMonth String
+  importStatus   String
+
+  s3FileId             Int?
+  s3File               S3File?                @relation(fields: [s3FileId], references: [id])
+  KontorRoyaltyReport  KontorRoyaltyReport[]  @relation("KontorImportedReports")
+  BelieveRoyaltyReport BelieveRoyaltyReport[] @relation("BelieveImportedReports")
+
+  @@map("imported_royalties_reports")
+}
+
+model BaseRoyaltyReport {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  currency       Currency    @default(EUR)
+  distributor    Distributor
+  reportingMonth String
+  totalRoyalties Float
+  totalEarnings  Float
+
+  debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
+
+  s3FileId Int? // Add this line for the S3 file ID
+  s3File   S3File? @relation(fields: [s3FileId], references: [id])
+
+  kontorReports  KontorRoyaltyReport[]  @relation("BaseKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("BaseBelieveReports")
+
+  userReports UserRoyaltyReport[] @relation("BaseUserReports")
+  Transaction Transaction[]       @relation("TransactionBaseReport")
+
+  @@unique([distributor, reportingMonth])
+  @@map("base_royalties_reports")
+}
+
+model UserRoyaltyReport {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  currency       Currency    @default(EUR)
+  distributor    Distributor
+  reportingMonth String
+  totalRoyalties Float
+
+  debitState DebitState @default(UNPAID)
+  paidOn     DateTime?
+
+  s3FileId Int? // Relación unidireccional
+  s3File   S3File? @relation(fields: [s3FileId], references: [id])
+
+  kontorReports  KontorRoyaltyReport[]  @relation("UserKontorReports")
+  believeReports BelieveRoyaltyReport[] @relation("UserBelieveReports")
+
+  baseReportId Int?
+  baseReport   BaseRoyaltyReport? @relation(fields: [baseReportId], references: [id], name: "BaseUserReports")
+
+  clientId     Int?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  transactions Transaction[] @relation("TransactionUserReport")
+}
+
+model KontorRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  currency  Currency @default(EUR)
+
+  labelId Int?
+  label   Label? @relation(fields: [labelId], references: [id], onDelete: Restrict)
+
+  reportingMonth String
+  salesMonth     String
+  store          String
+  chType         String?
+  channelId      String?
+  country        String
+  labelName      String
+  productType    String
+  productTitle   String
+  productArtist  String
+  ean            String
+  isrc           String
+  grid           String
+  articleNo      String?
+  royalties      Decimal
+  units          Int
+
+  cmg_clientRate Decimal?
+  cmg_netRevenue Decimal?
+
+  baseReportId     Int?
+  baseReport       BaseRoyaltyReport?     @relation(fields: [baseReportId], references: [id], name: "BaseKontorReports")
+  userReportId     Int?
+  userReport       UserRoyaltyReport?     @relation(fields: [userReportId], references: [id], name: "UserKontorReports")
+  importedReportId Int?
+  importedReport   ImportedRoyaltyReport? @relation(fields: [importedReportId], references: [id], name: "KontorImportedReports")
+
+  @@map("kontor_royalties_reports")
+}
+
+model BelieveRoyaltyReport {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  currency  Currency @default(USD)
+
+  labelId Int?
+  label   Label? @relation(fields: [labelId], references: [id], onDelete: Restrict)
+
+  reportingMonth            String
+  salesMonth                String
+  platform                  String
+  countryRegion             String
+  labelName                 String
+  artistName                String
+  releaseTitle              String
+  trackTitle                String
+  upc                       String
+  isrc                      String
+  catalogNb                 String?
+  streamingSubscriptionType String?
+  releaseType               String?
+  salesType                 String?
+  quantity                  String
+  clientPaymentCurrency     String?
+  unitPrice                 Decimal
+  mechanicalFee             Decimal?
+  grossRevenue              Decimal
+  clientShareRate           Decimal
+  netRevenue                Decimal
+
+  cmg_clientRate Decimal?
+  cmg_netRevenue Decimal?
+
+  baseReportId     Int?
+  baseReport       BaseRoyaltyReport?     @relation(fields: [baseReportId], references: [id], name: "BaseBelieveReports")
+  userReportId     Int?
+  userReport       UserRoyaltyReport?     @relation(fields: [userReportId], references: [id], name: "UserBelieveReports")
+  importedReportId Int?
+  importedReport   ImportedRoyaltyReport? @relation(fields: [importedReportId], references: [id], name: "BelieveImportedReports")
+
+  @@map("believe_reports")
+}
+
+model UnlinkedReport {
+  id                   Int                    @id @default(autoincrement())
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  distributor          Distributor
+  reportingMonth       String
+  labelName            String
+  count                Int
+  UnlinkedReportDetail UnlinkedReportDetail[]
+
+  @@map("unlinked_reports")
+}
+
+model UnlinkedReportDetail {
+  id               Int            @id @default(autoincrement())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  unlinkedReportId Int
+  unlinkedReport   UnlinkedReport @relation(fields: [unlinkedReportId], references: [id], onDelete: Cascade)
+  data             Json
+
+  @@map("unlinked_details_reports")
+}
+
+model FailedReportDetail {
+  id             Int         @id @default(autoincrement())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  distributor    Distributor
+  reportingMonth String
+  failedReason   String
+  data           Json
+
+  @@map("failed_details_reports")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isRevoked Boolean  @default(false)
+
+  @@index([userId])
+}
+
+//*** Enums  ***//
+
+enum Currency {
+  USD
+  EUR
+  GBP
+
+  @@map("currencies")
+}
+
+enum Distributor {
+  BELIEVE
+  KONTOR
+
+  @@map("distributors")
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  PAYPAL
+  CRYPTO
+
+  @@map("payment_methods")
+}
+
+enum AccessTypeDMB {
+  STANDARD
+  ADVANCED
+}
+
+enum Role {
+  ADMIN
+  ADMIN_CONTENT
+  ADMIN_LEGAL
+  ADMIN_MANAGER
+  USER
+
+  @@map("roles")
+}
+
+enum CommsChannels {
+  MOBILE
+  PHONE
+  SKYPE
+  X_TWITTER
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  TWITCH
+  VK
+
+  @@map("communication_channels")
+}
+
+//*** Enums Types ***//
+
+enum TransactionType {
+  PAYMENT
+  ROYALTIES
+  RECALLED_PAYMENT
+  BOUNCEDBACK_PAYMENT
+  OTHER
+}
+
+enum DebitState {
+  PAID
+  UNPAID
+  OPEN
+}
+
+enum ContractType {
+  DISTRIBUTION_NONEXCLUSIVE
+  DISTRIBUTION_EXCLUSIVE
+  LICENSING
+  PUBLISHING
+  MANAGEMENT
+  PRODUCTION
+  PROMOTION
+  OTHER
+
+  @@map("contracts_types")
+}
+
+enum ClientType {
+  PERSON
+  BUSINESS
+
+  @@map("clients_types")
+}
+
+enum TaxIdType {
+  COMPANY_NUMBER
+  NATIONAL_ID
+  PASSPORT
+  RESIDENT_PERMIT
+  ID_CARD
+  DRIVERS_LICENSE
+
+  @@map("clients_tax_id_types")
+}
+
+//*** Enums Statuses ***//
+
+enum LabelRegistrationStatus {
+  NO_REGISTRATION
+  PENDING
+  REJECTED
+  ACTIVE
+
+  @@map("label_registrations_statuses")
+}
+
+enum LabelStatus {
+  ACTIVE
+  DISABLED
+
+  @@map("label_statuses")
+}
+
+enum ContractStatus {
+  ACTIVE
+  TERMINATED
+  EXPIRED
+  DRAFT
+
+  @@map("contracts_statuses")
+}
+
+enum DMBStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+
+  @@map("dmb_statuses")
+}
