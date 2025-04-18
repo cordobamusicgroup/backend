@@ -451,8 +451,6 @@ export class AuthService {
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
     const { token, newPassword } = resetPasswordDto;
 
-    console.log('Password to validate:', newPassword);
-
     try {
       // Validaciones manuales para depuración
       let errorMessage = '';
