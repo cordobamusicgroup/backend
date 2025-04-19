@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # 🚀 File name: start_containers.sh
 # 📌 Usage: ./start_containers.sh [environment]
@@ -11,7 +12,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # 🛠️ Validate argument
-if [ -z "$1" ]; then
+if [ -z "${1-}" ]; then
   echo -e "${RED}❌ Error: No environment specified. Use 'production' or 'staging'.${NC}"
   exit 1
 fi
@@ -25,8 +26,9 @@ if [[ "$ENV" != "production" && "$ENV" != "staging" ]]; then
 fi
 
 ENV_FILE=".env.${ENV}"
+export COMPOSE_PROJECT_NAME="cmg-api-${ENV}"
 
-# 🐳 Check if Docker is installed
+# 🐳 Check if Docker and Compose are installed
 if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
   echo -e "${RED}❌ Error: Docker Compose is not installed. Please install it and try again.${NC}"
   exit 1
@@ -38,33 +40,21 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
+echo -e "${CYAN}🔧 Environment: ${ENV}${NC}"
+echo -e "${CYAN}📄 Using .env file: ${ENV_FILE}${NC}"
+echo -e "${CYAN}📦 Docker Project Name: ${COMPOSE_PROJECT_NAME}${NC}"
+
 # 🛑 Stop and remove existing containers
 echo -e "${YELLOW}🛑 Stopping and removing existing containers for ${ENV}...${NC}"
 docker compose --env-file "$ENV_FILE" down
-sleep 5  # Shorter wait time for smoother execution
-
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to stop and remove containers for ${ENV}.${NC}"
-  exit 1
-fi
 
 # 🔨 Build the containers
 echo -e "${CYAN}🔨 Building the containers for ${ENV}...${NC}"
 docker compose --env-file "$ENV_FILE" build
 
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to build containers for ${ENV}.${NC}"
-  exit 1
-fi
-
 # 🚀 Start the containers in detached mode
 echo -e "${GREEN}🚀 Starting the containers for ${ENV}...${NC}"
 docker compose --env-file "$ENV_FILE" up -d
-
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to start containers for ${ENV}.${NC}"
-  exit 1
-fi
 
 echo -e "${GREEN}✅ Containers for ${ENV} started successfully.${NC}"
 
@@ -73,24 +63,12 @@ echo -e "${YELLOW}🧹 Cleaning up unused Docker resources...${NC}"
 
 # 🗑️ Remove unused images
 docker image prune -a -f
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to prune unused Docker images.${NC}"
-  exit 1
-fi
 
 # 📦 Clean build cache older than 24 hours
 echo -e "${YELLOW}🗄️ Cleaning build cache older than 24 hours...${NC}"
 docker builder prune --filter "until=24h" -f
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to clean old build cache.${NC}"
-  exit 1
-fi
 
 # 🔄 Remove unused volumes
 docker volume prune -f
-if [ $? -ne 0 ]; then
-  echo -e "${RED}❌ Error: Failed to prune unused Docker volumes.${NC}"
-  exit 1
-fi
 
 echo -e "${GREEN}🎉 Cleanup completed successfully.${NC}"
