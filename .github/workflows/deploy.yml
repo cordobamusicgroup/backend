@@ -26,6 +26,7 @@ jobs:
 
       - name: 🧠 Set environment values based on branch
         run: |
+          set -u
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "DEPLOY_PATH=${{ vars.DEPLOY_PATH_PROD }}" >> $GITHUB_ENV
             echo "ENV=production" >> $GITHUB_ENV
@@ -39,6 +40,9 @@ jobs:
           echo "📌 DEPLOY_PATH: $DEPLOY_PATH"
           echo "📌 ENV: $ENV"
 
+      - name: 📅 Show deploy timestamp
+        run: echo "🕒 Deploy time: $(date -u)"
+
       - name: 🚀 Deploy and restart containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -46,8 +50,9 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
           echo "🚀 Starting deployment to $DEPLOY_PATH..."
-          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST \ "DEPLOY_PATH='$DEPLOY_PATH' ENV='$ENV' bash -s" << 'EOF'
-            
+          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST \
+            "DEPLOY_PATH='$DEPLOY_PATH' ENV='$ENV' bash -s" << 'EOF'
+
             set -e
 
             echo "🖥️ Connected to: $(hostname)"
