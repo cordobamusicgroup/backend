@@ -27,7 +27,7 @@ services:
 
   postgres:
     container_name: cmg-db-${DOCKER_ENV}
-    image: 'postgres:15' # ✅ Fijar versión para evitar roturas inesperadas
+    image: 'postgres:17' # ✅ Fijar versión para evitar roturas inesperadas
     env_file:
       - .env.${DOCKER_ENV}
     volumes:
@@ -48,7 +48,7 @@ services:
 
   redis:
     container_name: cmg-redis-${DOCKER_ENV}
-    image: 'redis:7' # ✅ Fijar versión
+    image: 'redis:7.4.2' # ✅ Fijar versión
     ports:
       - '${DOCKER_REDIS_PORT}:6379'
     healthcheck:
