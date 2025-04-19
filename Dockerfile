@@ -26,8 +26,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install
 # 📁 Copiar el resto del código fuente
 COPY . .
 
-# ⚙️ Generar Prisma client
-RUN pnpm prisma generate
+# # ⚙️ Generar Prisma client
+# RUN pnpm prisma generate
 
 # 🏗️ Build de la app
 RUN pnpm run build
