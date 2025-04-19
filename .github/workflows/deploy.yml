@@ -46,12 +46,9 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
           echo "🚀 Starting deployment to $DEPLOY_PATH..."
-          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
+          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST \ "DEPLOY_PATH='$DEPLOY_PATH' ENV='$ENV' bash -s" << 'EOF'
             
             set -e
-
-            export DEPLOY_PATH="$DEPLOY_PATH"
-            export ENV="$ENV"
 
             echo "🖥️ Connected to: $(hostname)"
             echo "📂 DEPLOY_PATH: $DEPLOY_PATH"
