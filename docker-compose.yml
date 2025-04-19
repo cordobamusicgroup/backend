@@ -27,7 +27,7 @@ services:
 
   postgres:
     container_name: cmg-db-${DOCKER_ENV}
-    image: 'postgres:17' # ✅ Fijar versión para evitar roturas inesperadas
+    image: 'postgres:16' # ✅ Fijar versión para evitar roturas inesperadas
     env_file:
       - .env.${DOCKER_ENV}
     volumes:
