@@ -1,40 +1,39 @@
-# Base image
+# 🐳 Base image
 FROM node:23-slim AS base
 
-# Install necessary system packages for Prisma and other dependencies (including OpenSSL and unzip)
-RUN apt-get update -y && apt-get install -y openssl curl unzip && rm -rf /var/lib/apt/lists/*
+# 🛠️ Instalar paquetes necesarios para Prisma, bcrypt, y unzip
+RUN apt-get update -y && apt-get install -y \
+    openssl \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
-# Enable pnpm via Corepack
-RUN corepack enable
-# Install pnpm v10 using corepack sin errores
-RUN SHA_SUM=$(npm view pnpm@10.1.0 dist.shasum) && corepack install -g pnpm@10.1.0+sha1.$SHA_SUM
+# 📦 Habilitar y activar pnpm desde corepack (usará la versión definida en package.json)
+RUN corepack enable && corepack prepare pnpm --activate
 
-# Set working directory
+# 🗂️ Establecer directorio de trabajo
 WORKDIR /app
 
-# Copy configuration files
-COPY package.json pnpm-lock.yaml ./
-
-# ✅ Permitir scripts postinstall (bcrypt, prisma, etc.)
+# 🔐 Habilitar scripts postinstall (prisma, bcrypt, etc.)
 ENV PNPM_ENABLE_PRE_POST_SCRIPTS=true
 
-# Instalar dependencias usando pnpm con cache
+# 📄 Copiar archivos de dependencias primero para aprovechar caché
+COPY package.json pnpm-lock.yaml ./
+
+# 📦 Instalar dependencias con caché montado
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store pnpm install
 
-# Copy the rest of the application files
+# 📁 Copiar el resto del código fuente
 COPY . .
 
-# Generate Prisma client using pnpm
+# ⚙️ Generar Prisma client
 RUN pnpm prisma generate
 
-# Build the application using pnpm
+# 🏗️ Build de la app
 RUN pnpm run build
 
-# Set environment variable for production
-ENV NODE_ENV=production
-
-# Expose the port on which the application runs
+# 🚪 Exponer puerto de ejecución
 EXPOSE 3000
 
-# Run Prisma migrations and start the application using pnpm
+# 🚀 Comando final: aplicar migraciones y arrancar
 CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm run start:prod"]
