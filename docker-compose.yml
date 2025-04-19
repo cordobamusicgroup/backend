@@ -1,4 +1,4 @@
-name: 'cmg-api-${DOCKER_ENV}'
+# ❌ No uses 'name:' con variables. En su lugar, usá COMPOSE_PROJECT_NAME desde el script
 
 services:
   app:
@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         - 'DOCKER_BUILDKIT=1'
-    image: ${DOCKER_IMAGE}:${DOCKER_VERSION} # Usa variable de imagen y versión
+    image: ${DOCKER_IMAGE}:${DOCKER_VERSION}
     container_name: cmg-api-${DOCKER_ENV}
     env_file:
       - .env.${DOCKER_ENV}
@@ -23,15 +23,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
 
   postgres:
     container_name: cmg-db-${DOCKER_ENV}
-    image: 'postgres:latest'
+    image: 'postgres:16' # ✅ Fijar versión para evitar roturas inesperadas
     env_file:
       - .env.${DOCKER_ENV}
     volumes:
-      - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data # Volumen específico para el entorno
+      - ./data/db/${DOCKER_ENV}_data:/var/lib/postgresql/data
       - ./data/db/${DOCKER_ENV}_log:/var/log/postgresql
+    ports:
+      - '${DOCKER_DB_PORT}:5432'
     healthcheck:
       test:
         [
@@ -41,12 +44,11 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    ports:
-      - '${DOCKER_DB_PORT}:5432'
+    restart: unless-stopped
 
   redis:
     container_name: cmg-redis-${DOCKER_ENV}
-    image: 'redis:latest'
+    image: 'redis:7.4.2' # ✅ Fijar versión
     ports:
       - '${DOCKER_REDIS_PORT}:6379'
     healthcheck:
@@ -54,6 +56,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
 
 networks:
   default:

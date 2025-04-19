@@ -9,10 +9,9 @@ on:
 jobs:
   deploy:
     runs-on: kvm4
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     concurrency:
-      group: deploy-${{ github.ref_name }} # Group by branch (main or staging)
+      group: deploy-${{ github.ref_name }}
 
     steps:
       - name: 📥 Checkout repository
@@ -25,40 +24,37 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: 🛠️ Validate deployment environment variables
+      - name: 🧠 Set environment values based on branch
         run: |
-          if [ -z "${{ vars.DEPLOY_PATH }}" ] || [ -z "${{ vars.ENV }}" ]; then
-            echo "❌ Error: DEPLOY_PATH or ENV is not set in GitHub Actions."
-            exit 1
+          set -u
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "DEPLOY_PATH=${{ vars.DEPLOY_PATH_PROD }}" >> $GITHUB_ENV
+            echo "ENV=production" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_PATH=${{ vars.DEPLOY_PATH_STAGING }}" >> $GITHUB_ENV
+            echo "ENV=staging" >> $GITHUB_ENV
           fi
-        env:
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          ENV: ${{ vars.ENV }}
 
-      - name: 🕵️ Debug Environment Variables
+      - name: 🕵️ Debug environment values
         run: |
           echo "📌 DEPLOY_PATH: $DEPLOY_PATH"
           echo "📌 ENV: $ENV"
-        env:
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          ENV: ${{ vars.ENV }}
+
+      - name: 📅 Show deploy timestamp
+        run: |
+          echo "🕒 Deploy time: $(date -u)"
 
       - name: 🚀 Deploy and restart containers on server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          ENV: ${{ vars.ENV }}
         run: |
           echo "🚀 Starting deployment to $DEPLOY_PATH..."
-          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST << 'EOF'
-            
-            set -e  # Stop execution on error
+          ssh -i ~/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST \
+            "DEPLOY_PATH='$DEPLOY_PATH' ENV='$ENV' bash -s" << 'EOF'
 
-            # Pass environment variables manually inside SSH session
-            export DEPLOY_PATH='${{ vars.DEPLOY_PATH }}'
-            export ENV='${{ vars.ENV }}'
+            set -e
 
             echo "🖥️ Connected to: $(hostname)"
             echo "📂 DEPLOY_PATH: $DEPLOY_PATH"
@@ -79,11 +75,8 @@ jobs:
 
             echo "🔄 Resetting local changes and updating code..."
             git reset --hard HEAD
-            git clean -fd  # Remove untracked files
-            
+            git clean -fd
             BRANCH=$(git rev-parse --abbrev-ref HEAD)
-            echo "📌 Using branch: $BRANCH"
-            
             git fetch origin $BRANCH
             git pull origin $BRANCH --rebase
 
