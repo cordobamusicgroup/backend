@@ -41,7 +41,8 @@ jobs:
           echo "📌 ENV: $ENV"
 
       - name: 📅 Show deploy timestamp
-        run: echo "🕒 Deploy time: $(date -u)"
+        run: |
+          echo "🕒 Deploy time: $(date -u)"
 
       - name: 🚀 Deploy and restart containers on server
         env:
