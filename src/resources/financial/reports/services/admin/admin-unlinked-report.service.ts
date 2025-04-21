@@ -125,7 +125,7 @@ export class AdminUnlinkedReportService {
       );
     }
     return {
-      unlinkedReportId: report.id,
+      id: report.id,
       labelName: report.labelName,
       distributor: report.distributor,
       reportingMonth: report.reportingMonth,
