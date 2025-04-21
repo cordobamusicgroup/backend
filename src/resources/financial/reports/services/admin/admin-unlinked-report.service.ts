@@ -99,12 +99,38 @@ export class AdminUnlinkedReportService {
   }
 
   /**
-   * Gets all unlinked reports
-   *
-   * @returns Array of all unlinked reports
+   * Gets all unlinked reports that do NOT have a job in progress in the import-reports queue.
    */
   async getAllUnlinkedReports() {
-    return this.prisma.unlinkedReport.findMany({});
+    const allReports = await this.prisma.unlinkedReport.findMany({});
+    const jobs = await this.importReportsQueue.getJobs(['waiting', 'active']);
+    const inProgressIds = new Set(
+      jobs
+        .filter((job) => job.name === 'LinkUnlinkedReport')
+        .map((job) => job.data.unlinkedReportId),
+    );
+    return allReports.filter((report) => !inProgressIds.has(report.id));
+  }
+
+  /**
+   * Gets individual unlinked report info by ID (ID, Label Name, Distributor, Reporting Month, Count).
+   */
+  async getUnlinkedReportInfo(unlinkedReportId: number) {
+    const report = await this.prisma.unlinkedReport.findUnique({
+      where: { id: unlinkedReportId },
+    });
+    if (!report) {
+      throw new BadRequestException(
+        `UnlinkedReport with ID ${unlinkedReportId} not found`,
+      );
+    }
+    return {
+      unlinkedReportId: report.id,
+      labelName: report.labelName,
+      distributor: report.distributor,
+      reportingMonth: report.reportingMonth,
+      count: report.count,
+    };
   }
 
   /**
