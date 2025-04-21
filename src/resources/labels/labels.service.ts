@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLabelDto } from './dto/create-label.dto';
 import { UpdateLabelDto } from './dto/update-label.dto';
@@ -9,6 +9,8 @@ import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpExcept
 
 @Injectable()
 export class LabelsService {
+  private readonly logger = new Logger(LabelsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userObject: CreateLabelDto): Promise<LabelDto> {
@@ -67,6 +69,7 @@ export class LabelsService {
         where: { id: { in: ids } },
       });
     } catch (error) {
+      this.logger.error(`Error deleting labels: ${error.message}`, error.stack);
       if (error.code === 'P2003') {
         // Prisma foreign key constraint violation code
         throw new ConflictRecordsException();
