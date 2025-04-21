@@ -6,6 +6,7 @@ import {
   Get,
   UsePipes,
   ValidationPipe,
+  Param,
 } from '@nestjs/common';
 
 import { Role } from 'generated/client';
@@ -21,12 +22,19 @@ export class AdminUnlinkedReportsController {
   // Unlinked Reports Endpoints
 
   /**
-   * Retrieves all unlinked reports.
-   * @returns An array of all unlinked reports.
+   * Retrieves all unlinked reports that do NOT have a job in progress.
    */
   @Get('unlinked')
   async getAllUnlinkedReports() {
     return this.reportsService.getAllUnlinkedReports();
+  }
+
+  /**
+   * Retrieves individual unlinked report info by ID.
+   */
+  @Get('unlinked/:id')
+  async getUnlinkedReportById(@Param('id') id: string) {
+    return this.reportsService.getUnlinkedReportInfo(Number(id));
   }
 
   /**
