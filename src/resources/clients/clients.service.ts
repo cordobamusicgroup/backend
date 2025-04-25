@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -25,6 +26,8 @@ import {
 
 @Injectable()
 export class ClientsService {
+  private readonly logger = new Logger(ClientsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -196,7 +199,7 @@ export class ClientsService {
   /**
    * Blocks a client and retains their funds
    */
-  async blockClient(clientId: number): Promise<ClientExtendedDto> {
+  async blockClient(clientId: number): Promise<any> {
     return this.prisma.$transaction(async (prisma) => {
       const client = await prisma.client.findUnique({
         where: { id: clientId },
@@ -206,9 +209,12 @@ export class ClientsService {
       if (client.isBlocked)
         throw new BadRequestException('Client is already blocked');
 
-      // Move funds to amountRetain and set amount to 0
+      const moved: Record<string, number> = {};
       for (const balance of client.balances) {
         if (balance.amount.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = balance.amount.toNumber();
+          moved[currency] = (moved[currency] || 0) + amountNum;
           await prisma.transaction.create({
             data: {
               type: TransactionType.OTHER,
@@ -225,24 +231,32 @@ export class ClientsService {
               amount: 0,
             },
           });
+          this.logger.log(
+            `Blocked client ${clientId}: moved ${amountNum} ${currency} to retained funds.`,
+          );
         }
       }
       await prisma.client.update({
         where: { id: clientId },
         data: { isBlocked: true },
       });
-      const updated = await prisma.client.findUnique({
-        where: { id: clientId },
-        include: { address: true, contract: true, balances: true, dmb: true },
-      });
-      return this.convertToClientDto(updated);
+      this.logger.log(`Client ${clientId} blocked successfully.`);
+      const movedMsg = Object.entries(moved)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'blocked',
+        moved,
+        message: `Client blocked, ${movedMsg ? movedMsg + ' moved to retained funds.' : 'no funds moved.'}`,
+      };
     });
   }
 
   /**
    * Unblocks a client and releases their funds
    */
-  async unblockClient(clientId: number): Promise<ClientExtendedDto> {
+  async unblockClient(clientId: number): Promise<any> {
     return this.prisma.$transaction(async (prisma) => {
       const client = await prisma.client.findUnique({
         where: { id: clientId },
@@ -252,9 +266,12 @@ export class ClientsService {
       if (!client.isBlocked)
         throw new BadRequestException('Client is not blocked');
 
-      // Move funds from amountRetain to amount
+      const moved: Record<string, number> = {};
       for (const balance of client.balances) {
         if (balance.amountRetain.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = balance.amountRetain.toNumber();
+          moved[currency] = (moved[currency] || 0) + amountNum;
           const newAmount = balance.amount.plus(balance.amountRetain);
           await prisma.transaction.create({
             data: {
@@ -272,17 +289,25 @@ export class ClientsService {
               amountRetain: 0,
             },
           });
+          this.logger.log(
+            `Unblocked client ${clientId}: released ${amountNum} ${currency} from retained funds.`,
+          );
         }
       }
       await prisma.client.update({
         where: { id: clientId },
         data: { isBlocked: false },
       });
-      const updated = await prisma.client.findUnique({
-        where: { id: clientId },
-        include: { address: true, contract: true, balances: true, dmb: true },
-      });
-      return this.convertToClientDto(updated);
+      this.logger.log(`Client ${clientId} unblocked successfully.`);
+      const movedMsg = Object.entries(moved)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'unblocked',
+        moved,
+        message: `Client unblocked, ${movedMsg ? movedMsg + ' released from retained funds.' : 'no funds released.'}`,
+      };
     });
   }
 
