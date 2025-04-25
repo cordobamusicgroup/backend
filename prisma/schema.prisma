@@ -87,16 +87,18 @@ model User {
 
   fullName String @default("Change Me")
 
+  usernameDMB String?
+
   preferences UserPreferences[]
   comms       UserComms[]
-  resetToken  PasswordResetToken? @relation("PasswordResetToken")
 
   role     Role    @default(USER)
   clientId Int?
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[] //TODO -- Remove this
 
-  generalContactClient Client[]       @relation("GeneralContact")
+  generalContactClient Client[]            @relation("GeneralContact")
+  resetToken           PasswordResetToken? @relation("PasswordResetToken")
   refreshTokens        RefreshToken[]
 
   @@map("users")
@@ -194,7 +196,7 @@ model ClientDMB {
   accessType    AccessTypeDMB @default(STANDARD)
   status        DMBStatus     @default(PENDING)
   subclientName String?
-  username      String?
+  username      String? //TODO -- Remove this in prod
 
   @@map("clients_dmb")
 }

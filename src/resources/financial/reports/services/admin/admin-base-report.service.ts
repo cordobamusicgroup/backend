@@ -34,90 +34,104 @@ export class AdminBaseReportService {
    */
   async createBaseReport(distributor: Distributor, reportingMonth: string) {
     this.logger.log(
-      `Creating base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      `Starting createBaseReport for distributor=${distributor}, reportingMonth=${reportingMonth}`,
     );
-
-    if (await this.checkForExistingImportJob(distributor, reportingMonth)) {
-      this.logger.warn(
-        `An import job is already in progress for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-      );
-      throw new BadRequestException(
-        'An import job is already in progress for the given distributor and reporting month.',
-      );
-    }
-
     try {
-      const existingReport = await this.prisma.baseRoyaltyReport.findUnique({
-        where: { distributor_reportingMonth: { distributor, reportingMonth } },
-      });
-
-      if (existingReport) {
-        this.logger.warn(
-          `Base report already exists for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-        );
-        throw new BaseReportAlreadyExistsException();
-      }
-
-      const unlinkedReports = await this.prisma.unlinkedReport.findMany({
-        where: { distributor, reportingMonth },
-      });
-
-      if (unlinkedReports.length > 0) {
-        this.logger.warn(
-          `Unlinked reports exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-        );
-        throw new UnlinkedReportsExistException();
-      }
-
-      const reports = await this.getReports(distributor, reportingMonth);
-
-      if (reports.length === 0) {
-        this.logger.warn(
-          `No reports found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-        );
-        throw new NoReportsFoundException();
-      }
-
-      const { totalRoyalties, totalEarnings } = this.calculateTotals(
-        reports,
-        distributor,
-      );
-
-      const currency = distributor === Distributor.KONTOR ? 'EUR' : 'USD';
-
       this.logger.log(
-        `Creating base report for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
+        `Creating base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
 
-      const baseReport = await this.prisma.baseRoyaltyReport.create({
-        data: {
+      if (await this.checkForExistingImportJob(distributor, reportingMonth)) {
+        this.logger.warn(
+          `An import job is already in progress for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BadRequestException(
+          'An import job is already in progress for the given distributor and reporting month.',
+        );
+      }
+
+      try {
+        const existingReport = await this.prisma.baseRoyaltyReport.findUnique({
+          where: {
+            distributor_reportingMonth: { distributor, reportingMonth },
+          },
+        });
+
+        if (existingReport) {
+          this.logger.warn(
+            `Base report already exists for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+          );
+          throw new BaseReportAlreadyExistsException();
+        }
+
+        const unlinkedReports = await this.prisma.unlinkedReport.findMany({
+          where: { distributor, reportingMonth },
+        });
+
+        if (unlinkedReports.length > 0) {
+          this.logger.warn(
+            `Unlinked reports exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+          );
+          throw new UnlinkedReportsExistException();
+        }
+
+        const reports = await this.getReports(distributor, reportingMonth);
+
+        if (reports.length === 0) {
+          this.logger.warn(
+            `No reports found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+          );
+          throw new NoReportsFoundException();
+        }
+
+        const { totalRoyalties, totalEarnings } = this.calculateTotals(
+          reports,
+          distributor,
+        );
+
+        const currency = distributor === Distributor.KONTOR ? 'EUR' : 'USD';
+
+        this.logger.log(
+          `Creating base report for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
+        );
+
+        const baseReport = await this.prisma.baseRoyaltyReport.create({
+          data: {
+            distributor,
+            reportingMonth,
+            totalRoyalties: totalRoyalties.toNumber(),
+            totalEarnings: totalEarnings.toNumber(),
+            currency,
+          },
+        });
+
+        // Queue CSV generation job instead of processing it synchronously
+        await this.queueCsvGeneration(
+          baseReport.id,
           distributor,
           reportingMonth,
-          totalRoyalties: totalRoyalties.toNumber(),
-          totalEarnings: totalEarnings.toNumber(),
-          currency,
-        },
-      });
+        );
 
-      // Queue CSV generation job instead of processing it synchronously
-      await this.queueCsvGeneration(baseReport.id, distributor, reportingMonth);
+        await this.updateReportsWithBaseReportId(
+          distributor,
+          reportingMonth,
+          baseReport.id,
+        );
 
-      await this.updateReportsWithBaseReportId(
-        distributor,
-        reportingMonth,
-        baseReport.id,
-      );
-
-      this.logger.log(
-        `Base report created successfully for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
-      );
-      return {
-        message:
-          'Base report created successfully. CSV generation has been queued.',
-        baseReport,
-      };
+        this.logger.log(
+          `Base report created successfully for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        return {
+          message:
+            'Base report created successfully. CSV generation has been queued.',
+          baseReport: await this.convertToDto(baseReport),
+        };
+      } catch (error) {
+        this.logger.error(`Failed to create base report: ${error.message}`);
+        throw error;
+      }
     } catch (error) {
-      this.logger.error(`Failed to create base report: ${error.message}`);
+      this.logger.error(`Error in createBaseReport: ${error.message}`);
       throw error;
     }
   }
@@ -131,61 +145,70 @@ export class AdminBaseReportService {
    */
   async deleteBaseReport(distributor: Distributor, reportingMonth: string) {
     this.logger.log(
-      `Deleting base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      `Starting deleteBaseReport for distributor=${distributor}, reportingMonth=${reportingMonth}`,
     );
-
-    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { distributor_reportingMonth: { distributor, reportingMonth } },
-    });
-
-    if (!baseReport) {
-      this.logger.warn(
-        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    try {
+      this.logger.log(
+        `Deleting base report for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
-      throw new BaseReportNotFoundException();
+
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: { distributor_reportingMonth: { distributor, reportingMonth } },
+        include: { s3File: true },
+      });
+
+      if (!baseReport) {
+        this.logger.warn(
+          `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BaseReportNotFoundException();
+      }
+
+      const userReports = await this.prisma.userRoyaltyReport.findMany({
+        where: { baseReportId: baseReport.id },
+      });
+
+      if (userReports.length > 0) {
+        this.logger.warn(
+          `User reports exist for baseReportId: ${baseReport.id}`,
+        );
+        throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
+      }
+
+      // Delete unlinked reports for the given period and distributor
+      await this.prisma.unlinkedReport.deleteMany({
+        where: {
+          distributor: baseReport.distributor,
+          reportingMonth: baseReport.reportingMonth,
+        },
+      });
+
+      // Delete S3 file if exists
+      if (baseReport.s3FileId) {
+        try {
+          await this.s3Service.deleteFile({ id: baseReport.s3FileId });
+          this.logger.log(`Deleted S3 file with id: ${baseReport.s3FileId}`);
+        } catch (err) {
+          this.logger.warn(
+            `Could not delete S3 file with id: ${baseReport.s3FileId}: ${err.message}`,
+          );
+        }
+      }
+
+      await this.prisma.baseRoyaltyReport.delete({
+        where: { id: baseReport.id },
+      });
+
+      this.logger.log(
+        `Base report deleted successfully with ID: ${baseReport.id}`,
+      );
+      return {
+        message: 'Base report deleted successfully.',
+      };
+    } catch (error) {
+      this.logger.error(`Error in deleteBaseReport: ${error.message}`);
+      throw error;
     }
-
-    const userReports = await this.prisma.userRoyaltyReport.findMany({
-      where: { baseReportId: baseReport.id },
-    });
-
-    if (userReports.length > 0) {
-      this.logger.warn(`User reports exist for baseReportId: ${baseReport.id}`);
-      throw new UserRoyaltyReportsAlreadyExistException(baseReport.id);
-    }
-
-    // Delete unlinked reports for the given period and distributor
-    await this.prisma.unlinkedReport.deleteMany({
-      where: {
-        distributor: baseReport.distributor,
-        reportingMonth: baseReport.reportingMonth,
-      },
-    });
-
-    await this.prisma.baseRoyaltyReport.delete({
-      where: { id: baseReport.id },
-    });
-
-    this.logger.log(
-      `Base report deleted successfully with ID: ${baseReport.id}`,
-    );
-    return {
-      message: 'Base report deleted successfully.',
-    };
-  }
-
-  /**
-   * Retrieves all base reports.
-   * @returns A promise that resolves to an array of base reports.
-   */
-  async getAllBaseReports(): Promise<BaseReportDto[]> {
-    const baseReports = await this.prisma.baseRoyaltyReport.findMany({
-      include: { s3File: true },
-    });
-
-    return await Promise.all(
-      baseReports.map((report) => this.convertToDto(report)),
-    );
   }
 
   /**
@@ -201,110 +224,174 @@ export class AdminBaseReportService {
     paidOn?: string,
   ) {
     this.logger.log(
-      `Generating payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}, paidOn: ${paidOn}`,
+      `Starting generatePayments for distributor=${distributor}, reportingMonth=${reportingMonth}, manual=${manual}`,
     );
-
-    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { distributor_reportingMonth: { distributor, reportingMonth } },
-      include: { userReports: true },
-    });
-
-    if (!baseReport) {
-      this.logger.warn(
-        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    try {
+      this.logger.log(
+        `Generating payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}, paidOn: ${paidOn}`,
       );
-      throw new BaseReportNotFoundException();
-    }
 
-    if (baseReport.debitState === 'PAID') {
-      this.logger.warn(
-        `Payments have already been generated for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      // Validar que no haya un proceso activo de generación de user reports en BullMQ
+      const jobs = await this.importReportsQueue.getJobs([
+        'active',
+        'waiting',
+        'delayed',
+      ]);
+      const userReportJobExists = jobs.some(
+        (job) =>
+          job.name === 'GenerateUserReports' &&
+          job.data?.distributor === distributor &&
+          job.data?.reportingMonth === reportingMonth,
       );
-      throw new BadRequestException(
-        'Payments have already been generated for this base report.',
-      );
-    }
+      if (userReportJobExists) {
+        this.logger.warn(
+          `A user report generation job is still running for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BadRequestException(
+          'A user report generation job is still running for this period. Please wait until it finishes.',
+        );
+      }
 
-    const paidOnDate = manual ? (paidOn ? new Date(paidOn) : null) : new Date();
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: { distributor_reportingMonth: { distributor, reportingMonth } },
+        include: { userReports: true },
+      });
 
-    await Promise.all(
-      baseReport.userReports.map(async (userReport) => {
-        const client = await this.prisma.client.findUnique({
-          where: { id: userReport.clientId },
-        });
+      if (!baseReport) {
+        this.logger.warn(
+          `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BaseReportNotFoundException();
+      }
 
-        if (!client) {
-          this.logger.warn(
-            `Client not found for user report ID: ${userReport.id}`,
-          );
-          return;
-        }
+      if (!baseReport.userReports || baseReport.userReports.length === 0) {
+        this.logger.warn(
+          `No user reports found for base report ID: ${baseReport.id}`,
+        );
+        throw new BadRequestException(
+          'No user reports found for this base report.',
+        );
+      }
 
-        if (!manual) {
-          let balance = await this.prisma.balance.findFirst({
-            where: { clientId: client.id, currency: userReport.currency },
+      if (baseReport.debitState === 'PAID') {
+        this.logger.warn(
+          `Payments have already been generated for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BadRequestException(
+          'Payments have already been generated for this base report.',
+        );
+      }
+
+      const paidOnDate = manual
+        ? paidOn
+          ? new Date(paidOn)
+          : null
+        : new Date();
+
+      await Promise.all(
+        baseReport.userReports.map(async (userReport) => {
+          const client = await this.prisma.client.findUnique({
+            where: { id: userReport.clientId },
           });
 
-          if (!balance) {
-            this.logger.log(
-              `Creating balance for client ID: ${client.id} and currency: ${userReport.currency}`,
+          if (!client) {
+            this.logger.warn(
+              `Client not found for user report ID: ${userReport.id}`,
             );
-            balance = await this.prisma.balance.create({
-              data: {
-                clientId: client.id,
-                currency: userReport.currency,
-                amount: 0,
-              },
-            });
+            return;
           }
 
-          const newBalanceAmount = new Decimal(balance.amount).plus(
-            userReport.totalRoyalties,
-          );
+          if (!manual) {
+            let balance = await this.prisma.balance.findFirst({
+              where: { clientId: client.id, currency: userReport.currency },
+            });
 
-          await this.prisma.transaction.create({
+            if (!balance) {
+              this.logger.log(
+                `Creating balance for client ID: ${client.id} and currency: ${userReport.currency}`,
+              );
+              balance = await this.prisma.balance.create({
+                data: {
+                  clientId: client.id,
+                  currency: userReport.currency,
+                  amount: 0,
+                },
+              });
+            }
+
+            const newBalanceAmount = new Decimal(balance.amount).plus(
+              userReport.totalRoyalties,
+            );
+
+            // 1. Acreditar royalties normalmente
+            await this.prisma.transaction.create({
+              data: {
+                type: TransactionType.ROYALTIES,
+                description: `Royalties for ${dayjs(userReport.reportingMonth).format('YYYY.MM')}`,
+                amount: userReport.totalRoyalties,
+                balanceAmount: newBalanceAmount.toNumber(),
+                balanceId: balance.id,
+                baseReportId: baseReport.id,
+                userReportId: userReport.id,
+                distributor: baseReport.distributor,
+              },
+            });
+
+            // 2. Si el cliente está bloqueado, debitar y mover a retenido
+            if (client.isBlocked) {
+              const afterDebit = new Decimal(0);
+              await this.prisma.transaction.create({
+                data: {
+                  type: TransactionType.OTHER,
+                  description: `Blocked client: Royalties for ${dayjs(userReport.reportingMonth).format('YYYY.MM')} retained`,
+                  amount: -userReport.totalRoyalties,
+                  balanceAmount: afterDebit.toNumber(),
+                  balanceId: balance.id,
+                },
+              });
+              await this.prisma.balance.update({
+                where: { id: balance.id },
+                data: {
+                  amountRetain: { increment: userReport.totalRoyalties },
+                  amount: 0,
+                },
+              });
+            } else {
+              await this.prisma.balance.update({
+                where: { id: balance.id },
+                data: { amount: newBalanceAmount.toNumber() },
+              });
+            }
+          }
+
+          // Update user report debitState to PAID
+          await this.prisma.userRoyaltyReport.update({
+            where: { id: userReport.id },
             data: {
-              type: TransactionType.ROYALTIES,
-              description: `Royalties for ${dayjs(userReport.reportingMonth).format('YYYY.MM')}`,
-              amount: userReport.totalRoyalties,
-              balanceAmount: newBalanceAmount.toNumber(),
-              balanceId: balance.id,
-              baseReportId: baseReport.id,
-              userReportId: userReport.id,
-              distributor: baseReport.distributor,
+              debitState: 'PAID',
+              paidOn: paidOnDate,
             },
           });
+        }),
+      );
 
-          await this.prisma.balance.update({
-            where: { id: balance.id },
-            data: { amount: newBalanceAmount.toNumber() },
-          });
-        }
+      // Update base report debitState to PAID
+      await this.prisma.baseRoyaltyReport.update({
+        where: { id: baseReport.id },
+        data: {
+          debitState: 'PAID',
+          paidOn: paidOnDate,
+        },
+      });
 
-        // Update user report debitState to PAID
-        await this.prisma.userRoyaltyReport.update({
-          where: { id: userReport.id },
-          data: {
-            debitState: 'PAID',
-            paidOn: paidOnDate,
-          },
-        });
-      }),
-    );
-
-    // Update base report debitState to PAID
-    await this.prisma.baseRoyaltyReport.update({
-      where: { id: baseReport.id },
-      data: {
-        debitState: 'PAID',
-        paidOn: paidOnDate,
-      },
-    });
-
-    this.logger.log(
-      `Payments generated successfully for base report ID: ${baseReport.id}`,
-    );
-    return { message: 'Payments generated successfully.' };
+      this.logger.log(
+        `Payments generated successfully for base report ID: ${baseReport.id}`,
+      );
+      return { message: 'Payments generated successfully.' };
+    } catch (error) {
+      this.logger.error(`Error in generatePayments: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
@@ -319,68 +406,76 @@ export class AdminBaseReportService {
     manual: boolean = false,
   ) {
     this.logger.log(
-      `Deleting payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}`,
+      `Starting deletePayments for distributor=${distributor}, reportingMonth=${reportingMonth}, manual=${manual}`,
     );
-
-    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { distributor_reportingMonth: { distributor, reportingMonth } },
-    });
-
-    if (!baseReport) {
-      this.logger.warn(
-        `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    try {
+      this.logger.log(
+        `Deleting payments for distributor: ${distributor}, reportingMonth: ${reportingMonth}, manual: ${manual}`,
       );
-      throw new BaseReportNotFoundException();
-    }
 
-    if (!manual) {
-      const transactions = await this.prisma.transaction.findMany({
-        where: { baseReportId: baseReport.id },
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: { distributor_reportingMonth: { distributor, reportingMonth } },
       });
 
-      for (const transaction of transactions) {
-        const balance = await this.prisma.balance.findUnique({
-          where: { id: transaction.balanceId },
-        });
-
-        if (!balance) {
-          this.logger.warn(
-            `Balance not found for transaction ID: ${transaction.id}`,
-          );
-          continue;
-        }
-
-        const newBalanceAmount = new Decimal(balance.amount)
-          .minus(new Decimal(transaction.amount))
-          .toNumber();
-
-        await this.prisma.balance.update({
-          where: { id: balance.id },
-          data: { amount: newBalanceAmount },
-        });
-
-        await this.prisma.transaction.delete({
-          where: { id: transaction.id },
-        });
+      if (!baseReport) {
+        this.logger.warn(
+          `Base report does not exist for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new BaseReportNotFoundException();
       }
+
+      if (!manual) {
+        const transactions = await this.prisma.transaction.findMany({
+          where: { baseReportId: baseReport.id },
+        });
+
+        for (const transaction of transactions) {
+          const balance = await this.prisma.balance.findUnique({
+            where: { id: transaction.balanceId },
+          });
+
+          if (!balance) {
+            this.logger.warn(
+              `Balance not found for transaction ID: ${transaction.id}`,
+            );
+            continue;
+          }
+
+          const newBalanceAmount = new Decimal(balance.amount)
+            .minus(new Decimal(transaction.amount))
+            .toNumber();
+
+          await this.prisma.balance.update({
+            where: { id: balance.id },
+            data: { amount: newBalanceAmount },
+          });
+
+          await this.prisma.transaction.delete({
+            where: { id: transaction.id },
+          });
+        }
+      }
+
+      // Revert user reports debitState to UNPAID and clear paidOn
+      await this.prisma.userRoyaltyReport.updateMany({
+        where: { baseReportId: baseReport.id },
+        data: { debitState: 'UNPAID', paidOn: null },
+      });
+
+      // Revert base report debitState to UNPAID and clear paidOn
+      await this.prisma.baseRoyaltyReport.update({
+        where: { id: baseReport.id },
+        data: { debitState: 'UNPAID', paidOn: null },
+      });
+
+      this.logger.log(
+        `Payments deleted successfully for base report ID: ${baseReport.id}`,
+      );
+      return { message: 'Payments deleted successfully.' };
+    } catch (error) {
+      this.logger.error(`Error in deletePayments: ${error.message}`);
+      throw error;
     }
-
-    // Revert user reports debitState to UNPAID and clear paidOn
-    await this.prisma.userRoyaltyReport.updateMany({
-      where: { baseReportId: baseReport.id },
-      data: { debitState: 'UNPAID', paidOn: null },
-    });
-
-    // Revert base report debitState to UNPAID and clear paidOn
-    await this.prisma.baseRoyaltyReport.update({
-      where: { id: baseReport.id },
-      data: { debitState: 'UNPAID', paidOn: null },
-    });
-
-    this.logger.log(
-      `Payments deleted successfully for base report ID: ${baseReport.id}`,
-    );
-    return { message: 'Payments deleted successfully.' };
   }
 
   /**
@@ -391,40 +486,48 @@ export class AdminBaseReportService {
    */
   async recalculateTotals(distributor: Distributor, reportingMonth: string) {
     this.logger.log(
-      `Recalculating totals for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+      `Starting recalculateTotals for distributor=${distributor}, reportingMonth=${reportingMonth}`,
     );
-
-    const reports = await this.getReports(distributor, reportingMonth);
-
-    if (reports.length === 0) {
-      this.logger.warn(
-        `No reports found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+    try {
+      this.logger.log(
+        `Recalculating totals for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
       );
-      throw new NoReportsFoundException();
-    }
 
-    const { totalRoyalties, totalEarnings } = this.calculateTotals(
-      reports,
-      distributor,
-    );
+      const reports = await this.getReports(distributor, reportingMonth);
 
-    this.logger.log(
-      `Recalculated totals for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
-    );
+      if (reports.length === 0) {
+        this.logger.warn(
+          `No reports found for distributor: ${distributor}, reportingMonth: ${reportingMonth}`,
+        );
+        throw new NoReportsFoundException();
+      }
 
-    // Update the base report with the recalculated totals
-    await this.prisma.baseRoyaltyReport.update({
-      where: { distributor_reportingMonth: { distributor, reportingMonth } },
-      data: {
+      const { totalRoyalties, totalEarnings } = this.calculateTotals(
+        reports,
+        distributor,
+      );
+
+      this.logger.log(
+        `Recalculated totals for ${distributor} with totalRoyalties: ${totalRoyalties.toFixed()}, totalEarnings: ${totalEarnings.toFixed()}`,
+      );
+
+      // Update the base report with the recalculated totals
+      await this.prisma.baseRoyaltyReport.update({
+        where: { distributor_reportingMonth: { distributor, reportingMonth } },
+        data: {
+          totalRoyalties: totalRoyalties.toNumber(),
+          totalEarnings: totalEarnings.toNumber(),
+        },
+      });
+
+      return {
         totalRoyalties: totalRoyalties.toNumber(),
         totalEarnings: totalEarnings.toNumber(),
-      },
-    });
-
-    return {
-      totalRoyalties: totalRoyalties.toNumber(),
-      totalEarnings: totalEarnings.toNumber(),
-    };
+      };
+    } catch (error) {
+      this.logger.error(`Error in recalculateTotals: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
@@ -437,18 +540,29 @@ export class AdminBaseReportService {
     distributor: Distributor,
     reportingMonth: string,
   ): Promise<BaseReportDto> {
-    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { distributor_reportingMonth: { distributor, reportingMonth } },
-    });
+    this.logger.log(
+      `Starting generateBaseReportCsv for distributor=${distributor}, reportingMonth=${reportingMonth}`,
+    );
+    try {
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: { distributor_reportingMonth: { distributor, reportingMonth } },
+      });
 
-    if (!baseReport) {
-      throw new BaseReportNotFoundException();
+      if (!baseReport) {
+        throw new BaseReportNotFoundException();
+      }
+
+      // Queue CSV generation job and update status
+      await this.queueCsvGeneration(baseReport.id, distributor, reportingMonth);
+
+      this.logger.log(
+        `CSV generation job queued for distributor=${distributor}, reportingMonth=${reportingMonth}`,
+      );
+      return this.convertToDto(baseReport);
+    } catch (error) {
+      this.logger.error(`Error in generateBaseReportCsv: ${error.message}`);
+      throw error;
     }
-
-    // Queue CSV generation job and update status
-    await this.queueCsvGeneration(baseReport.id, distributor, reportingMonth);
-
-    return this.convertToDto(baseReport);
   }
 
   /**
@@ -457,16 +571,61 @@ export class AdminBaseReportService {
    * @returns A promise that resolves to the base report with a signed URL.
    */
   async getBaseReportWithSignedUrl(id: number): Promise<BaseReportDto> {
-    const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
-      where: { id },
+    this.logger.log(`Starting getBaseReportWithSignedUrl for id=${id}`);
+    try {
+      const baseReport = await this.prisma.baseRoyaltyReport.findUnique({
+        where: { id },
+        include: { s3File: true },
+      });
+
+      if (!baseReport) {
+        throw new BaseReportNotFoundException();
+      }
+
+      this.logger.log(`Base report with signed URL retrieved for id=${id}`);
+      return this.convertToDto(baseReport);
+    } catch (error) {
+      this.logger.error(
+        `Error in getBaseReportWithSignedUrl: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves all base reports with optional filters and custom ordering.
+   * @param filters distributor and/or reportingMonth
+   * @returns Array of BaseReportDto
+   */
+  async getAllBaseReports(filters?: {
+    distributor?: string;
+    reportingMonth?: string;
+  }): Promise<BaseReportDto[]> {
+    this.logger.log(
+      'Fetching all base reports with filters: ' + JSON.stringify(filters),
+    );
+    const where: any = {};
+    if (filters?.distributor) {
+      where.distributor = filters.distributor;
+    }
+    if (filters?.reportingMonth) {
+      where.reportingMonth = filters.reportingMonth;
+    }
+    // Primero KONTOR, luego BELIEVE, y por periodo descendente
+    const all = await this.prisma.baseRoyaltyReport.findMany({
+      where,
       include: { s3File: true },
     });
-
-    if (!baseReport) {
-      throw new BaseReportNotFoundException();
-    }
-
-    return this.convertToDto(baseReport);
+    // Ordena primero por distributor (KONTOR primero), luego por reportingMonth descendente
+    all.sort((a, b) => {
+      if (a.distributor === b.distributor) {
+        return b.reportingMonth.localeCompare(a.reportingMonth);
+      }
+      if (a.distributor === 'KONTOR') return -1;
+      if (b.distributor === 'KONTOR') return 1;
+      return 0;
+    });
+    return await Promise.all(all.map((report) => this.convertToDto(report)));
   }
 
   /**

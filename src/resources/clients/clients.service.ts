@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -11,7 +12,7 @@ import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { Currency } from 'generated/client';
+import { Currency, TransactionType } from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import {
@@ -25,6 +26,8 @@ import {
 
 @Injectable()
 export class ClientsService {
+  private readonly logger = new Logger(ClientsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -194,6 +197,121 @@ export class ClientsService {
   }
 
   /**
+   * Blocks a client and retains their funds
+   */
+  async blockClient(clientId: number): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        include: { balances: true },
+      });
+      if (!client) throw new NotFoundException('Client not found');
+      if (client.isBlocked)
+        throw new BadRequestException('Client is already blocked');
+
+      const moved: Record<string, number> = {};
+      for (const balance of client.balances) {
+        if (balance.amount.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = balance.amount.toNumber();
+          moved[currency] = (moved[currency] || 0) + amountNum;
+          await prisma.transaction.create({
+            data: {
+              type: TransactionType.OTHER,
+              description: 'Client blocked: funds retained',
+              amount: balance.amount.negated(),
+              balanceAmount: 0,
+              balanceId: balance.id,
+            },
+          });
+          await prisma.balance.update({
+            where: { id: balance.id },
+            data: {
+              amountRetain: { increment: balance.amount },
+              amount: 0,
+            },
+          });
+          this.logger.log(
+            `Blocked client ${clientId}: moved ${amountNum} ${currency} to retained funds.`,
+          );
+        }
+      }
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { isBlocked: true },
+      });
+      this.logger.log(`Client ${clientId} blocked successfully.`);
+      const movedMsg = Object.entries(moved)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'blocked',
+        moved,
+        message: `Client blocked, ${movedMsg ? movedMsg + ' moved to retained funds.' : 'no funds moved.'}`,
+      };
+    });
+  }
+
+  /**
+   * Unblocks a client and releases their funds
+   */
+  async unblockClient(clientId: number): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        include: { balances: true },
+      });
+      if (!client) throw new NotFoundException('Client not found');
+      if (!client.isBlocked)
+        throw new BadRequestException('Client is not blocked');
+
+      const moved: Record<string, number> = {};
+      for (const balance of client.balances) {
+        if (balance.amountRetain.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = balance.amountRetain.toNumber();
+          moved[currency] = (moved[currency] || 0) + amountNum;
+          const newAmount = balance.amount.plus(balance.amountRetain);
+          await prisma.transaction.create({
+            data: {
+              type: TransactionType.OTHER,
+              description: 'Client unblocked: funds released',
+              amount: balance.amountRetain,
+              balanceAmount: newAmount,
+              balanceId: balance.id,
+            },
+          });
+          await prisma.balance.update({
+            where: { id: balance.id },
+            data: {
+              amount: { increment: balance.amountRetain },
+              amountRetain: 0,
+            },
+          });
+          this.logger.log(
+            `Unblocked client ${clientId}: released ${amountNum} ${currency} from retained funds.`,
+          );
+        }
+      }
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { isBlocked: false },
+      });
+      this.logger.log(`Client ${clientId} unblocked successfully.`);
+      const movedMsg = Object.entries(moved)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'unblocked',
+        moved,
+        message: `Client unblocked, ${movedMsg ? movedMsg + ' released from retained funds.' : 'no funds released.'}`,
+      };
+    });
+  }
+
+  /**
    * Method to update a client's address.
    * If the address exists, it will be updated with the new data.
    *
@@ -293,27 +411,37 @@ export class ClientsService {
    * @returns The converted ClientDto
    */
   private async convertToClientDto(client: any): Promise<ClientExtendedDto> {
-    const addressDto = await convertToDto(client.address, AddressDto);
-    const contractDto = await convertToDto(client.contract, ContractDto);
-    const dmbDto = await convertToDto(client.dmb, DmbDto);
+    // Defensive: If any related entity is missing, avoid errors
+    const addressDto = client.address
+      ? await convertToDto(client.address, AddressDto)
+      : null;
+    const contractDto = client.contract
+      ? await convertToDto(client.contract, ContractDto)
+      : null;
+    const dmbDto = client.dmb ? await convertToDto(client.dmb, DmbDto) : null;
 
-    const balanceDtos = await Promise.all(
-      client.balances.map((balance) =>
-        convertToDto(
-          {
-            ...balance,
-            amount: balance.amount.toNumber(),
-            amountRetain: balance.amountRetain.toNumber(),
-          },
-          BalanceDto,
-        ),
-      ),
-    );
+    // Defensive: balances may be undefined or empty
+    const balanceDtos = Array.isArray(client.balances)
+      ? await Promise.all(
+          client.balances.map((balance) =>
+            convertToDto(
+              {
+                ...balance,
+                amount: balance.amount?.toNumber?.() ?? 0,
+                amountRetain: balance.amountRetain?.toNumber?.() ?? 0,
+              },
+              BalanceDto,
+            ),
+          ),
+        )
+      : [];
 
-    addressDto.countryName = await getCountryName(
-      this.prisma,
-      addressDto.countryId,
-    );
+    if (addressDto && addressDto.countryId) {
+      addressDto.countryName = await getCountryName(
+        this.prisma,
+        addressDto.countryId,
+      );
+    }
 
     return convertToDto(
       {

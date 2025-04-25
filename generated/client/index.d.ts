@@ -7133,6 +7133,7 @@ export namespace Prisma {
     email: string | null
     password: string | null
     fullName: string | null
+    usernameDMB: string | null
     role: $Enums.Role | null
     clientId: number | null
   }
@@ -7145,6 +7146,7 @@ export namespace Prisma {
     email: string | null
     password: string | null
     fullName: string | null
+    usernameDMB: string | null
     role: $Enums.Role | null
     clientId: number | null
   }
@@ -7157,6 +7159,7 @@ export namespace Prisma {
     email: number
     password: number
     fullName: number
+    usernameDMB: number
     role: number
     clientId: number
     _all: number
@@ -7181,6 +7184,7 @@ export namespace Prisma {
     email?: true
     password?: true
     fullName?: true
+    usernameDMB?: true
     role?: true
     clientId?: true
   }
@@ -7193,6 +7197,7 @@ export namespace Prisma {
     email?: true
     password?: true
     fullName?: true
+    usernameDMB?: true
     role?: true
     clientId?: true
   }
@@ -7205,6 +7210,7 @@ export namespace Prisma {
     email?: true
     password?: true
     fullName?: true
+    usernameDMB?: true
     role?: true
     clientId?: true
     _all?: true
@@ -7304,6 +7310,7 @@ export namespace Prisma {
     email: string
     password: string
     fullName: string
+    usernameDMB: string | null
     role: $Enums.Role
     clientId: number | null
     _count: UserCountAggregateOutputType | null
@@ -7335,14 +7342,15 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     fullName?: boolean
+    usernameDMB?: boolean
     role?: boolean
     clientId?: boolean
     preferences?: boolean | User$preferencesArgs<ExtArgs>
     comms?: boolean | User$commsArgs<ExtArgs>
-    resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     client?: boolean | User$clientArgs<ExtArgs>
     logs?: boolean | User$logsArgs<ExtArgs>
     generalContactClient?: boolean | User$generalContactClientArgs<ExtArgs>
+    resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
@@ -7355,6 +7363,7 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     fullName?: boolean
+    usernameDMB?: boolean
     role?: boolean
     clientId?: boolean
     client?: boolean | User$clientArgs<ExtArgs>
@@ -7368,6 +7377,7 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     fullName?: boolean
+    usernameDMB?: boolean
     role?: boolean
     clientId?: boolean
     client?: boolean | User$clientArgs<ExtArgs>
@@ -7381,18 +7391,19 @@ export namespace Prisma {
     email?: boolean
     password?: boolean
     fullName?: boolean
+    usernameDMB?: boolean
     role?: boolean
     clientId?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "username" | "email" | "password" | "fullName" | "role" | "clientId", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "createdAt" | "updatedAt" | "username" | "email" | "password" | "fullName" | "usernameDMB" | "role" | "clientId", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     preferences?: boolean | User$preferencesArgs<ExtArgs>
     comms?: boolean | User$commsArgs<ExtArgs>
-    resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     client?: boolean | User$clientArgs<ExtArgs>
     logs?: boolean | User$logsArgs<ExtArgs>
     generalContactClient?: boolean | User$generalContactClientArgs<ExtArgs>
+    resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -7408,10 +7419,10 @@ export namespace Prisma {
     objects: {
       preferences: Prisma.$UserPreferencesPayload<ExtArgs>[]
       comms: Prisma.$UserCommsPayload<ExtArgs>[]
-      resetToken: Prisma.$PasswordResetTokenPayload<ExtArgs> | null
       client: Prisma.$ClientPayload<ExtArgs> | null
       logs: Prisma.$LogPayload<ExtArgs>[]
       generalContactClient: Prisma.$ClientPayload<ExtArgs>[]
+      resetToken: Prisma.$PasswordResetTokenPayload<ExtArgs> | null
       refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -7422,6 +7433,7 @@ export namespace Prisma {
       email: string
       password: string
       fullName: string
+      usernameDMB: string | null
       role: $Enums.Role
       clientId: number | null
     }, ExtArgs["result"]["user"]>
@@ -7820,10 +7832,10 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     preferences<T extends User$preferencesArgs<ExtArgs> = {}>(args?: Subset<T, User$preferencesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPreferencesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     comms<T extends User$commsArgs<ExtArgs> = {}>(args?: Subset<T, User$commsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserCommsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    resetToken<T extends User$resetTokenArgs<ExtArgs> = {}>(args?: Subset<T, User$resetTokenArgs<ExtArgs>>): Prisma__PasswordResetTokenClient<$Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     client<T extends User$clientArgs<ExtArgs> = {}>(args?: Subset<T, User$clientArgs<ExtArgs>>): Prisma__ClientClient<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     logs<T extends User$logsArgs<ExtArgs> = {}>(args?: Subset<T, User$logsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     generalContactClient<T extends User$generalContactClientArgs<ExtArgs> = {}>(args?: Subset<T, User$generalContactClientArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    resetToken<T extends User$resetTokenArgs<ExtArgs> = {}>(args?: Subset<T, User$resetTokenArgs<ExtArgs>>): Prisma__PasswordResetTokenClient<$Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     refreshTokens<T extends User$refreshTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -7861,6 +7873,7 @@ export namespace Prisma {
     readonly email: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
     readonly fullName: FieldRef<"User", 'String'>
+    readonly usernameDMB: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'Role'>
     readonly clientId: FieldRef<"User", 'Int'>
   }
@@ -8307,25 +8320,6 @@ export namespace Prisma {
   }
 
   /**
-   * User.resetToken
-   */
-  export type User$resetTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the PasswordResetToken
-     */
-    select?: PasswordResetTokenSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the PasswordResetToken
-     */
-    omit?: PasswordResetTokenOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: PasswordResetTokenInclude<ExtArgs> | null
-    where?: PasswordResetTokenWhereInput
-  }
-
-  /**
    * User.client
    */
   export type User$clientArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8390,6 +8384,25 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ClientScalarFieldEnum | ClientScalarFieldEnum[]
+  }
+
+  /**
+   * User.resetToken
+   */
+  export type User$resetTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PasswordResetToken
+     */
+    select?: PasswordResetTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PasswordResetToken
+     */
+    omit?: PasswordResetTokenOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PasswordResetTokenInclude<ExtArgs> | null
+    where?: PasswordResetTokenWhereInput
   }
 
   /**
@@ -34118,6 +34131,7 @@ export namespace Prisma {
     email: 'email',
     password: 'password',
     fullName: 'fullName',
+    usernameDMB: 'usernameDMB',
     role: 'role',
     clientId: 'clientId'
   };
@@ -35033,14 +35047,15 @@ export namespace Prisma {
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     fullName?: StringFilter<"User"> | string
+    usernameDMB?: StringNullableFilter<"User"> | string | null
     role?: EnumRoleFilter<"User"> | $Enums.Role
     clientId?: IntNullableFilter<"User"> | number | null
     preferences?: UserPreferencesListRelationFilter
     comms?: UserCommsListRelationFilter
-    resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     client?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
     logs?: LogListRelationFilter
     generalContactClient?: ClientListRelationFilter
+    resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
   }
 
@@ -35052,14 +35067,15 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     fullName?: SortOrder
+    usernameDMB?: SortOrderInput | SortOrder
     role?: SortOrder
     clientId?: SortOrderInput | SortOrder
     preferences?: UserPreferencesOrderByRelationAggregateInput
     comms?: UserCommsOrderByRelationAggregateInput
-    resetToken?: PasswordResetTokenOrderByWithRelationInput
     client?: ClientOrderByWithRelationInput
     logs?: LogOrderByRelationAggregateInput
     generalContactClient?: ClientOrderByRelationAggregateInput
+    resetToken?: PasswordResetTokenOrderByWithRelationInput
     refreshTokens?: RefreshTokenOrderByRelationAggregateInput
   }
 
@@ -35074,14 +35090,15 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     password?: StringFilter<"User"> | string
     fullName?: StringFilter<"User"> | string
+    usernameDMB?: StringNullableFilter<"User"> | string | null
     role?: EnumRoleFilter<"User"> | $Enums.Role
     clientId?: IntNullableFilter<"User"> | number | null
     preferences?: UserPreferencesListRelationFilter
     comms?: UserCommsListRelationFilter
-    resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     client?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
     logs?: LogListRelationFilter
     generalContactClient?: ClientListRelationFilter
+    resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
   }, "id" | "username" | "email">
 
@@ -35093,6 +35110,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     fullName?: SortOrder
+    usernameDMB?: SortOrderInput | SortOrder
     role?: SortOrder
     clientId?: SortOrderInput | SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -35113,6 +35131,7 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
     fullName?: StringWithAggregatesFilter<"User"> | string
+    usernameDMB?: StringNullableWithAggregatesFilter<"User"> | string | null
     role?: EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
     clientId?: IntNullableWithAggregatesFilter<"User"> | number | null
   }
@@ -37192,13 +37211,14 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -37210,13 +37230,14 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -37227,13 +37248,14 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -37245,13 +37267,14 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -37263,6 +37286,7 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
   }
@@ -37274,6 +37298,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
   }
 
@@ -37285,6 +37310,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
   }
@@ -39598,11 +39624,6 @@ export namespace Prisma {
     none?: UserCommsWhereInput
   }
 
-  export type PasswordResetTokenNullableScalarRelationFilter = {
-    is?: PasswordResetTokenWhereInput | null
-    isNot?: PasswordResetTokenWhereInput | null
-  }
-
   export type ClientNullableScalarRelationFilter = {
     is?: ClientWhereInput | null
     isNot?: ClientWhereInput | null
@@ -39618,6 +39639,11 @@ export namespace Prisma {
     every?: ClientWhereInput
     some?: ClientWhereInput
     none?: ClientWhereInput
+  }
+
+  export type PasswordResetTokenNullableScalarRelationFilter = {
+    is?: PasswordResetTokenWhereInput | null
+    isNot?: PasswordResetTokenWhereInput | null
   }
 
   export type RefreshTokenListRelationFilter = {
@@ -39654,6 +39680,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     fullName?: SortOrder
+    usernameDMB?: SortOrder
     role?: SortOrder
     clientId?: SortOrder
   }
@@ -39671,6 +39698,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     fullName?: SortOrder
+    usernameDMB?: SortOrder
     role?: SortOrder
     clientId?: SortOrder
   }
@@ -39683,6 +39711,7 @@ export namespace Prisma {
     email?: SortOrder
     password?: SortOrder
     fullName?: SortOrder
+    usernameDMB?: SortOrder
     role?: SortOrder
     clientId?: SortOrder
   }
@@ -41692,12 +41721,6 @@ export namespace Prisma {
     connect?: UserCommsWhereUniqueInput | UserCommsWhereUniqueInput[]
   }
 
-  export type PasswordResetTokenCreateNestedOneWithoutUserInput = {
-    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
-    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
-    connect?: PasswordResetTokenWhereUniqueInput
-  }
-
   export type ClientCreateNestedOneWithoutUsersInput = {
     create?: XOR<ClientCreateWithoutUsersInput, ClientUncheckedCreateWithoutUsersInput>
     connectOrCreate?: ClientCreateOrConnectWithoutUsersInput
@@ -41716,6 +41739,12 @@ export namespace Prisma {
     connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
     createMany?: ClientCreateManyGeneralContactInputEnvelope
     connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
+  }
+
+  export type PasswordResetTokenCreateNestedOneWithoutUserInput = {
+    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
+    connect?: PasswordResetTokenWhereUniqueInput
   }
 
   export type RefreshTokenCreateNestedManyWithoutUserInput = {
@@ -41739,12 +41768,6 @@ export namespace Prisma {
     connect?: UserCommsWhereUniqueInput | UserCommsWhereUniqueInput[]
   }
 
-  export type PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput = {
-    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
-    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
-    connect?: PasswordResetTokenWhereUniqueInput
-  }
-
   export type LogUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<LogCreateWithoutUserInput, LogUncheckedCreateWithoutUserInput> | LogCreateWithoutUserInput[] | LogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: LogCreateOrConnectWithoutUserInput | LogCreateOrConnectWithoutUserInput[]
@@ -41757,6 +41780,12 @@ export namespace Prisma {
     connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
     createMany?: ClientCreateManyGeneralContactInputEnvelope
     connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
+  }
+
+  export type PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput = {
+    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
+    connect?: PasswordResetTokenWhereUniqueInput
   }
 
   export type RefreshTokenUncheckedCreateNestedManyWithoutUserInput = {
@@ -41798,16 +41827,6 @@ export namespace Prisma {
     deleteMany?: UserCommsScalarWhereInput | UserCommsScalarWhereInput[]
   }
 
-  export type PasswordResetTokenUpdateOneWithoutUserNestedInput = {
-    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
-    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
-    upsert?: PasswordResetTokenUpsertWithoutUserInput
-    disconnect?: PasswordResetTokenWhereInput | boolean
-    delete?: PasswordResetTokenWhereInput | boolean
-    connect?: PasswordResetTokenWhereUniqueInput
-    update?: XOR<XOR<PasswordResetTokenUpdateToOneWithWhereWithoutUserInput, PasswordResetTokenUpdateWithoutUserInput>, PasswordResetTokenUncheckedUpdateWithoutUserInput>
-  }
-
   export type ClientUpdateOneWithoutUsersNestedInput = {
     create?: XOR<ClientCreateWithoutUsersInput, ClientUncheckedCreateWithoutUsersInput>
     connectOrCreate?: ClientCreateOrConnectWithoutUsersInput
@@ -41844,6 +41863,16 @@ export namespace Prisma {
     update?: ClientUpdateWithWhereUniqueWithoutGeneralContactInput | ClientUpdateWithWhereUniqueWithoutGeneralContactInput[]
     updateMany?: ClientUpdateManyWithWhereWithoutGeneralContactInput | ClientUpdateManyWithWhereWithoutGeneralContactInput[]
     deleteMany?: ClientScalarWhereInput | ClientScalarWhereInput[]
+  }
+
+  export type PasswordResetTokenUpdateOneWithoutUserNestedInput = {
+    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
+    upsert?: PasswordResetTokenUpsertWithoutUserInput
+    disconnect?: PasswordResetTokenWhereInput | boolean
+    delete?: PasswordResetTokenWhereInput | boolean
+    connect?: PasswordResetTokenWhereUniqueInput
+    update?: XOR<XOR<PasswordResetTokenUpdateToOneWithWhereWithoutUserInput, PasswordResetTokenUpdateWithoutUserInput>, PasswordResetTokenUncheckedUpdateWithoutUserInput>
   }
 
   export type RefreshTokenUpdateManyWithoutUserNestedInput = {
@@ -41888,16 +41917,6 @@ export namespace Prisma {
     deleteMany?: UserCommsScalarWhereInput | UserCommsScalarWhereInput[]
   }
 
-  export type PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput = {
-    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
-    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
-    upsert?: PasswordResetTokenUpsertWithoutUserInput
-    disconnect?: PasswordResetTokenWhereInput | boolean
-    delete?: PasswordResetTokenWhereInput | boolean
-    connect?: PasswordResetTokenWhereUniqueInput
-    update?: XOR<XOR<PasswordResetTokenUpdateToOneWithWhereWithoutUserInput, PasswordResetTokenUpdateWithoutUserInput>, PasswordResetTokenUncheckedUpdateWithoutUserInput>
-  }
-
   export type LogUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<LogCreateWithoutUserInput, LogUncheckedCreateWithoutUserInput> | LogCreateWithoutUserInput[] | LogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: LogCreateOrConnectWithoutUserInput | LogCreateOrConnectWithoutUserInput[]
@@ -41924,6 +41943,16 @@ export namespace Prisma {
     update?: ClientUpdateWithWhereUniqueWithoutGeneralContactInput | ClientUpdateWithWhereUniqueWithoutGeneralContactInput[]
     updateMany?: ClientUpdateManyWithWhereWithoutGeneralContactInput | ClientUpdateManyWithWhereWithoutGeneralContactInput[]
     deleteMany?: ClientScalarWhereInput | ClientScalarWhereInput[]
+  }
+
+  export type PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput = {
+    create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+    connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
+    upsert?: PasswordResetTokenUpsertWithoutUserInput
+    disconnect?: PasswordResetTokenWhereInput | boolean
+    delete?: PasswordResetTokenWhereInput | boolean
+    connect?: PasswordResetTokenWhereUniqueInput
+    update?: XOR<XOR<PasswordResetTokenUpdateToOneWithWhereWithoutUserInput, PasswordResetTokenUpdateWithoutUserInput>, PasswordResetTokenUncheckedUpdateWithoutUserInput>
   }
 
   export type RefreshTokenUncheckedUpdateManyWithoutUserNestedInput = {
@@ -44297,12 +44326,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -44314,12 +44344,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -44346,12 +44377,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -44363,12 +44395,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -44424,24 +44457,6 @@ export namespace Prisma {
   export type UserCommsCreateManyUserInputEnvelope = {
     data: UserCommsCreateManyUserInput | UserCommsCreateManyUserInput[]
     skipDuplicates?: boolean
-  }
-
-  export type PasswordResetTokenCreateWithoutUserInput = {
-    token: string
-    expiresAt: Date | string
-    createdAt?: Date | string
-  }
-
-  export type PasswordResetTokenUncheckedCreateWithoutUserInput = {
-    id?: number
-    token: string
-    expiresAt: Date | string
-    createdAt?: Date | string
-  }
-
-  export type PasswordResetTokenCreateOrConnectWithoutUserInput = {
-    where: PasswordResetTokenWhereUniqueInput
-    create: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
   }
 
   export type ClientCreateWithoutUsersInput = {
@@ -44594,6 +44609,24 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PasswordResetTokenCreateWithoutUserInput = {
+    token: string
+    expiresAt: Date | string
+    createdAt?: Date | string
+  }
+
+  export type PasswordResetTokenUncheckedCreateWithoutUserInput = {
+    id?: number
+    token: string
+    expiresAt: Date | string
+    createdAt?: Date | string
+  }
+
+  export type PasswordResetTokenCreateOrConnectWithoutUserInput = {
+    where: PasswordResetTokenWhereUniqueInput
+    create: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+  }
+
   export type RefreshTokenCreateWithoutUserInput = {
     token: string
     expiresAt: Date | string
@@ -44677,30 +44710,6 @@ export namespace Prisma {
     userId?: IntFilter<"UserComms"> | number
     type?: EnumCommsChannelsFilter<"UserComms"> | $Enums.CommsChannels
     value?: StringFilter<"UserComms"> | string
-  }
-
-  export type PasswordResetTokenUpsertWithoutUserInput = {
-    update: XOR<PasswordResetTokenUpdateWithoutUserInput, PasswordResetTokenUncheckedUpdateWithoutUserInput>
-    create: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
-    where?: PasswordResetTokenWhereInput
-  }
-
-  export type PasswordResetTokenUpdateToOneWithWhereWithoutUserInput = {
-    where?: PasswordResetTokenWhereInput
-    data: XOR<PasswordResetTokenUpdateWithoutUserInput, PasswordResetTokenUncheckedUpdateWithoutUserInput>
-  }
-
-  export type PasswordResetTokenUpdateWithoutUserInput = {
-    token?: StringFieldUpdateOperationsInput | string
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type PasswordResetTokenUncheckedUpdateWithoutUserInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    token?: StringFieldUpdateOperationsInput | string
-    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ClientUpsertWithoutUsersInput = {
@@ -44837,6 +44846,30 @@ export namespace Prisma {
     isPaymentDataInValidation?: BoolFilter<"Client"> | boolean
   }
 
+  export type PasswordResetTokenUpsertWithoutUserInput = {
+    update: XOR<PasswordResetTokenUpdateWithoutUserInput, PasswordResetTokenUncheckedUpdateWithoutUserInput>
+    create: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
+    where?: PasswordResetTokenWhereInput
+  }
+
+  export type PasswordResetTokenUpdateToOneWithWhereWithoutUserInput = {
+    where?: PasswordResetTokenWhereInput
+    data: XOR<PasswordResetTokenUpdateWithoutUserInput, PasswordResetTokenUncheckedUpdateWithoutUserInput>
+  }
+
+  export type PasswordResetTokenUpdateWithoutUserInput = {
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PasswordResetTokenUncheckedUpdateWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type RefreshTokenUpsertWithWhereUniqueWithoutUserInput = {
     where: RefreshTokenWhereUniqueInput
     update: XOR<RefreshTokenUpdateWithoutUserInput, RefreshTokenUncheckedUpdateWithoutUserInput>
@@ -44873,6 +44906,7 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
@@ -44890,6 +44924,7 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
@@ -44922,6 +44957,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
@@ -44939,6 +44975,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
@@ -44955,12 +44992,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -44972,12 +45010,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -45004,12 +45043,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -45021,12 +45061,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -45037,12 +45078,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -45054,12 +45096,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -45086,12 +45129,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -45103,12 +45147,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -45147,12 +45192,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -45164,12 +45210,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -45295,12 +45342,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     logs?: LogCreateNestedManyWithoutUserInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -45312,12 +45360,13 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -45462,12 +45511,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -45479,12 +45529,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -45632,6 +45683,7 @@ export namespace Prisma {
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     fullName?: StringFilter<"User"> | string
+    usernameDMB?: StringNullableFilter<"User"> | string | null
     role?: EnumRoleFilter<"User"> | $Enums.Role
     clientId?: IntNullableFilter<"User"> | number | null
   }
@@ -48912,13 +48964,14 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
     generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRefreshTokensInput = {
@@ -48929,13 +48982,14 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
     generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
+    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRefreshTokensInput = {
@@ -48961,13 +49015,14 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRefreshTokensInput = {
@@ -48978,13 +49033,14 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type UserRoyaltyReportCreateManyS3FileInput = {
@@ -49412,6 +49468,7 @@ export namespace Prisma {
     email: string
     password: string
     fullName?: string
+    usernameDMB?: string | null
     role?: $Enums.Role
   }
 
@@ -49503,12 +49560,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -49520,12 +49578,13 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
     generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
+    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -49537,6 +49596,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     fullName?: StringFieldUpdateOperationsInput | string
+    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
   }
 

@@ -79,6 +79,24 @@ export class ClientsController {
   }
 
   /**
+   * Bloquea a un cliente y retiene sus fondos
+   */
+  @Put(':id/block')
+  @Roles(Role.ADMIN)
+  async blockClient(@Param('id') id: number): Promise<ClientExtendedDto> {
+    return this.clientsService.blockClient(Number(id));
+  }
+
+  /**
+   * Desbloquea a un cliente y libera sus fondos
+   */
+  @Put(':id/unblock')
+  @Roles(Role.ADMIN)
+  async unblockClient(@Param('id') id: number): Promise<ClientExtendedDto> {
+    return this.clientsService.unblockClient(Number(id));
+  }
+
+  /**
    * Endpoint to delete multiple clients by their IDs.
    * Only accessible by ADMIN role.
    *
