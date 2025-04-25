@@ -25,8 +25,15 @@ export class AdminBaseReportsController {
   ) {}
 
   @Get()
-  async getAllBaseReports(): Promise<BaseReportDto[]> {
-    return this.baseReportService.getAllBaseReports();
+  async getAllBaseReports(
+    @Query('distributor') distributor?: string,
+    @Query('reportingMonth') reportingMonth?: string,
+  ): Promise<BaseReportDto[]> {
+    // Llama al service con los filtros y el orden solicitado
+    return this.baseReportService.getAllBaseReports({
+      distributor,
+      reportingMonth,
+    });
   }
 
   @Post('create')
