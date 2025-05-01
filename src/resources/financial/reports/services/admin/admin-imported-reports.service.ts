@@ -156,14 +156,12 @@ export class AdminImportedReportsService {
    *
    * @param reportingMonth - The reporting month in YYYYMM format
    * @param distributor - The distributor type (e.g., KONTOR, BELIEVE)
-   * @param deleteS3File - Whether to delete the associated S3 file
    * @returns Object containing information about deletion results
    * @throws BadRequestException if report deletion fails
    */
   async deleteImportedReports(
     reportingMonth: string,
     distributor: Distributor,
-    deleteS3File: boolean,
   ) {
     const result = {
       deleted: 0,
@@ -301,8 +299,7 @@ export class AdminImportedReportsService {
         `🗑️ Deleted ${result.failedRecordsDeleted} failed report details`,
       );
 
-      // Optionally delete the S3 file
-      if (deleteS3File && importedReport.s3FileId) {
+      if (importedReport.s3FileId) {
         try {
           this.logger.log(
             `🗑️ Deleting S3 file for imported report ID: ${importedReport.id}...`,

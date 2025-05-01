@@ -138,7 +138,6 @@ export class AdminImportReportsController {
     return this.importedReportsService.deleteImportedReports(
       reportingMonth,
       distributor,
-      deleteS3File,
     );
   }
 
