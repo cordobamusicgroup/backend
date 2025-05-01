@@ -34,6 +34,7 @@ export class BalancesService {
     return client.balances.map((balance) => ({
       currency: balance.currency,
       total: balance.amount,
+      retained: balance.amountRetain,
     }));
   }
 
