@@ -22,14 +22,15 @@ async function bootstrap() {
 
   const seedService = app.get(SeedService);
 
-  const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
-    .setVersion('1.0')
-    .addTag('cats')
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  // Swagger/OpenAPI desactivado
+  // const config = new DocumentBuilder()
+  //   .setTitle('Cats example')
+  //   .setDescription('The cats API description')
+  //   .setVersion('1.0')
+  //   .addTag('cats')
+  //   .build();
+  // const documentFactory = () => SwaggerModule.createDocument(app, config);
+  // SwaggerModule.setup('api', app, documentFactory);
 
   // Leer orígenes CORS desde variable de entorno y permitir wildcards
   const corsOriginsEnv = process.env.CORS_ORIGINS || '';
@@ -60,7 +61,10 @@ async function bootstrap() {
       if (matchOrigin(origin, corsOrigins)) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'), false);
+      return callback(
+        new Error(`Not allowed by CORS. Attempted origin: ${origin}`),
+        false,
+      );
     },
     credentials: true,
   });
