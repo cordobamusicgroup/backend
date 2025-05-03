@@ -25,6 +25,7 @@ import { ImportsModule } from './resources/imports/imports.module';
 import env from './config/env.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EmailService } from './resources/email-deprecated/email.service';
+import { DeprecatedModule } from './resources/deprecated/deprecated.module';
 
 @Global()
 @Module({
@@ -88,6 +89,7 @@ import { EmailService } from './resources/email-deprecated/email.service';
     CountriesModule,
     FinancialModule,
     ImportsModule,
+    DeprecatedModule,
   ],
   controllers: [AppController],
   providers: [
