@@ -201,6 +201,7 @@ exports.Prisma.ClientScalarFieldEnum = {
   vatRegistered: 'vatRegistered',
   vatId: 'vatId',
   generalContactId: 'generalContactId',
+  clientStatus: 'clientStatus',
   isBlocked: 'isBlocked',
   isPaymentsBlocked: 'isPaymentsBlocked',
   isPaymentInProgress: 'isPaymentInProgress',
@@ -502,6 +503,13 @@ exports.TaxIdType = exports.$Enums.TaxIdType = {
   RESIDENT_PERMIT: 'RESIDENT_PERMIT',
   ID_CARD: 'ID_CARD',
   DRIVERS_LICENSE: 'DRIVERS_LICENSE'
+};
+
+exports.ClientStatus = exports.$Enums.ClientStatus = {
+  ACTIVE: 'ACTIVE',
+  BLOCKED: 'BLOCKED',
+  TERMINATED: 'TERMINATED',
+  INACTIVE: 'INACTIVE'
 };
 
 exports.AccessTypeDMB = exports.$Enums.AccessTypeDMB = {
