@@ -69,6 +69,11 @@ export class UsersAdminService {
     }
 
     const password = this.generateRandomPassword();
+    if (!password) {
+      this.logger.error('Generated password is undefined or empty.');
+      throw new InternalServerErrorException('Error generating password.');
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
       const user = await this.prisma.user.create({
@@ -86,13 +91,21 @@ export class UsersAdminService {
 
       return this.convertToDto(user);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(
+        `Error registering user: username=${username}, email=${email}, message=${error.message}, stack=${error.stack}`,
+      );
       throw new InternalServerErrorException('Error registering user.');
     }
   }
 
-  private generateRandomPassword(): string {
-    return Math.random().toString(36).slice(-8);
+  private generateRandomPassword(length = 10): string {
+    const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
   }
 
   private async sendAccountInfoEmail(
