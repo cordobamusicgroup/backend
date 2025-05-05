@@ -168,10 +168,11 @@ model Client {
   generalContact   User? @relation("GeneralContact", fields: [generalContactId], references: [id])
   generalContactId Int?
 
-  isBlocked                 Boolean @default(false)
-  isPaymentsBlocked         Boolean @default(false)
-  isPaymentInProgress       Boolean @default(false)
-  isPaymentDataInValidation Boolean @default(false)
+  clientStatus              ClientStatus @default(ACTIVE)
+  isBlocked                 Boolean? // @deprecated USE clientStatus INSTEAD
+  isPaymentsBlocked         Boolean? // @deprecated remove from DB
+  isPaymentInProgress       Boolean      @default(false)
+  isPaymentDataInValidation Boolean      @default(false)
 
   dmb ClientDMB? @relation("ClientDMB")
 
@@ -588,6 +589,15 @@ enum CommsChannels {
 }
 
 //*** Enums Types ***//
+
+enum ClientStatus {
+  ACTIVE
+  BLOCKED
+  TERMINATED
+  INACTIVE
+
+  @@map("clients_statuses")
+}
 
 enum TransactionType {
   PAYMENT
