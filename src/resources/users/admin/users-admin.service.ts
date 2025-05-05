@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/resources/prisma/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { UserDto } from '../dto/user.dto';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
