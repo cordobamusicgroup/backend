@@ -261,6 +261,7 @@ export class ClientsService {
     });
   }
 
+  // Modify the terminateClient method to ensure consistency by requiring the client to be unblocked before termination
   async terminateClient(clientId: number, confirm: boolean): Promise<any> {
     if (!confirm) {
       throw new BadRequestException('Termination must be confirmed.');
@@ -274,6 +275,14 @@ export class ClientsService {
       if (client.status === ClientStatus.TERMINATED) {
         throw new BadRequestException('Client is already terminated');
       }
+
+      // Ensure the client is not blocked before termination
+      if (client.status === ClientStatus.BLOCKED) {
+        throw new BadRequestException(
+          'Client is blocked. Please unblock the client before termination to ensure consistency.',
+        );
+      }
+
       let moved: Record<string, number> = {};
       for (const balance of client.balances) {
         const total = balance.amount.plus(balance.amountRetain);
@@ -298,11 +307,11 @@ export class ClientsService {
               amount: total.negated(),
               balanceAmount: 0,
               balanceId: balance.id,
-              // Optionally, add a custom field/tag if you want to identify this transaction
             },
           });
         }
       }
+
       await prisma.client.update({
         where: { id: clientId },
         data: { status: ClientStatus.TERMINATED },
