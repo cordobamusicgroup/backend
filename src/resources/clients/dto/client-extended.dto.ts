@@ -34,6 +34,15 @@ export class ClientExtendedDto {
   vatId: string;
 
   @Expose()
+  status: ClientStatus;
+
+  @Expose()
+  isPaymentInProgress: boolean;
+
+  @Expose()
+  isPaymentDataInValidation: boolean;
+
+  @Expose()
   @Type(() => AddressDto)
   address: AddressDto;
 
@@ -48,13 +57,4 @@ export class ClientExtendedDto {
   @Expose()
   @Type(() => BalanceDto)
   balances: BalanceDto[];
-
-  @Expose()
-  status: ClientStatus;
-
-  @Expose()
-  isPaymentInProgress: boolean;
-
-  @Expose()
-  isPaymentDataInValidation: boolean;
 }
