@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { ClientType, TaxIdType } from 'generated/client';
+import { ClientStatus, ClientType, TaxIdType } from 'generated/client';
 import { ContractDto } from './contract/contract.dto';
 import { AddressDto } from './address/address.dto';
 import { DmbDto } from './dmb/dmb.dto';
@@ -34,6 +34,15 @@ export class ClientExtendedDto {
   vatId: string;
 
   @Expose()
+  status: ClientStatus;
+
+  @Expose()
+  isPaymentInProgress: boolean;
+
+  @Expose()
+  isPaymentDataInValidation: boolean;
+
+  @Expose()
   @Type(() => AddressDto)
   address: AddressDto;
 
@@ -48,16 +57,4 @@ export class ClientExtendedDto {
   @Expose()
   @Type(() => BalanceDto)
   balances: BalanceDto[];
-
-  @Expose()
-  isBlocked: boolean;
-
-  @Expose()
-  isPaymentsBlocked: boolean;
-
-  @Expose()
-  isPaymentInProgress: boolean;
-
-  @Expose()
-  isPaymentDataInValidation: boolean;
 }

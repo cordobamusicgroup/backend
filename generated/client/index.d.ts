@@ -11862,7 +11862,7 @@ export namespace Prisma {
     vatRegistered: boolean | null
     vatId: string | null
     generalContactId: number | null
-    clientStatus: $Enums.ClientStatus | null
+    status: $Enums.ClientStatus | null
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
     isPaymentInProgress: boolean | null
@@ -11884,7 +11884,7 @@ export namespace Prisma {
     vatRegistered: boolean | null
     vatId: string | null
     generalContactId: number | null
-    clientStatus: $Enums.ClientStatus | null
+    status: $Enums.ClientStatus | null
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
     isPaymentInProgress: boolean | null
@@ -11906,7 +11906,7 @@ export namespace Prisma {
     vatRegistered: number
     vatId: number
     generalContactId: number
-    clientStatus: number
+    status: number
     isBlocked: number
     isPaymentsBlocked: number
     isPaymentInProgress: number
@@ -11944,7 +11944,7 @@ export namespace Prisma {
     vatRegistered?: true
     vatId?: true
     generalContactId?: true
-    clientStatus?: true
+    status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
     isPaymentInProgress?: true
@@ -11966,7 +11966,7 @@ export namespace Prisma {
     vatRegistered?: true
     vatId?: true
     generalContactId?: true
-    clientStatus?: true
+    status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
     isPaymentInProgress?: true
@@ -11988,7 +11988,7 @@ export namespace Prisma {
     vatRegistered?: true
     vatId?: true
     generalContactId?: true
-    clientStatus?: true
+    status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
     isPaymentInProgress?: true
@@ -12097,7 +12097,7 @@ export namespace Prisma {
     vatRegistered: boolean
     vatId: string | null
     generalContactId: number | null
-    clientStatus: $Enums.ClientStatus
+    status: $Enums.ClientStatus
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
     isPaymentInProgress: boolean
@@ -12138,7 +12138,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: boolean
     generalContactId?: boolean
-    clientStatus?: boolean
+    status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
@@ -12170,7 +12170,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: boolean
     generalContactId?: boolean
-    clientStatus?: boolean
+    status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
@@ -12194,7 +12194,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: boolean
     generalContactId?: boolean
-    clientStatus?: boolean
+    status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
@@ -12218,14 +12218,14 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: boolean
     generalContactId?: boolean
-    clientStatus?: boolean
+    status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
   }
 
-  export type ClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "wp_id" | "createdAt" | "updatedAt" | "clientName" | "firstName" | "lastName" | "type" | "addressId" | "taxIdType" | "taxId" | "vatRegistered" | "vatId" | "generalContactId" | "clientStatus" | "isBlocked" | "isPaymentsBlocked" | "isPaymentInProgress" | "isPaymentDataInValidation", ExtArgs["result"]["client"]>
+  export type ClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "wp_id" | "createdAt" | "updatedAt" | "clientName" | "firstName" | "lastName" | "type" | "addressId" | "taxIdType" | "taxId" | "vatRegistered" | "vatId" | "generalContactId" | "status" | "isBlocked" | "isPaymentsBlocked" | "isPaymentInProgress" | "isPaymentDataInValidation", ExtArgs["result"]["client"]>
   export type ClientInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     address?: boolean | AddressDefaultArgs<ExtArgs>
     generalContact?: boolean | Client$generalContactArgs<ExtArgs>
@@ -12275,7 +12275,7 @@ export namespace Prisma {
       vatRegistered: boolean
       vatId: string | null
       generalContactId: number | null
-      clientStatus: $Enums.ClientStatus
+      status: $Enums.ClientStatus
       isBlocked: boolean | null
       isPaymentsBlocked: boolean | null
       isPaymentInProgress: boolean
@@ -12726,7 +12726,7 @@ export namespace Prisma {
     readonly vatRegistered: FieldRef<"Client", 'Boolean'>
     readonly vatId: FieldRef<"Client", 'String'>
     readonly generalContactId: FieldRef<"Client", 'Int'>
-    readonly clientStatus: FieldRef<"Client", 'ClientStatus'>
+    readonly status: FieldRef<"Client", 'ClientStatus'>
     readonly isBlocked: FieldRef<"Client", 'Boolean'>
     readonly isPaymentsBlocked: FieldRef<"Client", 'Boolean'>
     readonly isPaymentInProgress: FieldRef<"Client", 'Boolean'>
@@ -16810,6 +16810,7 @@ export namespace Prisma {
     clientId: number | null
     amount: Decimal | null
     amountRetain: Decimal | null
+    amountTerminated: Decimal | null
   }
 
   export type BalanceSumAggregateOutputType = {
@@ -16817,6 +16818,7 @@ export namespace Prisma {
     clientId: number | null
     amount: Decimal | null
     amountRetain: Decimal | null
+    amountTerminated: Decimal | null
   }
 
   export type BalanceMinAggregateOutputType = {
@@ -16825,6 +16827,7 @@ export namespace Prisma {
     currency: $Enums.Currency | null
     amount: Decimal | null
     amountRetain: Decimal | null
+    amountTerminated: Decimal | null
   }
 
   export type BalanceMaxAggregateOutputType = {
@@ -16833,6 +16836,7 @@ export namespace Prisma {
     currency: $Enums.Currency | null
     amount: Decimal | null
     amountRetain: Decimal | null
+    amountTerminated: Decimal | null
   }
 
   export type BalanceCountAggregateOutputType = {
@@ -16841,6 +16845,7 @@ export namespace Prisma {
     currency: number
     amount: number
     amountRetain: number
+    amountTerminated: number
     _all: number
   }
 
@@ -16850,6 +16855,7 @@ export namespace Prisma {
     clientId?: true
     amount?: true
     amountRetain?: true
+    amountTerminated?: true
   }
 
   export type BalanceSumAggregateInputType = {
@@ -16857,6 +16863,7 @@ export namespace Prisma {
     clientId?: true
     amount?: true
     amountRetain?: true
+    amountTerminated?: true
   }
 
   export type BalanceMinAggregateInputType = {
@@ -16865,6 +16872,7 @@ export namespace Prisma {
     currency?: true
     amount?: true
     amountRetain?: true
+    amountTerminated?: true
   }
 
   export type BalanceMaxAggregateInputType = {
@@ -16873,6 +16881,7 @@ export namespace Prisma {
     currency?: true
     amount?: true
     amountRetain?: true
+    amountTerminated?: true
   }
 
   export type BalanceCountAggregateInputType = {
@@ -16881,6 +16890,7 @@ export namespace Prisma {
     currency?: true
     amount?: true
     amountRetain?: true
+    amountTerminated?: true
     _all?: true
   }
 
@@ -16976,6 +16986,7 @@ export namespace Prisma {
     currency: $Enums.Currency
     amount: Decimal
     amountRetain: Decimal
+    amountTerminated: Decimal
     _count: BalanceCountAggregateOutputType | null
     _avg: BalanceAvgAggregateOutputType | null
     _sum: BalanceSumAggregateOutputType | null
@@ -17003,6 +17014,7 @@ export namespace Prisma {
     currency?: boolean
     amount?: boolean
     amountRetain?: boolean
+    amountTerminated?: boolean
     client?: boolean | ClientDefaultArgs<ExtArgs>
     transactions?: boolean | Balance$transactionsArgs<ExtArgs>
     _count?: boolean | BalanceCountOutputTypeDefaultArgs<ExtArgs>
@@ -17014,6 +17026,7 @@ export namespace Prisma {
     currency?: boolean
     amount?: boolean
     amountRetain?: boolean
+    amountTerminated?: boolean
     client?: boolean | ClientDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["balance"]>
 
@@ -17023,6 +17036,7 @@ export namespace Prisma {
     currency?: boolean
     amount?: boolean
     amountRetain?: boolean
+    amountTerminated?: boolean
     client?: boolean | ClientDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["balance"]>
 
@@ -17032,9 +17046,10 @@ export namespace Prisma {
     currency?: boolean
     amount?: boolean
     amountRetain?: boolean
+    amountTerminated?: boolean
   }
 
-  export type BalanceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientId" | "currency" | "amount" | "amountRetain", ExtArgs["result"]["balance"]>
+  export type BalanceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clientId" | "currency" | "amount" | "amountRetain" | "amountTerminated", ExtArgs["result"]["balance"]>
   export type BalanceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     client?: boolean | ClientDefaultArgs<ExtArgs>
     transactions?: boolean | Balance$transactionsArgs<ExtArgs>
@@ -17059,6 +17074,7 @@ export namespace Prisma {
       currency: $Enums.Currency
       amount: Prisma.Decimal
       amountRetain: Prisma.Decimal
+      amountTerminated: Prisma.Decimal
     }, ExtArgs["result"]["balance"]>
     composites: {}
   }
@@ -17489,6 +17505,7 @@ export namespace Prisma {
     readonly currency: FieldRef<"Balance", 'Currency'>
     readonly amount: FieldRef<"Balance", 'Decimal'>
     readonly amountRetain: FieldRef<"Balance", 'Decimal'>
+    readonly amountTerminated: FieldRef<"Balance", 'Decimal'>
   }
     
 
@@ -34218,7 +34235,7 @@ export namespace Prisma {
     vatRegistered: 'vatRegistered',
     vatId: 'vatId',
     generalContactId: 'generalContactId',
-    clientStatus: 'clientStatus',
+    status: 'status',
     isBlocked: 'isBlocked',
     isPaymentsBlocked: 'isPaymentsBlocked',
     isPaymentInProgress: 'isPaymentInProgress',
@@ -34279,7 +34296,8 @@ export namespace Prisma {
     clientId: 'clientId',
     currency: 'currency',
     amount: 'amount',
-    amountRetain: 'amountRetain'
+    amountRetain: 'amountRetain',
+    amountTerminated: 'amountTerminated'
   };
 
   export type BalanceScalarFieldEnum = (typeof BalanceScalarFieldEnum)[keyof typeof BalanceScalarFieldEnum]
@@ -35387,7 +35405,7 @@ export namespace Prisma {
     vatRegistered?: BoolFilter<"Client"> | boolean
     vatId?: StringNullableFilter<"Client"> | string | null
     generalContactId?: IntNullableFilter<"Client"> | number | null
-    clientStatus?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
+    status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolFilter<"Client"> | boolean
@@ -35418,7 +35436,7 @@ export namespace Prisma {
     vatRegistered?: SortOrder
     vatId?: SortOrderInput | SortOrder
     generalContactId?: SortOrderInput | SortOrder
-    clientStatus?: SortOrder
+    status?: SortOrder
     isBlocked?: SortOrderInput | SortOrder
     isPaymentsBlocked?: SortOrderInput | SortOrder
     isPaymentInProgress?: SortOrder
@@ -35452,7 +35470,7 @@ export namespace Prisma {
     vatRegistered?: BoolFilter<"Client"> | boolean
     vatId?: StringNullableFilter<"Client"> | string | null
     generalContactId?: IntNullableFilter<"Client"> | number | null
-    clientStatus?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
+    status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolFilter<"Client"> | boolean
@@ -35483,7 +35501,7 @@ export namespace Prisma {
     vatRegistered?: SortOrder
     vatId?: SortOrderInput | SortOrder
     generalContactId?: SortOrderInput | SortOrder
-    clientStatus?: SortOrder
+    status?: SortOrder
     isBlocked?: SortOrderInput | SortOrder
     isPaymentsBlocked?: SortOrderInput | SortOrder
     isPaymentInProgress?: SortOrder
@@ -35513,7 +35531,7 @@ export namespace Prisma {
     vatRegistered?: BoolWithAggregatesFilter<"Client"> | boolean
     vatId?: StringNullableWithAggregatesFilter<"Client"> | string | null
     generalContactId?: IntNullableWithAggregatesFilter<"Client"> | number | null
-    clientStatus?: EnumClientStatusWithAggregatesFilter<"Client"> | $Enums.ClientStatus
+    status?: EnumClientStatusWithAggregatesFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableWithAggregatesFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableWithAggregatesFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolWithAggregatesFilter<"Client"> | boolean
@@ -35765,6 +35783,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFilter<"Balance"> | $Enums.Currency
     amount?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     client?: XOR<ClientScalarRelationFilter, ClientWhereInput>
     transactions?: TransactionListRelationFilter
   }
@@ -35775,6 +35794,7 @@ export namespace Prisma {
     currency?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
     client?: ClientOrderByWithRelationInput
     transactions?: TransactionOrderByRelationAggregateInput
   }
@@ -35789,6 +35809,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFilter<"Balance"> | $Enums.Currency
     amount?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     client?: XOR<ClientScalarRelationFilter, ClientWhereInput>
     transactions?: TransactionListRelationFilter
   }, "id" | "currency_clientId">
@@ -35799,6 +35820,7 @@ export namespace Prisma {
     currency?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
     _count?: BalanceCountOrderByAggregateInput
     _avg?: BalanceAvgOrderByAggregateInput
     _max?: BalanceMaxOrderByAggregateInput
@@ -35815,6 +35837,7 @@ export namespace Prisma {
     currency?: EnumCurrencyWithAggregatesFilter<"Balance"> | $Enums.Currency
     amount?: DecimalWithAggregatesFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalWithAggregatesFilter<"Balance"> | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalWithAggregatesFilter<"Balance"> | Decimal | DecimalJsLike | number | string
   }
 
   export type TransactionWhereInput = {
@@ -37558,7 +37581,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -37589,7 +37612,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -37615,7 +37638,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -37646,7 +37669,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -37675,7 +37698,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -37694,7 +37717,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -37716,7 +37739,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -37974,6 +37997,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
     client: ClientCreateNestedOneWithoutBalancesInput
     transactions?: TransactionCreateNestedManyWithoutBalanceInput
   }
@@ -37984,6 +38008,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
     transactions?: TransactionUncheckedCreateNestedManyWithoutBalanceInput
   }
 
@@ -37991,6 +38016,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     client?: ClientUpdateOneRequiredWithoutBalancesNestedInput
     transactions?: TransactionUpdateManyWithoutBalanceNestedInput
   }
@@ -38001,6 +38027,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     transactions?: TransactionUncheckedUpdateManyWithoutBalanceNestedInput
   }
 
@@ -38010,12 +38037,14 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
   }
 
   export type BalanceUpdateManyMutationInput = {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type BalanceUncheckedUpdateManyInput = {
@@ -38024,6 +38053,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type TransactionCreateInput = {
@@ -40020,7 +40050,7 @@ export namespace Prisma {
     vatRegistered?: SortOrder
     vatId?: SortOrder
     generalContactId?: SortOrder
-    clientStatus?: SortOrder
+    status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
     isPaymentInProgress?: SortOrder
@@ -40049,7 +40079,7 @@ export namespace Prisma {
     vatRegistered?: SortOrder
     vatId?: SortOrder
     generalContactId?: SortOrder
-    clientStatus?: SortOrder
+    status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
     isPaymentInProgress?: SortOrder
@@ -40071,7 +40101,7 @@ export namespace Prisma {
     vatRegistered?: SortOrder
     vatId?: SortOrder
     generalContactId?: SortOrder
-    clientStatus?: SortOrder
+    status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
     isPaymentInProgress?: SortOrder
@@ -40513,6 +40543,7 @@ export namespace Prisma {
     currency?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
   }
 
   export type BalanceAvgOrderByAggregateInput = {
@@ -40520,6 +40551,7 @@ export namespace Prisma {
     clientId?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
   }
 
   export type BalanceMaxOrderByAggregateInput = {
@@ -40528,6 +40560,7 @@ export namespace Prisma {
     currency?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
   }
 
   export type BalanceMinOrderByAggregateInput = {
@@ -40536,6 +40569,7 @@ export namespace Prisma {
     currency?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
   }
 
   export type BalanceSumOrderByAggregateInput = {
@@ -40543,6 +40577,7 @@ export namespace Prisma {
     clientId?: SortOrder
     amount?: SortOrder
     amountRetain?: SortOrder
+    amountTerminated?: SortOrder
   }
 
   export type EnumCurrencyWithAggregatesFilter<$PrismaModel = never> = {
@@ -44566,7 +44601,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -44596,7 +44631,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -44655,7 +44690,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -44684,7 +44719,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -44834,7 +44869,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -44864,7 +44899,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -44941,7 +44976,7 @@ export namespace Prisma {
     vatRegistered?: BoolFilter<"Client"> | boolean
     vatId?: StringNullableFilter<"Client"> | string | null
     generalContactId?: IntNullableFilter<"Client"> | number | null
-    clientStatus?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
+    status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolFilter<"Client"> | boolean
@@ -45355,6 +45390,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
     transactions?: TransactionCreateNestedManyWithoutBalanceInput
   }
 
@@ -45363,6 +45399,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
     transactions?: TransactionUncheckedCreateNestedManyWithoutBalanceInput
   }
 
@@ -45696,6 +45733,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFilter<"Balance"> | $Enums.Currency
     amount?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFilter<"Balance"> | Decimal | DecimalJsLike | number | string
   }
 
   export type ClientPaymentInformationUpsertWithoutClientInput = {
@@ -45860,7 +45898,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -45890,7 +45928,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -45931,7 +45969,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -45961,7 +45999,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -45986,7 +46024,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46016,7 +46054,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46057,7 +46095,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46087,7 +46125,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46112,7 +46150,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46142,7 +46180,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46183,7 +46221,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46213,7 +46251,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46238,7 +46276,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46268,7 +46306,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46346,7 +46384,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46376,7 +46414,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -46427,6 +46465,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
     client: ClientCreateNestedOneWithoutBalancesInput
   }
 
@@ -46436,6 +46475,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
   }
 
   export type BalanceCreateOrConnectWithoutTransactionsInput = {
@@ -46534,6 +46574,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     client?: ClientUpdateOneRequiredWithoutBalancesNestedInput
   }
 
@@ -46543,6 +46584,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type BaseRoyaltyReportUpsertWithoutTransactionInput = {
@@ -46665,7 +46707,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46694,7 +46736,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46893,7 +46935,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -46923,7 +46965,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -47124,7 +47166,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -47154,7 +47196,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -48102,7 +48144,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -48132,7 +48174,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -48322,7 +48364,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -48352,7 +48394,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49372,7 +49414,7 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -49481,7 +49523,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49510,7 +49552,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49538,7 +49580,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49576,6 +49618,7 @@ export namespace Prisma {
     currency?: $Enums.Currency
     amount?: Decimal | DecimalJsLike | number | string
     amountRetain?: Decimal | DecimalJsLike | number | string
+    amountTerminated?: Decimal | DecimalJsLike | number | string
   }
 
   export type LabelCreateManyClientInput = {
@@ -49622,6 +49665,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     transactions?: TransactionUpdateManyWithoutBalanceNestedInput
   }
 
@@ -49630,6 +49674,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     transactions?: TransactionUncheckedUpdateManyWithoutBalanceNestedInput
   }
 
@@ -49638,6 +49683,7 @@ export namespace Prisma {
     currency?: EnumCurrencyFieldUpdateOperationsInput | $Enums.Currency
     amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     amountRetain?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    amountTerminated?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type LabelUpdateWithoutClientInput = {
@@ -49848,7 +49894,7 @@ export namespace Prisma {
     vatRegistered?: boolean
     vatId?: string | null
     generalContactId?: number | null
-    clientStatus?: $Enums.ClientStatus
+    status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
@@ -49867,7 +49913,7 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49896,7 +49942,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
@@ -49924,7 +49970,7 @@ export namespace Prisma {
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
     generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
-    clientStatus?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
+    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean

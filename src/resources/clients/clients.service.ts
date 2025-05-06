@@ -12,7 +12,7 @@ import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { Currency, TransactionType } from 'generated/client';
+import { ClientStatus, Currency, TransactionType } from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import {
@@ -23,6 +23,8 @@ import {
   PrismaClientKnownRequestError,
   Decimal,
 } from 'generated/client/runtime/library';
+import { ClientValidationSchema } from './validation/client-validation.schema';
+import { validateWithZod } from 'src/common/utils/zod-validate.util';
 
 @Injectable()
 export class ClientsService {
@@ -38,48 +40,16 @@ export class ClientsService {
    * @returns The created client as a ClientDto
    */
   async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
+    validateWithZod(ClientValidationSchema, userObject);
     await this.validateClientData(userObject);
-    const { address, contract, dmb, generalContactId, ...clientData } =
-      userObject;
-
-    let generalContact = null;
-    if (generalContactId) {
-      generalContact = await this.prisma.user.findUnique({
-        where: { id: generalContactId },
-      });
-    }
-
-    if (generalContactId && !generalContact) {
-      throw new UserNotFoundException();
-    }
-
+    const generalContact = await this.getAndValidateGeneralContact(
+      userObject.generalContactId,
+    );
+    const data = this.buildClientData(userObject, generalContact, 'create');
     const client = await this.prisma.client.create({
-      data: {
-        ...clientData,
-        generalContact: generalContact
-          ? { connect: { id: generalContact.id } }
-          : undefined,
-        address: {
-          create: address,
-        },
-        contract: {
-          create: contract,
-        },
-        dmb: {
-          create: dmb,
-        },
-        balances: {
-          createMany: {
-            data: [
-              { amount: new Decimal(0), currency: Currency.EUR },
-              { amount: new Decimal(0), currency: Currency.USD },
-            ],
-          },
-        },
-      },
+      data,
       include: { address: true, contract: true, balances: true, dmb: true },
     });
-
     return this.convertToClientDto(client);
   }
 
@@ -97,40 +67,20 @@ export class ClientsService {
     id: number,
     updateClientDto: UpdateClientDto,
   ): Promise<ClientExtendedDto> {
-    const { address, contract, dmb, generalContactId, ...clientData } =
-      updateClientDto;
-
-    let generalContact = null;
-    if (generalContactId) {
-      generalContact = await this.prisma.user.findUnique({
-        where: { id: generalContactId },
-      });
-    }
-
-    if (generalContactId && !generalContact) {
-      throw new UserNotFoundException();
-    }
-
+    validateWithZod(ClientValidationSchema, updateClientDto);
+    const generalContact = await this.getAndValidateGeneralContact(
+      updateClientDto.generalContactId,
+    );
+    const data = this.buildClientData(
+      updateClientDto,
+      generalContact,
+      'update',
+    );
     const updatedClient = await this.prisma.client.update({
       where: { id },
-      data: {
-        ...clientData,
-        generalContact: generalContact
-          ? { connect: { id: generalContact.id } }
-          : undefined,
-        address: {
-          update: { ...address },
-        },
-        contract: {
-          update: { ...contract },
-        },
-        dmb: {
-          update: { ...dmb },
-        },
-      },
+      data,
       include: { address: true, contract: true, balances: true, dmb: true },
     });
-
     return this.convertToClientDto(updatedClient);
   }
 
@@ -206,7 +156,7 @@ export class ClientsService {
         include: { balances: true },
       });
       if (!client) throw new NotFoundException('Client not found');
-      if (client.isBlocked)
+      if (client.status === 'BLOCKED')
         throw new BadRequestException('Client is already blocked');
 
       const moved: Record<string, number> = {};
@@ -238,7 +188,7 @@ export class ClientsService {
       }
       await prisma.client.update({
         where: { id: clientId },
-        data: { isBlocked: true },
+        data: { status: 'BLOCKED' },
       });
       this.logger.log(`Client ${clientId} blocked successfully.`);
       const movedMsg = Object.entries(moved)
@@ -263,7 +213,7 @@ export class ClientsService {
         include: { balances: true },
       });
       if (!client) throw new NotFoundException('Client not found');
-      if (!client.isBlocked)
+      if (client.status !== 'BLOCKED')
         throw new BadRequestException('Client is not blocked');
 
       const moved: Record<string, number> = {};
@@ -296,7 +246,7 @@ export class ClientsService {
       }
       await prisma.client.update({
         where: { id: clientId },
-        data: { isBlocked: false },
+        data: { status: 'ACTIVE' },
       });
       this.logger.log(`Client ${clientId} unblocked successfully.`);
       const movedMsg = Object.entries(moved)
@@ -307,6 +257,113 @@ export class ClientsService {
         action: 'unblocked',
         moved,
         message: `Client unblocked, ${movedMsg ? movedMsg + ' released from retained funds.' : 'no funds released.'}`,
+      };
+    });
+  }
+
+  async terminateClient(clientId: number, confirm: boolean): Promise<any> {
+    if (!confirm) {
+      throw new BadRequestException('Termination must be confirmed.');
+    }
+    return this.prisma.$transaction(async (prisma) => {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        include: { balances: true },
+      });
+      if (!client) throw new NotFoundException('Client not found');
+      if (client.status === ClientStatus.TERMINATED) {
+        throw new BadRequestException('Client is already terminated');
+      }
+      let moved: Record<string, number> = {};
+      for (const balance of client.balances) {
+        const total = balance.amount.plus(balance.amountRetain);
+        if (total.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = total.toNumber();
+          moved[currency] = (moved[currency] || 0) + amountNum;
+          // Move to amountTerminated
+          await prisma.balance.update({
+            where: { id: balance.id },
+            data: {
+              amountTerminated: { increment: total },
+              amount: 0,
+              amountRetain: 0,
+            },
+          });
+          // Create termination transaction
+          await prisma.transaction.create({
+            data: {
+              type: TransactionType.OTHER,
+              description: 'Account Terminated',
+              amount: total.negated(),
+              balanceAmount: 0,
+              balanceId: balance.id,
+              // Optionally, add a custom field/tag if you want to identify this transaction
+            },
+          });
+        }
+      }
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { status: ClientStatus.TERMINATED },
+      });
+      const movedMsg = Object.entries(moved)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'terminated',
+        moved,
+        message: `Client terminated, ${movedMsg ? movedMsg + ' moved to terminated funds.' : 'no funds moved.'}`,
+      };
+    });
+  }
+
+  async undoTerminateClient(clientId: number): Promise<any> {
+    return this.prisma.$transaction(async (prisma) => {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        include: { balances: true },
+      });
+      if (!client) throw new NotFoundException('Client not found');
+      if (client.status !== ClientStatus.TERMINATED) {
+        throw new BadRequestException('Client is not terminated');
+      }
+      let restored: Record<string, number> = {};
+      for (const balance of client.balances) {
+        if (balance.amountTerminated.gt(0)) {
+          const currency = balance.currency;
+          const amountNum = balance.amountTerminated.toNumber();
+          restored[currency] = (restored[currency] || 0) + amountNum;
+          // Restore funds
+          await prisma.balance.update({
+            where: { id: balance.id },
+            data: {
+              amount: { increment: balance.amountTerminated },
+              amountTerminated: 0,
+            },
+          });
+          // Delete the termination transaction (Account Terminated)
+          await prisma.transaction.deleteMany({
+            where: {
+              balanceId: balance.id,
+              description: 'Account Terminated',
+            },
+          });
+        }
+      }
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { status: ClientStatus.ACTIVE },
+      });
+      const movedMsg = Object.entries(restored)
+        .map(([cur, amt]) => `${amt} ${cur}`)
+        .join(' and ');
+      return {
+        success: true,
+        action: 'undo-terminated',
+        restored,
+        message: `Termination undone, ${movedMsg ? movedMsg + ' funds restored.' : 'no funds restored.'}`,
       };
     });
   }
@@ -453,5 +510,58 @@ export class ClientsService {
       },
       ClientExtendedDto,
     );
+  }
+
+  // --- Helpers ---
+
+  private async getAndValidateGeneralContact(generalContactId?: number) {
+    if (!generalContactId) return null;
+    const generalContact = await this.prisma.user.findUnique({
+      where: { id: generalContactId },
+    });
+    if (!generalContact) throw new UserNotFoundException();
+    return generalContact;
+  }
+
+  private buildClientData(
+    dto: any,
+    generalContact: any,
+    mode: 'create' | 'update',
+  ) {
+    const { address, contract, dmb, generalContactId, ...clientData } = dto;
+    const data: any = {
+      ...clientData,
+      generalContact: generalContact
+        ? { connect: { id: generalContact.id } }
+        : undefined,
+    };
+    if (address) {
+      data.address =
+        mode === 'create' ? { create: address } : { update: { ...address } };
+    }
+    if (contract) {
+      // Calcular el valor de signed automáticamente
+      const status = contract.status;
+      const signed = status === 'DRAFT' ? false : true;
+      const contractData = { ...contract, signed };
+      data.contract =
+        mode === 'create'
+          ? { create: contractData }
+          : { update: { ...contractData } };
+    }
+    if (dmb) {
+      data.dmb = mode === 'create' ? { create: dmb } : { update: { ...dmb } };
+    }
+    if (mode === 'create') {
+      data.balances = {
+        createMany: {
+          data: [
+            { amount: new Decimal(0), currency: Currency.EUR },
+            { amount: new Decimal(0), currency: Currency.USD },
+          ],
+        },
+      };
+    }
+    return data;
   }
 }

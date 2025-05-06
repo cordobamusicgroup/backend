@@ -168,7 +168,7 @@ model Client {
   generalContact   User? @relation("GeneralContact", fields: [generalContactId], references: [id])
   generalContactId Int?
 
-  clientStatus              ClientStatus @default(ACTIVE)
+  status                    ClientStatus @default(ACTIVE)
   isBlocked                 Boolean? // @deprecated USE clientStatus INSTEAD
   isPaymentsBlocked         Boolean? // @deprecated remove from DB
   isPaymentInProgress       Boolean      @default(false)
@@ -240,13 +240,14 @@ model Contract {
 }
 
 model Balance {
-  id           Int           @id @default(autoincrement())
-  clientId     Int
-  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
-  currency     Currency      @default(EUR)
-  amount       Decimal       @default(0.00)
-  amountRetain Decimal       @default(0.00)
-  transactions Transaction[] @relation("BalanceTransactions")
+  id               Int           @id @default(autoincrement())
+  clientId         Int
+  client           Client        @relation(fields: [clientId], references: [id], onDelete: Cascade, name: "ClientBalances")
+  currency         Currency      @default(EUR)
+  amount           Decimal       @default(0.00)
+  amountRetain     Decimal       @default(0.00)
+  amountTerminated Decimal       @default(0.00)
+  transactions     Transaction[] @relation("BalanceTransactions")
 
   @@unique([currency, clientId])
   @@map("clients_balances")

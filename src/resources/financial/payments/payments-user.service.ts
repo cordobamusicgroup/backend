@@ -28,7 +28,7 @@ export class PaymentsUserService {
     const client = await this.prisma.client.findUnique({
       where: { id: clientId },
       select: {
-        isBlocked: true,
+        status: true,
         isPaymentInProgress: true,
         isPaymentDataInValidation: true,
       },
@@ -38,7 +38,15 @@ export class PaymentsUserService {
       throw new NotFoundException(`Client with ID ${clientId} not found`);
     }
 
-    return client;
+    // isBlocked depende de clientStatus
+    const isBlocked =
+      client.status === 'BLOCKED' || client.status === 'TERMINATED';
+
+    return {
+      isBlocked,
+      isPaymentInProgress: client.isPaymentInProgress,
+      isPaymentDataInValidation: client.isPaymentDataInValidation,
+    };
   }
 
   //TODO: Implement logic again for payment info update

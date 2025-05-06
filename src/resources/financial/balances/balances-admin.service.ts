@@ -52,27 +52,37 @@ export class BalancesAdminService {
   }
 
   /**
-   * Sums the balances of all users and returns the total in USD and EUR.
-   * @returns An object containing the total balances in USD and EUR.
+   * Suma y desglosa los balances normales y retenidos de todos los usuarios en USD y EUR.
+   * @returns Un objeto con el desglose y total por moneda.
    */
-  async getTotalBalances(): Promise<{ usd: number; eur: number }> {
+  async getTotalBalances(): Promise<{
+    usd: { normal: number; retained: number; total: number };
+    eur: { normal: number; retained: number; total: number };
+  }> {
     const balances = await this.prisma.balance.groupBy({
       by: ['currency'],
-      _sum: { amount: true },
+      _sum: { amount: true, amountRetain: true },
       where: { currency: { in: [Currency.USD, Currency.EUR] } },
     });
 
-    return balances.reduce(
-      (acc, balance) => {
-        if (balance.currency === Currency.USD) {
-          acc.usd = balance._sum.amount.toNumber();
-        } else if (balance.currency === Currency.EUR) {
-          acc.eur = balance._sum.amount.toNumber();
-        }
-        return acc;
-      },
-      { usd: 0, eur: 0 },
-    );
+    const result = {
+      usd: { normal: 0, retained: 0, total: 0 },
+      eur: { normal: 0, retained: 0, total: 0 },
+    };
+
+    for (const balance of balances) {
+      const normal = balance._sum.amount ? balance._sum.amount.toNumber() : 0;
+      const retained = balance._sum.amountRetain
+        ? balance._sum.amountRetain.toNumber()
+        : 0;
+      const total = normal + retained;
+      if (balance.currency === Currency.USD) {
+        result.usd = { normal, retained, total };
+      } else if (balance.currency === Currency.EUR) {
+        result.eur = { normal, retained, total };
+      }
+    }
+    return result;
   }
 
   // Función auxiliar para recalcular la cadena de transacciones en un balance

@@ -201,7 +201,7 @@ exports.Prisma.ClientScalarFieldEnum = {
   vatRegistered: 'vatRegistered',
   vatId: 'vatId',
   generalContactId: 'generalContactId',
-  clientStatus: 'clientStatus',
+  status: 'status',
   isBlocked: 'isBlocked',
   isPaymentsBlocked: 'isPaymentsBlocked',
   isPaymentInProgress: 'isPaymentInProgress',
@@ -250,7 +250,8 @@ exports.Prisma.BalanceScalarFieldEnum = {
   clientId: 'clientId',
   currency: 'currency',
   amount: 'amount',
-  amountRetain: 'amountRetain'
+  amountRetain: 'amountRetain',
+  amountTerminated: 'amountTerminated'
 };
 
 exports.Prisma.TransactionScalarFieldEnum = {
