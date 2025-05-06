@@ -50,7 +50,7 @@ export class ClientExtendedDto {
   balances: BalanceDto[];
 
   @Expose()
-  clientStatus: ClientStatus;
+  status: ClientStatus;
 
   @Expose()
   isPaymentInProgress: boolean;
