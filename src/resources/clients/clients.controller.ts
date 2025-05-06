@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -15,6 +16,7 @@ import { ClientExtendedDto } from './dto/client-extended.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Role } from 'generated/client';
+import { ClientValidationSchema } from './validation/client-validation.schema';
 
 @Controller('clients')
 @UseGuards(RolesGuard)
@@ -94,6 +96,21 @@ export class ClientsController {
   @Roles(Role.ADMIN)
   async unblockClient(@Param('id') id: number): Promise<ClientExtendedDto> {
     return this.clientsService.unblockClient(Number(id));
+  }
+
+  @Put(':id/terminate')
+  @Roles(Role.ADMIN)
+  async terminateClient(
+    @Param('id') id: number,
+    @Body() body: { confirm: boolean },
+  ) {
+    return this.clientsService.terminateClient(Number(id), body.confirm);
+  }
+
+  @Put(':id/undo-terminate')
+  @Roles(Role.ADMIN)
+  async undoTerminateClient(@Param('id') id: number) {
+    return this.clientsService.undoTerminateClient(Number(id));
   }
 
   /**

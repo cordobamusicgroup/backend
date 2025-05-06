@@ -15,7 +15,6 @@ export class CreateContractDto {
   @IsNotEmpty()
   type: ContractType;
 
-  @ValidateIf((o) => o.signed === true)
   @IsNotEmpty()
   @IsNumber()
   ppd?: number;
@@ -36,17 +35,11 @@ export class CreateContractDto {
   @IsDateString()
   endDate?: string;
 
-  @IsBoolean()
-  @IsNotEmpty()
-  signed: boolean;
-
-  @ValidateIf((o) => o.signed === true)
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
   signedAt?: string;
 
-  @ValidateIf((o) => o.signed === true)
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   signedBy?: string;
 }

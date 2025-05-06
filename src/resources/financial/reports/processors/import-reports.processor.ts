@@ -9,7 +9,7 @@ import { PrismaService } from 'src/resources/prisma/prisma.service';
 import env from 'src/config/env.config';
 import { ProcessingType } from '../enums/processing-type.enum';
 import { BullJobLogger } from 'src/common/logger/BullJobLogger';
-import { ContractType, Distributor } from 'generated/client';
+import { ClientStatus, ContractType, Distributor } from 'generated/client';
 import { parse } from 'fast-csv';
 import * as fs from 'fs';
 import { decode } from 'html-entities';
@@ -347,7 +347,7 @@ export class ImportReportsProcessor extends WorkerHost {
         // If no label found, save as unlinked and stop processing
         if (!label) {
           logger.warn(
-            `⚠️ Record #${rowIndex + 1}: No matching label found for "${record.labelName}"`,
+            `Record #${rowIndex + 1}: No matching label found for "${record.labelName}"`,
           );
           await this.saveUnlinkedRecord(record, distributor, reportingMonth);
           logger.log(`📝 Record saved as unlinked for future processing`);
@@ -359,11 +359,20 @@ export class ImportReportsProcessor extends WorkerHost {
       logger.log(`🔍 Finding contract for client ID: ${label.client.id}`);
       const contract = await this.findClientContract(label.client.id);
 
+      // Si el cliente está en estado TERMINATED, el PPD pasa a ser 0
+      let ppd = contract?.ppd;
+      if (label.client.status === ClientStatus.TERMINATED) {
+        logger.warn(
+          `Record #${rowIndex + 1}: Client is TERMINATED, PPD forced to 0`,
+        );
+        ppd = 0;
+      }
+
       // Validate contract has PPD (Percentage Per Distribution)
       // Modified to handle PPD value of 0
-      if (contract?.ppd === null || contract?.ppd === undefined) {
+      if (ppd === null || ppd === undefined) {
         logger.warn(
-          `⚠️ Record #${rowIndex + 1}: No valid contract with PPD found for client ID ${label.client.id}`,
+          `Record #${rowIndex + 1}: No valid contract with PPD found for client ID ${label.client.id}`,
         );
         await this.saveRecordAsFailure(
           record,
@@ -373,13 +382,13 @@ export class ImportReportsProcessor extends WorkerHost {
         );
         return;
       }
-      logger.log(`✅ Found contract with PPD: ${contract.ppd}%`);
+      logger.log(`✅ Found contract with PPD: ${ppd}%`);
 
       // Step 3: Calculate revenue based on PPD and distributor
       logger.log(`🧮 Calculating client revenue`);
       const { cmg_clientRate, cmg_netRevenue } = this.calculateClientRevenue(
         record,
-        contract.ppd,
+        ppd,
         distributor,
       );
       logger.log(

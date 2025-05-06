@@ -23,7 +23,7 @@ export class DeprecatedService {
     // 1. Set clientStatus = BLOCKED where isBlocked = true
     const updateBlocked = await this.prisma.client.updateMany({
       where: { isBlocked: true },
-      data: { clientStatus: ClientStatus.BLOCKED },
+      data: { status: ClientStatus.BLOCKED },
     });
     this.logger.log(`Clientes actualizados a BLOCKED: ${updateBlocked.count}`);
     // 2. Set isBlocked = null for all clients
