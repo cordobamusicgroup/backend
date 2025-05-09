@@ -53,10 +53,7 @@ export class ClientsService {
     // Validar relaciones entre campos
     this.validateRelatedFields(userObject);
 
-    const generalContact = await this.getAndValidateGeneralContact(
-      userObject.generalContactId,
-    );
-    const data = this.buildClientData(userObject, generalContact, 'create');
+    const data = this.buildClientData(userObject, 'create');
     const client = await this.prisma.client.create({
       data,
       include: {
@@ -86,14 +83,7 @@ export class ClientsService {
     // Validar relaciones entre campos
     this.validateRelatedFields(updateClientDto);
 
-    const generalContact = await this.getAndValidateGeneralContact(
-      updateClientDto.generalContactId,
-    );
-    const data = this.buildClientData(
-      updateClientDto,
-      generalContact,
-      'update',
-    );
+    const data = this.buildClientData(updateClientDto, 'update');
     const updatedClient = await this.prisma.client.update({
       where: { id },
       data,
@@ -634,54 +624,72 @@ export class ClientsService {
 
   // --- Helpers ---
 
-  private async getAndValidateGeneralContact(generalContactId?: number) {
-    if (!generalContactId) return null;
-    const generalContact = await this.prisma.user.findUnique({
-      where: { id: generalContactId },
-    });
-    if (!generalContact) throw new UserNotFoundException();
-    return generalContact;
-  }
+  /**
+   * Builds the base data object for creating or updating a client.
+   * @param dto - The incoming client DTO
+   * @param mode - 'create' or 'update'
+   * @returns Prisma-compatible data object
+   */
+  private buildClientData(dto: any, mode: 'create' | 'update') {
+    this.logger.log(`Building client data (${mode})`);
+    const { address, contract, dmb, ...clientData } = dto;
+    const data: any = { ...clientData };
 
-  private buildClientData(
-    dto: any,
-    generalContact: any,
-    mode: 'create' | 'update',
-  ) {
-    const { address, contract, dmb, generalContactId, ...clientData } = dto;
-    const data: any = {
-      ...clientData,
-      generalContact: generalContact
-        ? { connect: { id: generalContact.id } }
-        : undefined,
-    };
     if (address) {
-      data.address =
-        mode === 'create' ? { create: address } : { update: { ...address } };
+      data.address = this.buildAddressData(address, mode);
     }
     if (contract) {
-      // Calcular el valor de signed automáticamente
-      const status = contract.status;
-      const signed = status === 'DRAFT' ? false : true;
-      const contractData = { ...contract, signed };
-      data.contract =
-        mode === 'create'
-          ? { create: contractData }
-          : { update: { ...contractData } };
+      data.contract = this.buildContractData(contract, mode);
     }
     if (dmb) {
-      data.dmb = mode === 'create' ? { create: dmb } : { update: { ...dmb } };
+      data.dmb = this.buildDmbData(dmb, mode);
     }
     if (mode === 'create') {
-      data.balances = {
-        createMany: {
-          data: [
-            { amount: new Decimal(0), currency: Currency.EUR },
-            { amount: new Decimal(0), currency: Currency.USD },
-          ],
-        },
-      };
+      data.balances = this.buildBalancesData();
     }
     return data;
+  }
+
+  /**
+   * Helper to build address data structure.
+   */
+  private buildAddressData(address: any, mode: 'create' | 'update') {
+    this.logger.debug('Building address data');
+    return mode === 'create' ? { create: address } : { update: { ...address } };
+  }
+
+  /**
+   * Helper to build contract data structure with auto-signed flag.
+   */
+  private buildContractData(contract: any, mode: 'create' | 'update') {
+    this.logger.debug('Building contract data');
+    const signed = contract.status !== ContractStatus.DRAFT;
+    const contractData = { ...contract, signed };
+    return mode === 'create'
+      ? { create: contractData }
+      : { update: { ...contractData } };
+  }
+
+  /**
+   * Helper to build DMB data structure.
+   */
+  private buildDmbData(dmb: any, mode: 'create' | 'update') {
+    this.logger.debug('Building DMB data');
+    return mode === 'create' ? { create: dmb } : { update: { ...dmb } };
+  }
+
+  /**
+   * Helper to initialize balances for a new client.
+   */
+  private buildBalancesData() {
+    this.logger.debug('Initializing balances for new client');
+    return {
+      createMany: {
+        data: [
+          { amount: new Decimal(0), currency: Currency.EUR },
+          { amount: new Decimal(0), currency: Currency.USD },
+        ],
+      },
+    };
   }
 }
