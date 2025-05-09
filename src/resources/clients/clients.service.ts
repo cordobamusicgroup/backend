@@ -16,17 +16,11 @@ import {
   ClientStatus,
   Currency,
   TransactionType,
-  ContractType,
   ContractStatus,
-  AccessTypeDMB,
-  DMBStatus,
 } from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
-import {
-  ConflictRecordsException,
-  UserNotFoundException,
-} from 'src/common/exceptions/CustomHttpException';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
 import {
   PrismaClientKnownRequestError,
   Decimal,
@@ -393,54 +387,6 @@ export class ClientsService {
         restored,
         message: `Termination undone, ${movedMsg ? movedMsg + ' funds restored.' : 'no funds restored.'}`,
       };
-    });
-  }
-
-  /**
-   * Method to update a client's address.
-   * If the address exists, it will be updated with the new data.
-   *
-   * @param addressId - The ID of the address to be updated
-   * @param address - The new address data
-   * @returns The updated address
-   */
-  private async updateAddress(addressId: number, address: any): Promise<any> {
-    return this.prisma.address.update({
-      where: { id: addressId },
-      data: { ...address },
-    });
-  }
-
-  /**
-   * Method to update a client's contract.
-   * If the contract exists, it will be updated with the new data.
-   *
-   * @param contractId - The ID of the contract to be updated
-   * @param contract - The new contract data
-   * @returns The updated contract
-   */
-  private async updateContract(
-    contractId: number,
-    contract: any,
-  ): Promise<any> {
-    return this.prisma.contract.update({
-      where: { id: contractId },
-      data: { ...contract },
-    });
-  }
-
-  /**
-   * Method to update a client's DMB (Digital Music Bundle) data.
-   * If the DMB exists, it will be updated with the new data.
-   *
-   * @param dmbId - The ID of the DMB record to be updated
-   * @param dmb - The new DMB data
-   * @returns The updated DMB data
-   */
-  private async updateDmb(dmbId: number, dmb: any): Promise<any> {
-    return this.prisma.clientDMB.update({
-      where: { id: dmbId },
-      data: { ...dmb },
     });
   }
 
