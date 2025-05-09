@@ -40,10 +40,6 @@ export class CreateClientDto {
   @IsOptional()
   vatId?: string;
 
-  @IsInt()
-  @IsOptional()
-  generalContactId?: number;
-
   @ValidateNested()
   @Type(() => CreateAddressDto)
   @IsNotEmptyObject()

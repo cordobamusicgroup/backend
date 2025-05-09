@@ -45,10 +45,6 @@ export class UpdateClientDto {
   @IsOptional()
   vatId?: string;
 
-  @IsInt()
-  @IsOptional()
-  generalContactId?: number;
-
   @ValidateNested()
   @Type(() => UpdateAddressDto)
   @IsOptional()

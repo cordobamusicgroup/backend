@@ -5,7 +5,6 @@ import { AddressDto } from './address/address.dto';
 import { DmbDto } from './dmb/dmb.dto';
 import { BalanceDto } from '../../financial/balances/dto/balance.dto';
 import { UserDto } from '../../users/dto/user.dto';
-import { exitOnError } from 'winston';
 
 export class ClientExtendedDto {
   @Expose()
@@ -37,9 +36,6 @@ export class ClientExtendedDto {
 
   @Expose()
   vatId: string;
-
-  @Expose()
-  generalContactId: number;
 
   @Expose()
   isPaymentInProgress: boolean;
