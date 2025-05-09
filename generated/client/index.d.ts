@@ -801,8 +801,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.6.0
-   * Query Engine version: f676762280b54cd07c770017ed3711ddde35f37a
+   * Prisma Client JS version: 6.7.0
+   * Query Engine version: 3cff47a7f5d65c3ea74883f1d736e41d68ce91ed
    */
   export type PrismaVersion = {
     client: string
@@ -3335,7 +3335,6 @@ export namespace Prisma {
     preferences: number
     comms: number
     logs: number
-    generalContactClient: number
     refreshTokens: number
   }
 
@@ -3343,7 +3342,6 @@ export namespace Prisma {
     preferences?: boolean | UserCountOutputTypeCountPreferencesArgs
     comms?: boolean | UserCountOutputTypeCountCommsArgs
     logs?: boolean | UserCountOutputTypeCountLogsArgs
-    generalContactClient?: boolean | UserCountOutputTypeCountGeneralContactClientArgs
     refreshTokens?: boolean | UserCountOutputTypeCountRefreshTokensArgs
   }
 
@@ -3377,13 +3375,6 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: LogWhereInput
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountGeneralContactClientArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ClientWhereInput
   }
 
   /**
@@ -7363,7 +7354,6 @@ export namespace Prisma {
     comms?: boolean | User$commsArgs<ExtArgs>
     client?: boolean | User$clientArgs<ExtArgs>
     logs?: boolean | User$logsArgs<ExtArgs>
-    generalContactClient?: boolean | User$generalContactClientArgs<ExtArgs>
     resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -7416,7 +7406,6 @@ export namespace Prisma {
     comms?: boolean | User$commsArgs<ExtArgs>
     client?: boolean | User$clientArgs<ExtArgs>
     logs?: boolean | User$logsArgs<ExtArgs>
-    generalContactClient?: boolean | User$generalContactClientArgs<ExtArgs>
     resetToken?: boolean | User$resetTokenArgs<ExtArgs>
     refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -7435,7 +7424,6 @@ export namespace Prisma {
       comms: Prisma.$UserCommsPayload<ExtArgs>[]
       client: Prisma.$ClientPayload<ExtArgs> | null
       logs: Prisma.$LogPayload<ExtArgs>[]
-      generalContactClient: Prisma.$ClientPayload<ExtArgs>[]
       resetToken: Prisma.$PasswordResetTokenPayload<ExtArgs> | null
       refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
     }
@@ -7848,7 +7836,6 @@ export namespace Prisma {
     comms<T extends User$commsArgs<ExtArgs> = {}>(args?: Subset<T, User$commsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserCommsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     client<T extends User$clientArgs<ExtArgs> = {}>(args?: Subset<T, User$clientArgs<ExtArgs>>): Prisma__ClientClient<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     logs<T extends User$logsArgs<ExtArgs> = {}>(args?: Subset<T, User$logsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    generalContactClient<T extends User$generalContactClientArgs<ExtArgs> = {}>(args?: Subset<T, User$generalContactClientArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     resetToken<T extends User$resetTokenArgs<ExtArgs> = {}>(args?: Subset<T, User$resetTokenArgs<ExtArgs>>): Prisma__PasswordResetTokenClient<$Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     refreshTokens<T extends User$refreshTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -8374,30 +8361,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: LogScalarFieldEnum | LogScalarFieldEnum[]
-  }
-
-  /**
-   * User.generalContactClient
-   */
-  export type User$generalContactClientArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Client
-     */
-    select?: ClientSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Client
-     */
-    omit?: ClientOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ClientInclude<ExtArgs> | null
-    where?: ClientWhereInput
-    orderBy?: ClientOrderByWithRelationInput | ClientOrderByWithRelationInput[]
-    cursor?: ClientWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: ClientScalarFieldEnum | ClientScalarFieldEnum[]
   }
 
   /**
@@ -11837,14 +11800,12 @@ export namespace Prisma {
     id: number | null
     wp_id: number | null
     addressId: number | null
-    generalContactId: number | null
   }
 
   export type ClientSumAggregateOutputType = {
     id: number | null
     wp_id: number | null
     addressId: number | null
-    generalContactId: number | null
   }
 
   export type ClientMinAggregateOutputType = {
@@ -11861,7 +11822,6 @@ export namespace Prisma {
     taxId: string | null
     vatRegistered: boolean | null
     vatId: string | null
-    generalContactId: number | null
     status: $Enums.ClientStatus | null
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
@@ -11883,7 +11843,6 @@ export namespace Prisma {
     taxId: string | null
     vatRegistered: boolean | null
     vatId: string | null
-    generalContactId: number | null
     status: $Enums.ClientStatus | null
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
@@ -11905,7 +11864,6 @@ export namespace Prisma {
     taxId: number
     vatRegistered: number
     vatId: number
-    generalContactId: number
     status: number
     isBlocked: number
     isPaymentsBlocked: number
@@ -11919,14 +11877,12 @@ export namespace Prisma {
     id?: true
     wp_id?: true
     addressId?: true
-    generalContactId?: true
   }
 
   export type ClientSumAggregateInputType = {
     id?: true
     wp_id?: true
     addressId?: true
-    generalContactId?: true
   }
 
   export type ClientMinAggregateInputType = {
@@ -11943,7 +11899,6 @@ export namespace Prisma {
     taxId?: true
     vatRegistered?: true
     vatId?: true
-    generalContactId?: true
     status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
@@ -11965,7 +11920,6 @@ export namespace Prisma {
     taxId?: true
     vatRegistered?: true
     vatId?: true
-    generalContactId?: true
     status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
@@ -11987,7 +11941,6 @@ export namespace Prisma {
     taxId?: true
     vatRegistered?: true
     vatId?: true
-    generalContactId?: true
     status?: true
     isBlocked?: true
     isPaymentsBlocked?: true
@@ -12096,7 +12049,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered: boolean
     vatId: string | null
-    generalContactId: number | null
     status: $Enums.ClientStatus
     isBlocked: boolean | null
     isPaymentsBlocked: boolean | null
@@ -12137,14 +12089,12 @@ export namespace Prisma {
     taxId?: boolean
     vatRegistered?: boolean
     vatId?: boolean
-    generalContactId?: boolean
     status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
     dmb?: boolean | Client$dmbArgs<ExtArgs>
     balances?: boolean | Client$balancesArgs<ExtArgs>
     paymentData?: boolean | Client$paymentDataArgs<ExtArgs>
@@ -12169,14 +12119,12 @@ export namespace Prisma {
     taxId?: boolean
     vatRegistered?: boolean
     vatId?: boolean
-    generalContactId?: boolean
     status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
   }, ExtArgs["result"]["client"]>
 
   export type ClientSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -12193,14 +12141,12 @@ export namespace Prisma {
     taxId?: boolean
     vatRegistered?: boolean
     vatId?: boolean
-    generalContactId?: boolean
     status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
   }, ExtArgs["result"]["client"]>
 
   export type ClientSelectScalar = {
@@ -12217,7 +12163,6 @@ export namespace Prisma {
     taxId?: boolean
     vatRegistered?: boolean
     vatId?: boolean
-    generalContactId?: boolean
     status?: boolean
     isBlocked?: boolean
     isPaymentsBlocked?: boolean
@@ -12225,10 +12170,9 @@ export namespace Prisma {
     isPaymentDataInValidation?: boolean
   }
 
-  export type ClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "wp_id" | "createdAt" | "updatedAt" | "clientName" | "firstName" | "lastName" | "type" | "addressId" | "taxIdType" | "taxId" | "vatRegistered" | "vatId" | "generalContactId" | "status" | "isBlocked" | "isPaymentsBlocked" | "isPaymentInProgress" | "isPaymentDataInValidation", ExtArgs["result"]["client"]>
+  export type ClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "wp_id" | "createdAt" | "updatedAt" | "clientName" | "firstName" | "lastName" | "type" | "addressId" | "taxIdType" | "taxId" | "vatRegistered" | "vatId" | "status" | "isBlocked" | "isPaymentsBlocked" | "isPaymentInProgress" | "isPaymentDataInValidation", ExtArgs["result"]["client"]>
   export type ClientInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
     dmb?: boolean | Client$dmbArgs<ExtArgs>
     balances?: boolean | Client$balancesArgs<ExtArgs>
     paymentData?: boolean | Client$paymentDataArgs<ExtArgs>
@@ -12240,18 +12184,15 @@ export namespace Prisma {
   }
   export type ClientIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
   }
   export type ClientIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     address?: boolean | AddressDefaultArgs<ExtArgs>
-    generalContact?: boolean | Client$generalContactArgs<ExtArgs>
   }
 
   export type $ClientPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Client"
     objects: {
       address: Prisma.$AddressPayload<ExtArgs>
-      generalContact: Prisma.$UserPayload<ExtArgs> | null
       dmb: Prisma.$ClientDMBPayload<ExtArgs> | null
       balances: Prisma.$BalancePayload<ExtArgs>[]
       paymentData: Prisma.$ClientPaymentInformationPayload<ExtArgs> | null
@@ -12274,7 +12215,6 @@ export namespace Prisma {
       taxId: string
       vatRegistered: boolean
       vatId: string | null
-      generalContactId: number | null
       status: $Enums.ClientStatus
       isBlocked: boolean | null
       isPaymentsBlocked: boolean | null
@@ -12675,7 +12615,6 @@ export namespace Prisma {
   export interface Prisma__ClientClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     address<T extends AddressDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AddressDefaultArgs<ExtArgs>>): Prisma__AddressClient<$Result.GetResult<Prisma.$AddressPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    generalContact<T extends Client$generalContactArgs<ExtArgs> = {}>(args?: Subset<T, Client$generalContactArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     dmb<T extends Client$dmbArgs<ExtArgs> = {}>(args?: Subset<T, Client$dmbArgs<ExtArgs>>): Prisma__ClientDMBClient<$Result.GetResult<Prisma.$ClientDMBPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     balances<T extends Client$balancesArgs<ExtArgs> = {}>(args?: Subset<T, Client$balancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BalancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     paymentData<T extends Client$paymentDataArgs<ExtArgs> = {}>(args?: Subset<T, Client$paymentDataArgs<ExtArgs>>): Prisma__ClientPaymentInformationClient<$Result.GetResult<Prisma.$ClientPaymentInformationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -12725,7 +12664,6 @@ export namespace Prisma {
     readonly taxId: FieldRef<"Client", 'String'>
     readonly vatRegistered: FieldRef<"Client", 'Boolean'>
     readonly vatId: FieldRef<"Client", 'String'>
-    readonly generalContactId: FieldRef<"Client", 'Int'>
     readonly status: FieldRef<"Client", 'ClientStatus'>
     readonly isBlocked: FieldRef<"Client", 'Boolean'>
     readonly isPaymentsBlocked: FieldRef<"Client", 'Boolean'>
@@ -13124,25 +13062,6 @@ export namespace Prisma {
      * Limit how many Clients to delete.
      */
     limit?: number
-  }
-
-  /**
-   * Client.generalContact
-   */
-  export type Client$generalContactArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the User
-     */
-    omit?: UserOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: UserInclude<ExtArgs> | null
-    where?: UserWhereInput
   }
 
   /**
@@ -34234,7 +34153,6 @@ export namespace Prisma {
     taxId: 'taxId',
     vatRegistered: 'vatRegistered',
     vatId: 'vatId',
-    generalContactId: 'generalContactId',
     status: 'status',
     isBlocked: 'isBlocked',
     isPaymentsBlocked: 'isPaymentsBlocked',
@@ -35114,7 +35032,6 @@ export namespace Prisma {
     comms?: UserCommsListRelationFilter
     client?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
     logs?: LogListRelationFilter
-    generalContactClient?: ClientListRelationFilter
     resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
   }
@@ -35134,7 +35051,6 @@ export namespace Prisma {
     comms?: UserCommsOrderByRelationAggregateInput
     client?: ClientOrderByWithRelationInput
     logs?: LogOrderByRelationAggregateInput
-    generalContactClient?: ClientOrderByRelationAggregateInput
     resetToken?: PasswordResetTokenOrderByWithRelationInput
     refreshTokens?: RefreshTokenOrderByRelationAggregateInput
   }
@@ -35157,7 +35073,6 @@ export namespace Prisma {
     comms?: UserCommsListRelationFilter
     client?: XOR<ClientNullableScalarRelationFilter, ClientWhereInput> | null
     logs?: LogListRelationFilter
-    generalContactClient?: ClientListRelationFilter
     resetToken?: XOR<PasswordResetTokenNullableScalarRelationFilter, PasswordResetTokenWhereInput> | null
     refreshTokens?: RefreshTokenListRelationFilter
   }, "id" | "username" | "email">
@@ -35404,14 +35319,12 @@ export namespace Prisma {
     taxId?: StringFilter<"Client"> | string
     vatRegistered?: BoolFilter<"Client"> | boolean
     vatId?: StringNullableFilter<"Client"> | string | null
-    generalContactId?: IntNullableFilter<"Client"> | number | null
     status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolFilter<"Client"> | boolean
     isPaymentDataInValidation?: BoolFilter<"Client"> | boolean
     address?: XOR<AddressScalarRelationFilter, AddressWhereInput>
-    generalContact?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     dmb?: XOR<ClientDMBNullableScalarRelationFilter, ClientDMBWhereInput> | null
     balances?: BalanceListRelationFilter
     paymentData?: XOR<ClientPaymentInformationNullableScalarRelationFilter, ClientPaymentInformationWhereInput> | null
@@ -35435,14 +35348,12 @@ export namespace Prisma {
     taxId?: SortOrder
     vatRegistered?: SortOrder
     vatId?: SortOrderInput | SortOrder
-    generalContactId?: SortOrderInput | SortOrder
     status?: SortOrder
     isBlocked?: SortOrderInput | SortOrder
     isPaymentsBlocked?: SortOrderInput | SortOrder
     isPaymentInProgress?: SortOrder
     isPaymentDataInValidation?: SortOrder
     address?: AddressOrderByWithRelationInput
-    generalContact?: UserOrderByWithRelationInput
     dmb?: ClientDMBOrderByWithRelationInput
     balances?: BalanceOrderByRelationAggregateInput
     paymentData?: ClientPaymentInformationOrderByWithRelationInput
@@ -35469,14 +35380,12 @@ export namespace Prisma {
     taxId?: StringFilter<"Client"> | string
     vatRegistered?: BoolFilter<"Client"> | boolean
     vatId?: StringNullableFilter<"Client"> | string | null
-    generalContactId?: IntNullableFilter<"Client"> | number | null
     status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
     isPaymentInProgress?: BoolFilter<"Client"> | boolean
     isPaymentDataInValidation?: BoolFilter<"Client"> | boolean
     address?: XOR<AddressScalarRelationFilter, AddressWhereInput>
-    generalContact?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     dmb?: XOR<ClientDMBNullableScalarRelationFilter, ClientDMBWhereInput> | null
     balances?: BalanceListRelationFilter
     paymentData?: XOR<ClientPaymentInformationNullableScalarRelationFilter, ClientPaymentInformationWhereInput> | null
@@ -35500,7 +35409,6 @@ export namespace Prisma {
     taxId?: SortOrder
     vatRegistered?: SortOrder
     vatId?: SortOrderInput | SortOrder
-    generalContactId?: SortOrderInput | SortOrder
     status?: SortOrder
     isBlocked?: SortOrderInput | SortOrder
     isPaymentsBlocked?: SortOrderInput | SortOrder
@@ -35530,7 +35438,6 @@ export namespace Prisma {
     taxId?: StringWithAggregatesFilter<"Client"> | string
     vatRegistered?: BoolWithAggregatesFilter<"Client"> | boolean
     vatId?: StringNullableWithAggregatesFilter<"Client"> | string | null
-    generalContactId?: IntNullableWithAggregatesFilter<"Client"> | number | null
     status?: EnumClientStatusWithAggregatesFilter<"Client"> | $Enums.ClientStatus
     isBlocked?: BoolNullableWithAggregatesFilter<"Client"> | boolean | null
     isPaymentsBlocked?: BoolNullableWithAggregatesFilter<"Client"> | boolean | null
@@ -37287,7 +37194,6 @@ export namespace Prisma {
     comms?: UserCommsCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
@@ -37306,7 +37212,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
@@ -37324,7 +37229,6 @@ export namespace Prisma {
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
@@ -37343,7 +37247,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -37587,7 +37490,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -37611,7 +37513,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -37644,7 +37545,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -37668,7 +37568,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -37697,7 +37596,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -37738,7 +37636,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -39719,12 +39616,6 @@ export namespace Prisma {
     none?: LogWhereInput
   }
 
-  export type ClientListRelationFilter = {
-    every?: ClientWhereInput
-    some?: ClientWhereInput
-    none?: ClientWhereInput
-  }
-
   export type PasswordResetTokenNullableScalarRelationFilter = {
     is?: PasswordResetTokenWhereInput | null
     isNot?: PasswordResetTokenWhereInput | null
@@ -39745,10 +39636,6 @@ export namespace Prisma {
   }
 
   export type LogOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type ClientOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -40049,7 +39936,6 @@ export namespace Prisma {
     taxId?: SortOrder
     vatRegistered?: SortOrder
     vatId?: SortOrder
-    generalContactId?: SortOrder
     status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
@@ -40061,7 +39947,6 @@ export namespace Prisma {
     id?: SortOrder
     wp_id?: SortOrder
     addressId?: SortOrder
-    generalContactId?: SortOrder
   }
 
   export type ClientMaxOrderByAggregateInput = {
@@ -40078,7 +39963,6 @@ export namespace Prisma {
     taxId?: SortOrder
     vatRegistered?: SortOrder
     vatId?: SortOrder
-    generalContactId?: SortOrder
     status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
@@ -40100,7 +39984,6 @@ export namespace Prisma {
     taxId?: SortOrder
     vatRegistered?: SortOrder
     vatId?: SortOrder
-    generalContactId?: SortOrder
     status?: SortOrder
     isBlocked?: SortOrder
     isPaymentsBlocked?: SortOrder
@@ -40112,7 +39995,6 @@ export namespace Prisma {
     id?: SortOrder
     wp_id?: SortOrder
     addressId?: SortOrder
-    generalContactId?: SortOrder
   }
 
   export type EnumClientTypeWithAggregatesFilter<$PrismaModel = never> = {
@@ -40721,6 +40603,16 @@ export namespace Prisma {
   export type CountryScalarRelationFilter = {
     is?: CountryWhereInput
     isNot?: CountryWhereInput
+  }
+
+  export type ClientListRelationFilter = {
+    every?: ClientWhereInput
+    some?: ClientWhereInput
+    none?: ClientWhereInput
+  }
+
+  export type ClientOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type AddressCountOrderByAggregateInput = {
@@ -41843,13 +41735,6 @@ export namespace Prisma {
     connect?: LogWhereUniqueInput | LogWhereUniqueInput[]
   }
 
-  export type ClientCreateNestedManyWithoutGeneralContactInput = {
-    create?: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput> | ClientCreateWithoutGeneralContactInput[] | ClientUncheckedCreateWithoutGeneralContactInput[]
-    connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
-    createMany?: ClientCreateManyGeneralContactInputEnvelope
-    connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-  }
-
   export type PasswordResetTokenCreateNestedOneWithoutUserInput = {
     create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
     connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
@@ -41882,13 +41767,6 @@ export namespace Prisma {
     connectOrCreate?: LogCreateOrConnectWithoutUserInput | LogCreateOrConnectWithoutUserInput[]
     createMany?: LogCreateManyUserInputEnvelope
     connect?: LogWhereUniqueInput | LogWhereUniqueInput[]
-  }
-
-  export type ClientUncheckedCreateNestedManyWithoutGeneralContactInput = {
-    create?: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput> | ClientCreateWithoutGeneralContactInput[] | ClientUncheckedCreateWithoutGeneralContactInput[]
-    connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
-    createMany?: ClientCreateManyGeneralContactInputEnvelope
-    connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
   }
 
   export type PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput = {
@@ -41960,20 +41838,6 @@ export namespace Prisma {
     deleteMany?: LogScalarWhereInput | LogScalarWhereInput[]
   }
 
-  export type ClientUpdateManyWithoutGeneralContactNestedInput = {
-    create?: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput> | ClientCreateWithoutGeneralContactInput[] | ClientUncheckedCreateWithoutGeneralContactInput[]
-    connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
-    upsert?: ClientUpsertWithWhereUniqueWithoutGeneralContactInput | ClientUpsertWithWhereUniqueWithoutGeneralContactInput[]
-    createMany?: ClientCreateManyGeneralContactInputEnvelope
-    set?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    disconnect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    delete?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    update?: ClientUpdateWithWhereUniqueWithoutGeneralContactInput | ClientUpdateWithWhereUniqueWithoutGeneralContactInput[]
-    updateMany?: ClientUpdateManyWithWhereWithoutGeneralContactInput | ClientUpdateManyWithWhereWithoutGeneralContactInput[]
-    deleteMany?: ClientScalarWhereInput | ClientScalarWhereInput[]
-  }
-
   export type PasswordResetTokenUpdateOneWithoutUserNestedInput = {
     create?: XOR<PasswordResetTokenCreateWithoutUserInput, PasswordResetTokenUncheckedCreateWithoutUserInput>
     connectOrCreate?: PasswordResetTokenCreateOrConnectWithoutUserInput
@@ -42038,20 +41902,6 @@ export namespace Prisma {
     update?: LogUpdateWithWhereUniqueWithoutUserInput | LogUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: LogUpdateManyWithWhereWithoutUserInput | LogUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: LogScalarWhereInput | LogScalarWhereInput[]
-  }
-
-  export type ClientUncheckedUpdateManyWithoutGeneralContactNestedInput = {
-    create?: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput> | ClientCreateWithoutGeneralContactInput[] | ClientUncheckedCreateWithoutGeneralContactInput[]
-    connectOrCreate?: ClientCreateOrConnectWithoutGeneralContactInput | ClientCreateOrConnectWithoutGeneralContactInput[]
-    upsert?: ClientUpsertWithWhereUniqueWithoutGeneralContactInput | ClientUpsertWithWhereUniqueWithoutGeneralContactInput[]
-    createMany?: ClientCreateManyGeneralContactInputEnvelope
-    set?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    disconnect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    delete?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    connect?: ClientWhereUniqueInput | ClientWhereUniqueInput[]
-    update?: ClientUpdateWithWhereUniqueWithoutGeneralContactInput | ClientUpdateWithWhereUniqueWithoutGeneralContactInput[]
-    updateMany?: ClientUpdateManyWithWhereWithoutGeneralContactInput | ClientUpdateManyWithWhereWithoutGeneralContactInput[]
-    deleteMany?: ClientScalarWhereInput | ClientScalarWhereInput[]
   }
 
   export type PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput = {
@@ -42134,12 +41984,6 @@ export namespace Prisma {
     create?: XOR<AddressCreateWithoutClientInput, AddressUncheckedCreateWithoutClientInput>
     connectOrCreate?: AddressCreateOrConnectWithoutClientInput
     connect?: AddressWhereUniqueInput
-  }
-
-  export type UserCreateNestedOneWithoutGeneralContactClientInput = {
-    create?: XOR<UserCreateWithoutGeneralContactClientInput, UserUncheckedCreateWithoutGeneralContactClientInput>
-    connectOrCreate?: UserCreateOrConnectWithoutGeneralContactClientInput
-    connect?: UserWhereUniqueInput
   }
 
   export type ClientDMBCreateNestedOneWithoutClientInput = {
@@ -42252,16 +42096,6 @@ export namespace Prisma {
     upsert?: AddressUpsertWithoutClientInput
     connect?: AddressWhereUniqueInput
     update?: XOR<XOR<AddressUpdateToOneWithWhereWithoutClientInput, AddressUpdateWithoutClientInput>, AddressUncheckedUpdateWithoutClientInput>
-  }
-
-  export type UserUpdateOneWithoutGeneralContactClientNestedInput = {
-    create?: XOR<UserCreateWithoutGeneralContactClientInput, UserUncheckedCreateWithoutGeneralContactClientInput>
-    connectOrCreate?: UserCreateOrConnectWithoutGeneralContactClientInput
-    upsert?: UserUpsertWithoutGeneralContactClientInput
-    disconnect?: UserWhereInput | boolean
-    delete?: UserWhereInput | boolean
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutGeneralContactClientInput, UserUpdateWithoutGeneralContactClientInput>, UserUncheckedUpdateWithoutGeneralContactClientInput>
   }
 
   export type ClientDMBUpdateOneWithoutClientNestedInput = {
@@ -44461,7 +44295,6 @@ export namespace Prisma {
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
@@ -44479,7 +44312,6 @@ export namespace Prisma {
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
@@ -44512,7 +44344,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
@@ -44530,7 +44361,6 @@ export namespace Prisma {
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -44607,7 +44437,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -44630,7 +44459,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -44675,71 +44503,6 @@ export namespace Prisma {
 
   export type LogCreateManyUserInputEnvelope = {
     data: LogCreateManyUserInput | LogCreateManyUserInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type ClientCreateWithoutGeneralContactInput = {
-    wp_id?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clientName: string
-    firstName: string
-    lastName: string
-    type?: $Enums.ClientType
-    taxIdType: $Enums.TaxIdType
-    taxId: string
-    vatRegistered?: boolean
-    vatId?: string | null
-    status?: $Enums.ClientStatus
-    isBlocked?: boolean | null
-    isPaymentsBlocked?: boolean | null
-    isPaymentInProgress?: boolean
-    isPaymentDataInValidation?: boolean
-    address: AddressCreateNestedOneWithoutClientInput
-    dmb?: ClientDMBCreateNestedOneWithoutClientInput
-    balances?: BalanceCreateNestedManyWithoutClientInput
-    paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
-    labels?: LabelCreateNestedManyWithoutClientInput
-    users?: UserCreateNestedManyWithoutClientInput
-    contract?: ContractCreateNestedOneWithoutClientInput
-    userRoyaltyReport?: UserRoyaltyReportCreateNestedManyWithoutClientInput
-  }
-
-  export type ClientUncheckedCreateWithoutGeneralContactInput = {
-    id?: number
-    wp_id?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clientName: string
-    firstName: string
-    lastName: string
-    type?: $Enums.ClientType
-    addressId: number
-    taxIdType: $Enums.TaxIdType
-    taxId: string
-    vatRegistered?: boolean
-    vatId?: string | null
-    status?: $Enums.ClientStatus
-    isBlocked?: boolean | null
-    isPaymentsBlocked?: boolean | null
-    isPaymentInProgress?: boolean
-    isPaymentDataInValidation?: boolean
-    dmb?: ClientDMBUncheckedCreateNestedOneWithoutClientInput
-    balances?: BalanceUncheckedCreateNestedManyWithoutClientInput
-    paymentData?: ClientPaymentInformationUncheckedCreateNestedOneWithoutClientInput
-    labels?: LabelUncheckedCreateNestedManyWithoutClientInput
-    users?: UserUncheckedCreateNestedManyWithoutClientInput
-    contract?: ContractUncheckedCreateNestedOneWithoutClientInput
-    userRoyaltyReport?: UserRoyaltyReportUncheckedCreateNestedManyWithoutClientInput
-  }
-
-  export type ClientCreateOrConnectWithoutGeneralContactInput = {
-    where: ClientWhereUniqueInput
-    create: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput>
-  }
-
-  export type ClientCreateManyGeneralContactInputEnvelope = {
-    data: ClientCreateManyGeneralContactInput | ClientCreateManyGeneralContactInput[]
     skipDuplicates?: boolean
   }
 
@@ -44875,7 +44638,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -44898,7 +44660,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -44940,47 +44701,6 @@ export namespace Prisma {
     message?: StringFilter<"Log"> | string
     script?: StringNullableFilter<"Log"> | string | null
     ip?: StringNullableFilter<"Log"> | string | null
-  }
-
-  export type ClientUpsertWithWhereUniqueWithoutGeneralContactInput = {
-    where: ClientWhereUniqueInput
-    update: XOR<ClientUpdateWithoutGeneralContactInput, ClientUncheckedUpdateWithoutGeneralContactInput>
-    create: XOR<ClientCreateWithoutGeneralContactInput, ClientUncheckedCreateWithoutGeneralContactInput>
-  }
-
-  export type ClientUpdateWithWhereUniqueWithoutGeneralContactInput = {
-    where: ClientWhereUniqueInput
-    data: XOR<ClientUpdateWithoutGeneralContactInput, ClientUncheckedUpdateWithoutGeneralContactInput>
-  }
-
-  export type ClientUpdateManyWithWhereWithoutGeneralContactInput = {
-    where: ClientScalarWhereInput
-    data: XOR<ClientUpdateManyMutationInput, ClientUncheckedUpdateManyWithoutGeneralContactInput>
-  }
-
-  export type ClientScalarWhereInput = {
-    AND?: ClientScalarWhereInput | ClientScalarWhereInput[]
-    OR?: ClientScalarWhereInput[]
-    NOT?: ClientScalarWhereInput | ClientScalarWhereInput[]
-    id?: IntFilter<"Client"> | number
-    wp_id?: IntNullableFilter<"Client"> | number | null
-    createdAt?: DateTimeFilter<"Client"> | Date | string
-    updatedAt?: DateTimeFilter<"Client"> | Date | string
-    clientName?: StringFilter<"Client"> | string
-    firstName?: StringFilter<"Client"> | string
-    lastName?: StringFilter<"Client"> | string
-    type?: EnumClientTypeFilter<"Client"> | $Enums.ClientType
-    addressId?: IntFilter<"Client"> | number
-    taxIdType?: EnumTaxIdTypeFilter<"Client"> | $Enums.TaxIdType
-    taxId?: StringFilter<"Client"> | string
-    vatRegistered?: BoolFilter<"Client"> | boolean
-    vatId?: StringNullableFilter<"Client"> | string | null
-    generalContactId?: IntNullableFilter<"Client"> | number | null
-    status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
-    isBlocked?: BoolNullableFilter<"Client"> | boolean | null
-    isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
-    isPaymentInProgress?: BoolFilter<"Client"> | boolean
-    isPaymentDataInValidation?: BoolFilter<"Client"> | boolean
   }
 
   export type PasswordResetTokenUpsertWithoutUserInput = {
@@ -45049,7 +44769,6 @@ export namespace Prisma {
     comms?: UserCommsCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
 
@@ -45067,7 +44786,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
 
@@ -45100,7 +44818,6 @@ export namespace Prisma {
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
 
@@ -45118,7 +44835,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
@@ -45134,7 +44850,6 @@ export namespace Prisma {
     comms?: UserCommsCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
@@ -45152,7 +44867,6 @@ export namespace Prisma {
     clientId?: number | null
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
@@ -45185,7 +44899,6 @@ export namespace Prisma {
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
@@ -45203,7 +44916,6 @@ export namespace Prisma {
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -45220,7 +44932,6 @@ export namespace Prisma {
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
@@ -45238,7 +44949,6 @@ export namespace Prisma {
     clientId?: number | null
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
@@ -45271,7 +44981,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
@@ -45289,7 +44998,6 @@ export namespace Prisma {
     clientId?: NullableIntFieldUpdateOperationsInput | number | null
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -45320,46 +45028,6 @@ export namespace Prisma {
   export type AddressCreateOrConnectWithoutClientInput = {
     where: AddressWhereUniqueInput
     create: XOR<AddressCreateWithoutClientInput, AddressUncheckedCreateWithoutClientInput>
-  }
-
-  export type UserCreateWithoutGeneralContactClientInput = {
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    username: string
-    email: string
-    password: string
-    fullName?: string
-    usernameDMB?: string | null
-    role?: $Enums.Role
-    preferences?: UserPreferencesCreateNestedManyWithoutUserInput
-    comms?: UserCommsCreateNestedManyWithoutUserInput
-    client?: ClientCreateNestedOneWithoutUsersInput
-    logs?: LogCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
-    refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
-  }
-
-  export type UserUncheckedCreateWithoutGeneralContactClientInput = {
-    id?: number
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    username: string
-    email: string
-    password: string
-    fullName?: string
-    usernameDMB?: string | null
-    role?: $Enums.Role
-    clientId?: number | null
-    preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
-    comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
-    logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
-    refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
-  }
-
-  export type UserCreateOrConnectWithoutGeneralContactClientInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutGeneralContactClientInput, UserUncheckedCreateWithoutGeneralContactClientInput>
   }
 
   export type ClientDMBCreateWithoutClientInput = {
@@ -45486,7 +45154,6 @@ export namespace Prisma {
     preferences?: UserPreferencesCreateNestedManyWithoutUserInput
     comms?: UserCommsCreateNestedManyWithoutUserInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
   }
@@ -45504,7 +45171,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
     refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
   }
@@ -45630,52 +45296,6 @@ export namespace Prisma {
     state?: StringFieldUpdateOperationsInput | string
     countryId?: IntFieldUpdateOperationsInput | number
     zip?: StringFieldUpdateOperationsInput | string
-  }
-
-  export type UserUpsertWithoutGeneralContactClientInput = {
-    update: XOR<UserUpdateWithoutGeneralContactClientInput, UserUncheckedUpdateWithoutGeneralContactClientInput>
-    create: XOR<UserCreateWithoutGeneralContactClientInput, UserUncheckedCreateWithoutGeneralContactClientInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutGeneralContactClientInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutGeneralContactClientInput, UserUncheckedUpdateWithoutGeneralContactClientInput>
-  }
-
-  export type UserUpdateWithoutGeneralContactClientInput = {
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    username?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    fullName?: StringFieldUpdateOperationsInput | string
-    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
-    preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
-    comms?: UserCommsUpdateManyWithoutUserNestedInput
-    client?: ClientUpdateOneWithoutUsersNestedInput
-    logs?: LogUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
-    refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
-  }
-
-  export type UserUncheckedUpdateWithoutGeneralContactClientInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    username?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    fullName?: StringFieldUpdateOperationsInput | string
-    usernameDMB?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
-    clientId?: NullableIntFieldUpdateOperationsInput | number | null
-    preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
-    comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
-    logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
-    refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ClientDMBUpsertWithoutClientInput = {
@@ -45904,7 +45524,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
     labels?: LabelCreateNestedManyWithoutClientInput
@@ -45927,7 +45546,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -45975,7 +45593,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
     labels?: LabelUpdateManyWithoutClientNestedInput
@@ -45998,7 +45615,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -46030,7 +45646,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     labels?: LabelCreateNestedManyWithoutClientInput
@@ -46053,7 +45668,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -46101,7 +45715,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     labels?: LabelUpdateManyWithoutClientNestedInput
@@ -46124,7 +45737,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -46156,7 +45768,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -46179,7 +45790,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -46227,7 +45837,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -46250,7 +45859,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -46282,7 +45890,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
     labels?: LabelCreateNestedManyWithoutClientInput
@@ -46305,7 +45912,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -46390,7 +45996,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
     labels?: LabelUpdateManyWithoutClientNestedInput
@@ -46413,7 +46018,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -46712,7 +46316,6 @@ export namespace Prisma {
     isPaymentsBlocked?: boolean | null
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -46735,7 +46338,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -46800,6 +46402,30 @@ export namespace Prisma {
   export type ClientUpdateManyWithWhereWithoutAddressInput = {
     where: ClientScalarWhereInput
     data: XOR<ClientUpdateManyMutationInput, ClientUncheckedUpdateManyWithoutAddressInput>
+  }
+
+  export type ClientScalarWhereInput = {
+    AND?: ClientScalarWhereInput | ClientScalarWhereInput[]
+    OR?: ClientScalarWhereInput[]
+    NOT?: ClientScalarWhereInput | ClientScalarWhereInput[]
+    id?: IntFilter<"Client"> | number
+    wp_id?: IntNullableFilter<"Client"> | number | null
+    createdAt?: DateTimeFilter<"Client"> | Date | string
+    updatedAt?: DateTimeFilter<"Client"> | Date | string
+    clientName?: StringFilter<"Client"> | string
+    firstName?: StringFilter<"Client"> | string
+    lastName?: StringFilter<"Client"> | string
+    type?: EnumClientTypeFilter<"Client"> | $Enums.ClientType
+    addressId?: IntFilter<"Client"> | number
+    taxIdType?: EnumTaxIdTypeFilter<"Client"> | $Enums.TaxIdType
+    taxId?: StringFilter<"Client"> | string
+    vatRegistered?: BoolFilter<"Client"> | boolean
+    vatId?: StringNullableFilter<"Client"> | string | null
+    status?: EnumClientStatusFilter<"Client"> | $Enums.ClientStatus
+    isBlocked?: BoolNullableFilter<"Client"> | boolean | null
+    isPaymentsBlocked?: BoolNullableFilter<"Client"> | boolean | null
+    isPaymentInProgress?: BoolFilter<"Client"> | boolean
+    isPaymentDataInValidation?: BoolFilter<"Client"> | boolean
   }
 
   export type AddressCreateWithoutCountryInput = {
@@ -46941,7 +46567,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -46964,7 +46589,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -47172,7 +46796,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -47195,7 +46818,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -48150,7 +47772,6 @@ export namespace Prisma {
     isPaymentInProgress?: boolean
     isPaymentDataInValidation?: boolean
     address: AddressCreateNestedOneWithoutClientInput
-    generalContact?: UserCreateNestedOneWithoutGeneralContactClientInput
     dmb?: ClientDMBCreateNestedOneWithoutClientInput
     balances?: BalanceCreateNestedManyWithoutClientInput
     paymentData?: ClientPaymentInformationCreateNestedOneWithoutClientInput
@@ -48173,7 +47794,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -48370,7 +47990,6 @@ export namespace Prisma {
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
     address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -48393,7 +48012,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -49140,7 +48758,6 @@ export namespace Prisma {
     comms?: UserCommsCreateNestedManyWithoutUserInput
     client?: ClientCreateNestedOneWithoutUsersInput
     logs?: LogCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenCreateNestedOneWithoutUserInput
   }
 
@@ -49158,7 +48775,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedCreateNestedManyWithoutUserInput
     comms?: UserCommsUncheckedCreateNestedManyWithoutUserInput
     logs?: LogUncheckedCreateNestedManyWithoutUserInput
-    generalContactClient?: ClientUncheckedCreateNestedManyWithoutGeneralContactInput
     resetToken?: PasswordResetTokenUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -49191,7 +48807,6 @@ export namespace Prisma {
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     client?: ClientUpdateOneWithoutUsersNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
   }
 
@@ -49209,7 +48824,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -49400,27 +49014,6 @@ export namespace Prisma {
     ip?: string | null
   }
 
-  export type ClientCreateManyGeneralContactInput = {
-    id?: number
-    wp_id?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    clientName: string
-    firstName: string
-    lastName: string
-    type?: $Enums.ClientType
-    addressId: number
-    taxIdType: $Enums.TaxIdType
-    taxId: string
-    vatRegistered?: boolean
-    vatId?: string | null
-    status?: $Enums.ClientStatus
-    isBlocked?: boolean | null
-    isPaymentsBlocked?: boolean | null
-    isPaymentInProgress?: boolean
-    isPaymentDataInValidation?: boolean
-  }
-
   export type RefreshTokenCreateManyUserInput = {
     id?: number
     token: string
@@ -49509,82 +49102,6 @@ export namespace Prisma {
     message?: StringFieldUpdateOperationsInput | string
     script?: NullableStringFieldUpdateOperationsInput | string | null
     ip?: NullableStringFieldUpdateOperationsInput | string | null
-  }
-
-  export type ClientUpdateWithoutGeneralContactInput = {
-    wp_id?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clientName?: StringFieldUpdateOperationsInput | string
-    firstName?: StringFieldUpdateOperationsInput | string
-    lastName?: StringFieldUpdateOperationsInput | string
-    type?: EnumClientTypeFieldUpdateOperationsInput | $Enums.ClientType
-    taxIdType?: EnumTaxIdTypeFieldUpdateOperationsInput | $Enums.TaxIdType
-    taxId?: StringFieldUpdateOperationsInput | string
-    vatRegistered?: BoolFieldUpdateOperationsInput | boolean
-    vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
-    isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
-    isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
-    address?: AddressUpdateOneRequiredWithoutClientNestedInput
-    dmb?: ClientDMBUpdateOneWithoutClientNestedInput
-    balances?: BalanceUpdateManyWithoutClientNestedInput
-    paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
-    labels?: LabelUpdateManyWithoutClientNestedInput
-    users?: UserUpdateManyWithoutClientNestedInput
-    contract?: ContractUpdateOneWithoutClientNestedInput
-    userRoyaltyReport?: UserRoyaltyReportUpdateManyWithoutClientNestedInput
-  }
-
-  export type ClientUncheckedUpdateWithoutGeneralContactInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    wp_id?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clientName?: StringFieldUpdateOperationsInput | string
-    firstName?: StringFieldUpdateOperationsInput | string
-    lastName?: StringFieldUpdateOperationsInput | string
-    type?: EnumClientTypeFieldUpdateOperationsInput | $Enums.ClientType
-    addressId?: IntFieldUpdateOperationsInput | number
-    taxIdType?: EnumTaxIdTypeFieldUpdateOperationsInput | $Enums.TaxIdType
-    taxId?: StringFieldUpdateOperationsInput | string
-    vatRegistered?: BoolFieldUpdateOperationsInput | boolean
-    vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
-    isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
-    isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
-    dmb?: ClientDMBUncheckedUpdateOneWithoutClientNestedInput
-    balances?: BalanceUncheckedUpdateManyWithoutClientNestedInput
-    paymentData?: ClientPaymentInformationUncheckedUpdateOneWithoutClientNestedInput
-    labels?: LabelUncheckedUpdateManyWithoutClientNestedInput
-    users?: UserUncheckedUpdateManyWithoutClientNestedInput
-    contract?: ContractUncheckedUpdateOneWithoutClientNestedInput
-    userRoyaltyReport?: UserRoyaltyReportUncheckedUpdateManyWithoutClientNestedInput
-  }
-
-  export type ClientUncheckedUpdateManyWithoutGeneralContactInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    wp_id?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    clientName?: StringFieldUpdateOperationsInput | string
-    firstName?: StringFieldUpdateOperationsInput | string
-    lastName?: StringFieldUpdateOperationsInput | string
-    type?: EnumClientTypeFieldUpdateOperationsInput | $Enums.ClientType
-    addressId?: IntFieldUpdateOperationsInput | number
-    taxIdType?: EnumTaxIdTypeFieldUpdateOperationsInput | $Enums.TaxIdType
-    taxId?: StringFieldUpdateOperationsInput | string
-    vatRegistered?: BoolFieldUpdateOperationsInput | boolean
-    vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
-    isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
-    isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type RefreshTokenUpdateWithoutUserInput = {
@@ -49743,7 +49260,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUpdateManyWithoutUserNestedInput
     comms?: UserCommsUpdateManyWithoutUserNestedInput
     logs?: LogUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
   }
@@ -49761,7 +49277,6 @@ export namespace Prisma {
     preferences?: UserPreferencesUncheckedUpdateManyWithoutUserNestedInput
     comms?: UserCommsUncheckedUpdateManyWithoutUserNestedInput
     logs?: LogUncheckedUpdateManyWithoutUserNestedInput
-    generalContactClient?: ClientUncheckedUpdateManyWithoutGeneralContactNestedInput
     resetToken?: PasswordResetTokenUncheckedUpdateOneWithoutUserNestedInput
     refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
   }
@@ -49893,7 +49408,6 @@ export namespace Prisma {
     taxId: string
     vatRegistered?: boolean
     vatId?: string | null
-    generalContactId?: number | null
     status?: $Enums.ClientStatus
     isBlocked?: boolean | null
     isPaymentsBlocked?: boolean | null
@@ -49918,7 +49432,6 @@ export namespace Prisma {
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentInProgress?: BoolFieldUpdateOperationsInput | boolean
     isPaymentDataInValidation?: BoolFieldUpdateOperationsInput | boolean
-    generalContact?: UserUpdateOneWithoutGeneralContactClientNestedInput
     dmb?: ClientDMBUpdateOneWithoutClientNestedInput
     balances?: BalanceUpdateManyWithoutClientNestedInput
     paymentData?: ClientPaymentInformationUpdateOneWithoutClientNestedInput
@@ -49941,7 +49454,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
@@ -49969,7 +49481,6 @@ export namespace Prisma {
     taxId?: StringFieldUpdateOperationsInput | string
     vatRegistered?: BoolFieldUpdateOperationsInput | boolean
     vatId?: NullableStringFieldUpdateOperationsInput | string | null
-    generalContactId?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumClientStatusFieldUpdateOperationsInput | $Enums.ClientStatus
     isBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null
     isPaymentsBlocked?: NullableBoolFieldUpdateOperationsInput | boolean | null

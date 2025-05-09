@@ -97,9 +97,8 @@ model User {
   client   Client? @relation(fields: [clientId], references: [id])
   logs     Log[] //TODO -- Remove this
 
-  generalContactClient Client[]            @relation("GeneralContact")
-  resetToken           PasswordResetToken? @relation("PasswordResetToken")
-  refreshTokens        RefreshToken[]
+  resetToken    PasswordResetToken? @relation("PasswordResetToken")
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
@@ -164,9 +163,6 @@ model Client {
   taxId         String
   vatRegistered Boolean    @default(false)
   vatId         String?
-
-  generalContact   User? @relation("GeneralContact", fields: [generalContactId], references: [id])
-  generalContactId Int?
 
   status                    ClientStatus @default(ACTIVE)
   isBlocked                 Boolean? // @deprecated USE clientStatus INSTEAD

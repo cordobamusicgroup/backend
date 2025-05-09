@@ -4,10 +4,14 @@ import { ContractDto } from './contract/contract.dto';
 import { AddressDto } from './address/address.dto';
 import { DmbDto } from './dmb/dmb.dto';
 import { BalanceDto } from '../../financial/balances/dto/balance.dto';
+import { UserDto } from '../../users/dto/user.dto';
 
 export class ClientExtendedDto {
   @Expose()
   id: number;
+
+  @Expose()
+  status: ClientStatus;
 
   @Expose()
   clientName: string;
@@ -34,9 +38,6 @@ export class ClientExtendedDto {
   vatId: string;
 
   @Expose()
-  status: ClientStatus;
-
-  @Expose()
   isPaymentInProgress: boolean;
 
   @Expose()
@@ -57,4 +58,8 @@ export class ClientExtendedDto {
   @Expose()
   @Type(() => BalanceDto)
   balances: BalanceDto[];
+
+  @Expose()
+  @Type(() => UserDto)
+  users: UserDto[];
 }

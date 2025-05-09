@@ -12,19 +12,20 @@ import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { ClientStatus, Currency, TransactionType } from 'generated/client';
+import {
+  ClientStatus,
+  Currency,
+  TransactionType,
+  ContractStatus,
+} from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
-import {
-  ConflictRecordsException,
-  UserNotFoundException,
-} from 'src/common/exceptions/CustomHttpException';
+import { ConflictRecordsException } from 'src/common/exceptions/CustomHttpException';
 import {
   PrismaClientKnownRequestError,
   Decimal,
 } from 'generated/client/runtime/library';
-import { ClientValidationSchema } from './validation/client-validation.schema';
-import { validateWithZod } from 'src/common/utils/zod-validate.util';
+import { UserDto } from 'src/resources/users/dto/user.dto';
 
 @Injectable()
 export class ClientsService {
@@ -40,15 +41,21 @@ export class ClientsService {
    * @returns The created client as a ClientDto
    */
   async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
-    validateWithZod(ClientValidationSchema, userObject);
+    // Validaciones condicionales
     await this.validateClientData(userObject);
-    const generalContact = await this.getAndValidateGeneralContact(
-      userObject.generalContactId,
-    );
-    const data = this.buildClientData(userObject, generalContact, 'create');
+
+    // Validar relaciones entre campos
+    this.validateRelatedFields(userObject);
+
+    const data = this.buildClientData(userObject, 'create');
     const client = await this.prisma.client.create({
       data,
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+      },
     });
     return this.convertToClientDto(client);
   }
@@ -67,19 +74,19 @@ export class ClientsService {
     id: number,
     updateClientDto: UpdateClientDto,
   ): Promise<ClientExtendedDto> {
-    validateWithZod(ClientValidationSchema, updateClientDto);
-    const generalContact = await this.getAndValidateGeneralContact(
-      updateClientDto.generalContactId,
-    );
-    const data = this.buildClientData(
-      updateClientDto,
-      generalContact,
-      'update',
-    );
+    // Validar relaciones entre campos
+    this.validateRelatedFields(updateClientDto);
+
+    const data = this.buildClientData(updateClientDto, 'update');
     const updatedClient = await this.prisma.client.update({
       where: { id },
       data,
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+      },
     });
     return this.convertToClientDto(updatedClient);
   }
@@ -126,7 +133,13 @@ export class ClientsService {
    */
   async getClients(): Promise<ClientExtendedDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+        users: true,
+      },
     });
 
     return Promise.all(
@@ -378,54 +391,6 @@ export class ClientsService {
   }
 
   /**
-   * Method to update a client's address.
-   * If the address exists, it will be updated with the new data.
-   *
-   * @param addressId - The ID of the address to be updated
-   * @param address - The new address data
-   * @returns The updated address
-   */
-  private async updateAddress(addressId: number, address: any): Promise<any> {
-    return this.prisma.address.update({
-      where: { id: addressId },
-      data: { ...address },
-    });
-  }
-
-  /**
-   * Method to update a client's contract.
-   * If the contract exists, it will be updated with the new data.
-   *
-   * @param contractId - The ID of the contract to be updated
-   * @param contract - The new contract data
-   * @returns The updated contract
-   */
-  private async updateContract(
-    contractId: number,
-    contract: any,
-  ): Promise<any> {
-    return this.prisma.contract.update({
-      where: { id: contractId },
-      data: { ...contract },
-    });
-  }
-
-  /**
-   * Method to update a client's DMB (Digital Music Bundle) data.
-   * If the DMB exists, it will be updated with the new data.
-   *
-   * @param dmbId - The ID of the DMB record to be updated
-   * @param dmb - The new DMB data
-   * @returns The updated DMB data
-   */
-  private async updateDmb(dmbId: number, dmb: any): Promise<any> {
-    return this.prisma.clientDMB.update({
-      where: { id: dmbId },
-      data: { ...dmb },
-    });
-  }
-
-  /**
    * Helper method to validate the client data before creating or updating a client.
    * Ensures that clientName is unique and VAT-related fields are correct.
    *
@@ -435,6 +400,11 @@ export class ClientsService {
   private async validateClientData(
     clientData: Partial<CreateClientDto>,
   ): Promise<void> {
+    // Verificar que clientName esté definido antes de validar
+    if (!clientData.clientName) {
+      return; // Si no hay clientName, no hay necesidad de validar (para updates parciales)
+    }
+
     const existingClient = await this.prisma.client.findFirst({
       where: { clientName: clientData.clientName },
     });
@@ -443,11 +413,74 @@ export class ClientsService {
       throw new BadRequestException('Client with this name already exists');
     }
 
-    if (clientData.vatRegistered && !clientData.vatId) {
+    // Solo validar vatId si vatRegistered está definido y es true
+    if (clientData.vatRegistered === true && !clientData.vatId) {
       throw new BadRequestException(
         'VAT ID is required for VAT-registered clients',
       );
     }
+  }
+
+  /**
+   * Validates related fields and business rules
+   *
+   * @param clientData - The client data to validate
+   * @throws BadRequestException if validation fails
+   */
+  private validateRelatedFields(
+    clientData: Partial<CreateClientDto | UpdateClientDto>,
+  ): void {
+    // Validación de campos relacionados con contract
+    if (clientData.contract) {
+      const { contract } = clientData;
+
+      // Validar que si el status es diferente de DRAFT, se proporcione un valor para ppd
+      if (
+        contract.status !== ContractStatus.DRAFT &&
+        (!contract.ppd || contract.ppd <= 0)
+      ) {
+        throw new BadRequestException(
+          'PPD value is required for non-draft contracts',
+        );
+      }
+
+      // Validar fechas de contrato
+      if (contract.startDate && contract.endDate) {
+        try {
+          const startDate = new Date(contract.startDate);
+          const endDate = new Date(contract.endDate);
+
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            throw new BadRequestException(
+              'Invalid date format in contract dates',
+            );
+          }
+
+          if (endDate <= startDate) {
+            throw new BadRequestException(
+              'Contract end date must be after start date',
+            );
+          }
+        } catch (error) {
+          if (error instanceof BadRequestException) {
+            throw error;
+          }
+          throw new BadRequestException('Error validating contract dates');
+        }
+      }
+
+      // Validar campos de firma si el contrato no está en DRAFT
+      if (
+        contract.status !== ContractStatus.DRAFT &&
+        (!contract.signedAt || !contract.signedBy)
+      ) {
+        throw new BadRequestException(
+          'Non-draft contracts require signedAt and signedBy',
+        );
+      }
+    }
+
+    // Se eliminan las validaciones del DMB según las instrucciones
   }
 
   /**
@@ -461,7 +494,13 @@ export class ClientsService {
   private async findClientById(id: number) {
     const client = await this.prisma.client.findUnique({
       where: { id },
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+        users: true,
+      },
     });
     if (!client) {
       throw new NotFoundException(`Client with ID ${id} not found`);
@@ -509,6 +548,13 @@ export class ClientsService {
       );
     }
 
+    // Convert related users
+    const userDtos = Array.isArray(client.users)
+      ? await Promise.all(
+          client.users.map((user: any) => convertToDto(user, UserDto)),
+        )
+      : [];
+
     return convertToDto(
       {
         ...client,
@@ -516,6 +562,7 @@ export class ClientsService {
         dmb: dmbDto,
         contract: contractDto,
         balances: balanceDtos,
+        users: userDtos,
       },
       ClientExtendedDto,
     );
@@ -523,54 +570,72 @@ export class ClientsService {
 
   // --- Helpers ---
 
-  private async getAndValidateGeneralContact(generalContactId?: number) {
-    if (!generalContactId) return null;
-    const generalContact = await this.prisma.user.findUnique({
-      where: { id: generalContactId },
-    });
-    if (!generalContact) throw new UserNotFoundException();
-    return generalContact;
-  }
+  /**
+   * Builds the base data object for creating or updating a client.
+   * @param dto - The incoming client DTO
+   * @param mode - 'create' or 'update'
+   * @returns Prisma-compatible data object
+   */
+  private buildClientData(dto: any, mode: 'create' | 'update') {
+    this.logger.log(`Building client data (${mode})`);
+    const { address, contract, dmb, ...clientData } = dto;
+    const data: any = { ...clientData };
 
-  private buildClientData(
-    dto: any,
-    generalContact: any,
-    mode: 'create' | 'update',
-  ) {
-    const { address, contract, dmb, generalContactId, ...clientData } = dto;
-    const data: any = {
-      ...clientData,
-      generalContact: generalContact
-        ? { connect: { id: generalContact.id } }
-        : undefined,
-    };
     if (address) {
-      data.address =
-        mode === 'create' ? { create: address } : { update: { ...address } };
+      data.address = this.buildAddressData(address, mode);
     }
     if (contract) {
-      // Calcular el valor de signed automáticamente
-      const status = contract.status;
-      const signed = status === 'DRAFT' ? false : true;
-      const contractData = { ...contract, signed };
-      data.contract =
-        mode === 'create'
-          ? { create: contractData }
-          : { update: { ...contractData } };
+      data.contract = this.buildContractData(contract, mode);
     }
     if (dmb) {
-      data.dmb = mode === 'create' ? { create: dmb } : { update: { ...dmb } };
+      data.dmb = this.buildDmbData(dmb, mode);
     }
     if (mode === 'create') {
-      data.balances = {
-        createMany: {
-          data: [
-            { amount: new Decimal(0), currency: Currency.EUR },
-            { amount: new Decimal(0), currency: Currency.USD },
-          ],
-        },
-      };
+      data.balances = this.buildBalancesData();
     }
     return data;
+  }
+
+  /**
+   * Helper to build address data structure.
+   */
+  private buildAddressData(address: any, mode: 'create' | 'update') {
+    this.logger.debug('Building address data');
+    return mode === 'create' ? { create: address } : { update: { ...address } };
+  }
+
+  /**
+   * Helper to build contract data structure with auto-signed flag.
+   */
+  private buildContractData(contract: any, mode: 'create' | 'update') {
+    this.logger.debug('Building contract data');
+    const signed = contract.status !== ContractStatus.DRAFT;
+    const contractData = { ...contract, signed };
+    return mode === 'create'
+      ? { create: contractData }
+      : { update: { ...contractData } };
+  }
+
+  /**
+   * Helper to build DMB data structure.
+   */
+  private buildDmbData(dmb: any, mode: 'create' | 'update') {
+    this.logger.debug('Building DMB data');
+    return mode === 'create' ? { create: dmb } : { update: { ...dmb } };
+  }
+
+  /**
+   * Helper to initialize balances for a new client.
+   */
+  private buildBalancesData() {
+    this.logger.debug('Initializing balances for new client');
+    return {
+      createMany: {
+        data: [
+          { amount: new Decimal(0), currency: Currency.EUR },
+          { amount: new Decimal(0), currency: Currency.USD },
+        ],
+      },
+    };
   }
 }

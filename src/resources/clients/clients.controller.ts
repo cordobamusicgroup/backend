@@ -16,7 +16,6 @@ import { ClientExtendedDto } from './dto/client-extended.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Role } from 'generated/client';
-import { ClientValidationSchema } from './validation/client-validation.schema';
 
 @Controller('clients')
 @UseGuards(RolesGuard)
