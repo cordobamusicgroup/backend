@@ -12,7 +12,15 @@ import { ContractDto } from './dto/contract/contract.dto';
 import { AddressDto } from './dto/address/address.dto';
 import { BalanceDto } from '../financial/balances/dto/balance.dto';
 import { DmbDto } from './dto/dmb/dmb.dto';
-import { ClientStatus, Currency, TransactionType } from 'generated/client';
+import {
+  ClientStatus,
+  Currency,
+  TransactionType,
+  ContractType,
+  ContractStatus,
+  AccessTypeDMB,
+  DMBStatus,
+} from 'generated/client';
 import { convertToDto } from 'src/common/utils/convert-dto.util';
 import { getCountryName } from 'src/common/utils/get-countryname.util';
 import {
@@ -23,8 +31,7 @@ import {
   PrismaClientKnownRequestError,
   Decimal,
 } from 'generated/client/runtime/library';
-import { ClientValidationSchema } from './validation/client-validation.schema';
-import { validateWithZod } from 'src/common/utils/zod-validate.util';
+import { UserDto } from 'src/resources/users/dto/user.dto';
 
 @Injectable()
 export class ClientsService {
@@ -40,15 +47,24 @@ export class ClientsService {
    * @returns The created client as a ClientDto
    */
   async create(userObject: CreateClientDto): Promise<ClientExtendedDto> {
-    validateWithZod(ClientValidationSchema, userObject);
+    // Validaciones condicionales
     await this.validateClientData(userObject);
+
+    // Validar relaciones entre campos
+    this.validateRelatedFields(userObject);
+
     const generalContact = await this.getAndValidateGeneralContact(
       userObject.generalContactId,
     );
     const data = this.buildClientData(userObject, generalContact, 'create');
     const client = await this.prisma.client.create({
       data,
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+      },
     });
     return this.convertToClientDto(client);
   }
@@ -67,7 +83,9 @@ export class ClientsService {
     id: number,
     updateClientDto: UpdateClientDto,
   ): Promise<ClientExtendedDto> {
-    validateWithZod(ClientValidationSchema, updateClientDto);
+    // Validar relaciones entre campos
+    this.validateRelatedFields(updateClientDto);
+
     const generalContact = await this.getAndValidateGeneralContact(
       updateClientDto.generalContactId,
     );
@@ -79,7 +97,12 @@ export class ClientsService {
     const updatedClient = await this.prisma.client.update({
       where: { id },
       data,
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+      },
     });
     return this.convertToClientDto(updatedClient);
   }
@@ -126,7 +149,13 @@ export class ClientsService {
    */
   async getClients(): Promise<ClientExtendedDto[]> {
     const clients = await this.prisma.client.findMany({
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+        users: true,
+      },
     });
 
     return Promise.all(
@@ -435,6 +464,11 @@ export class ClientsService {
   private async validateClientData(
     clientData: Partial<CreateClientDto>,
   ): Promise<void> {
+    // Verificar que clientName esté definido antes de validar
+    if (!clientData.clientName) {
+      return; // Si no hay clientName, no hay necesidad de validar (para updates parciales)
+    }
+
     const existingClient = await this.prisma.client.findFirst({
       where: { clientName: clientData.clientName },
     });
@@ -443,11 +477,74 @@ export class ClientsService {
       throw new BadRequestException('Client with this name already exists');
     }
 
-    if (clientData.vatRegistered && !clientData.vatId) {
+    // Solo validar vatId si vatRegistered está definido y es true
+    if (clientData.vatRegistered === true && !clientData.vatId) {
       throw new BadRequestException(
         'VAT ID is required for VAT-registered clients',
       );
     }
+  }
+
+  /**
+   * Validates related fields and business rules
+   *
+   * @param clientData - The client data to validate
+   * @throws BadRequestException if validation fails
+   */
+  private validateRelatedFields(
+    clientData: Partial<CreateClientDto | UpdateClientDto>,
+  ): void {
+    // Validación de campos relacionados con contract
+    if (clientData.contract) {
+      const { contract } = clientData;
+
+      // Validar que si el status es diferente de DRAFT, se proporcione un valor para ppd
+      if (
+        contract.status !== ContractStatus.DRAFT &&
+        (!contract.ppd || contract.ppd <= 0)
+      ) {
+        throw new BadRequestException(
+          'PPD value is required for non-draft contracts',
+        );
+      }
+
+      // Validar fechas de contrato
+      if (contract.startDate && contract.endDate) {
+        try {
+          const startDate = new Date(contract.startDate);
+          const endDate = new Date(contract.endDate);
+
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            throw new BadRequestException(
+              'Invalid date format in contract dates',
+            );
+          }
+
+          if (endDate <= startDate) {
+            throw new BadRequestException(
+              'Contract end date must be after start date',
+            );
+          }
+        } catch (error) {
+          if (error instanceof BadRequestException) {
+            throw error;
+          }
+          throw new BadRequestException('Error validating contract dates');
+        }
+      }
+
+      // Validar campos de firma si el contrato no está en DRAFT
+      if (
+        contract.status !== ContractStatus.DRAFT &&
+        (!contract.signedAt || !contract.signedBy)
+      ) {
+        throw new BadRequestException(
+          'Non-draft contracts require signedAt and signedBy',
+        );
+      }
+    }
+
+    // Se eliminan las validaciones del DMB según las instrucciones
   }
 
   /**
@@ -461,7 +558,13 @@ export class ClientsService {
   private async findClientById(id: number) {
     const client = await this.prisma.client.findUnique({
       where: { id },
-      include: { address: true, contract: true, balances: true, dmb: true },
+      include: {
+        address: true,
+        contract: true,
+        balances: true,
+        dmb: true,
+        users: true,
+      },
     });
     if (!client) {
       throw new NotFoundException(`Client with ID ${id} not found`);
@@ -509,6 +612,13 @@ export class ClientsService {
       );
     }
 
+    // Convert related users
+    const userDtos = Array.isArray(client.users)
+      ? await Promise.all(
+          client.users.map((user: any) => convertToDto(user, UserDto)),
+        )
+      : [];
+
     return convertToDto(
       {
         ...client,
@@ -516,6 +626,7 @@ export class ClientsService {
         dmb: dmbDto,
         contract: contractDto,
         balances: balanceDtos,
+        users: userDtos,
       },
       ClientExtendedDto,
     );
